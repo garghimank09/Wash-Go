@@ -1,0 +1,1 @@
+"""WashGo FastAPI application package."""
