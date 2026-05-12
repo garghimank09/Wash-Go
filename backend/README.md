@@ -70,7 +70,7 @@ The API proxies to either **Ollama** (default) or **OpenAI**, configured in `.en
 | `OPENAI_API_KEY` | Required when `AI_PROVIDER=openai` |
 | `OPENAI_MODEL` | e.g. `gpt-4o-mini` |
 
-The frontend **Assistant** page and the dashboard **floating chat** use this route (JWT required).
+The frontend **floating concierge** (dashboard) uses this route (JWT required).
 
 ## Ollama (legacy single-shot)
 

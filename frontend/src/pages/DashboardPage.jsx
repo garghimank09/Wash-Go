@@ -37,11 +37,6 @@ export function DashboardPage() {
           <p className="mt-1 text-slate-600 dark:text-slate-400">Here is your wash command center.</p>
         </div>
         <div className="flex flex-wrap gap-2">
-          <Link to="/assistant">
-            <Button variant="outline" size="sm">
-              AI assistant
-            </Button>
-          </Link>
           <Link to="/booking">
             <Button size="sm">Quick booking</Button>
           </Link>

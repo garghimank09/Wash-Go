@@ -1,15 +1,9 @@
 import { useState } from 'react';
-import { useLocation } from 'react-router-dom';
 
 import { AssistantChat } from './AssistantChat';
 
 export function AssistantDock() {
   const [open, setOpen] = useState(false);
-  const { pathname } = useLocation();
-
-  if (pathname === '/assistant') {
-    return null;
-  }
 
   return (
     <>

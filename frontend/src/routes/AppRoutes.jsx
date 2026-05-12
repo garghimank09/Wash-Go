@@ -4,7 +4,6 @@ import { ProtectedRoute } from '../components/ProtectedRoute';
 import { AuthLayout } from '../layouts/AuthLayout';
 import { MainLayout } from '../layouts/MainLayout';
 import { MarketingLayout } from '../layouts/MarketingLayout';
-import { AssistantPage } from '../pages/AssistantPage';
 import { BookingDetailPage } from '../pages/BookingDetailPage';
 import { BookingPage } from '../pages/BookingPage';
 import { BookingsPage } from '../pages/BookingsPage';
@@ -34,7 +33,6 @@ export function AppRoutes() {
             <Route path="/booking" element={<BookingPage />} />
             <Route path="/bookings" element={<BookingsPage />} />
             <Route path="/bookings/:id" element={<BookingDetailPage />} />
-            <Route path="/assistant" element={<AssistantPage />} />
           </Route>
         </Route>
 

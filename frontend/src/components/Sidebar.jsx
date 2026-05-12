@@ -5,7 +5,6 @@ const links = [
   { to: '/bookings', label: 'Bookings' },
   { to: '/cars', label: 'Cars' },
   { to: '/booking', label: 'New wash' },
-  { to: '/assistant', label: 'AI Concierge' },
 ];
 
 export function Sidebar({ mobileOpen, onNavigate }) {
