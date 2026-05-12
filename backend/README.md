@@ -52,13 +52,45 @@ In **`ENVIRONMENT=development`**, tables are auto-created on startup (`create_al
 
 Promote users to `washer` or `admin` via SQL/pgAdmin for now, or add an admin API later.
 
-## Ollama
+## AI assistant (chatbot)
 
-`app/ai_models/ollama_service.py` wraps `POST {OLLAMA_BASE_URL}/api/generate` for future chatbot, booking insights, review analysis, and recommendations.
+Authenticated users can call **`POST /assistant/chat`** with a JSON body:
 
-## Mobile (Expo) companion
+```json
+{ "messages": [{ "role": "user", "content": "How do bookings work?" }] }
+```
 
-The `../mobile` Expo app calls **`/cars`**, **`/pricing/calculate`**, **`/bookings`**, **`/bookings/{id}`**, and auth routes. Cars are also available under **`/users/me/cars`**.
+The API proxies to either **Ollama** (default) or **OpenAI**, configured in `.env`:
+
+| Variable | Purpose |
+|----------|---------|
+| `AI_PROVIDER` | `ollama` (default) or `openai` |
+| `OLLAMA_BASE_URL` | e.g. `http://localhost:11434` |
+| `OLLAMA_MODEL` | e.g. `llama3.2` (run `ollama pull <name>` first) |
+| `OPENAI_API_KEY` | Required when `AI_PROVIDER=openai` |
+| `OPENAI_MODEL` | e.g. `gpt-4o-mini` |
+
+The frontend **Assistant** page and the dashboard **floating chat** use this route (JWT required).
+
+## Ollama (legacy single-shot)
+
+`app/ai_models/ollama_service.py` still wraps `POST /api/generate` for one-shot prompts if you need it elsewhere.
+
+## Verify PostgreSQL
+
+From `backend/` (with venv activated):
+
+```powershell
+python scripts\check_db.py
+```
+
+You should see `DB_OK 1`. If not, fix **`DATABASE_URL`** in `.env` (Postgres running, database `washgo` exists, user/password correct).
+
+## Web frontend companion
+
+The **`../frontend`** Vite app calls **`/cars`**, **`/pricing/calculate`**, **`/bookings`**, **`/bookings/{id}`**, **`/assistant/chat`**, and auth routes. Cars are also available under **`/users/me/cars`**.
+
+Use **`CORS_ORIGINS=*`** (default in `.env.example`) for local dev, or list explicit origins such as `http://localhost:5173,http://127.0.0.1:5173`.
 
 ## Project layout
 

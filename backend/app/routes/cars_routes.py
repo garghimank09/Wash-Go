@@ -1,4 +1,4 @@
-"""Alias routes under `/cars` for mobile clients (same handlers as `/users/me/cars`)."""
+"""Alias routes under `/cars` for SPA / web clients (same handlers as `/users/me/cars`)."""
 
 from typing import Annotated
 from uuid import UUID

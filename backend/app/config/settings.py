@@ -20,6 +20,10 @@ class Settings(BaseSettings):
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24
     ENVIRONMENT: str = "development"
     OLLAMA_BASE_URL: str = "http://localhost:11434"
+    OLLAMA_MODEL: str = "llama3.2"
+    AI_PROVIDER: str = "ollama"
+    OPENAI_API_KEY: str | None = None
+    OPENAI_MODEL: str = "gpt-4o-mini"
     CORS_ORIGINS: str = "*"
 
     @field_validator("DATABASE_URL")
