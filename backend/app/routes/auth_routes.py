@@ -9,7 +9,7 @@ from app.auth.password_handler import verify_password
 from app.database.database import get_db
 from app.models.user import User
 from app.schemas.auth_schema import Token
-from app.schemas.user_schema import UserCreate, UserLogin, UserRead
+from app.schemas.user_schema import PartnerSignup, UserCreate, UserLogin, UserRead
 from app.services import user_service
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
@@ -18,6 +18,12 @@ router = APIRouter(prefix="/auth", tags=["Authentication"])
 @router.post("/signup", response_model=UserRead, status_code=status.HTTP_201_CREATED)
 async def signup(payload: UserCreate, db: Annotated[AsyncSession, Depends(get_db)]) -> User:
     return await user_service.create_user(db, payload)
+
+
+@router.post("/partner/signup", response_model=UserRead, status_code=status.HTTP_201_CREATED)
+async def partner_signup(payload: PartnerSignup, db: Annotated[AsyncSession, Depends(get_db)]) -> User:
+    """Public registration for field partners — creates `washer` role user + linked washer profile."""
+    return await user_service.create_partner_user(db, payload)
 
 
 @router.post("/login", response_model=Token)

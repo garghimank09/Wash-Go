@@ -1,3 +1,4 @@
+from decimal import Decimal
 from uuid import UUID
 
 from sqlalchemy import select
@@ -7,8 +8,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.auth.password_handler import hash_password
 from app.models.car import Car
 from app.models.user import User, UserRole
+from app.models.washer import Washer
 from app.schemas.car_schema import CarCreate
-from app.schemas.user_schema import UserCreate
+from app.schemas.user_schema import PartnerSignup, UserCreate
 from app.utils.exceptions import ConflictError, NotFoundError
 
 
@@ -29,6 +31,36 @@ async def create_user(db: AsyncSession, data: UserCreate) -> User:
         role=UserRole.customer,
     )
     db.add(user)
+    try:
+        await db.commit()
+    except IntegrityError:
+        await db.rollback()
+        raise ConflictError("Email already registered") from None
+    await db.refresh(user)
+    return user
+
+
+async def create_partner_user(db: AsyncSession, data: PartnerSignup) -> User:
+    if await get_user_by_email(db, data.email):
+        raise ConflictError("Email already registered")
+
+    user = User(
+        email=data.email.lower(),
+        hashed_password=hash_password(data.password),
+        full_name=data.full_name.strip(),
+        phone=data.phone.strip() if data.phone else None,
+        role=UserRole.washer,
+    )
+    db.add(user)
+    await db.flush()
+
+    washer = Washer(
+        user_id=user.id,
+        service_area=data.service_area.strip() if data.service_area else None,
+        rating_avg=Decimal("0.00"),
+        is_available=True,
+    )
+    db.add(washer)
     try:
         await db.commit()
     except IntegrityError:

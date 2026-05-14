@@ -11,8 +11,10 @@ from app.models.car import Car
 from app.models.user import User, UserRole
 from app.models.washer import Washer
 from app.schemas.booking_schema import (
+    BookingCancelBody,
     BookingCreate,
     BookingDetailRead,
+    BookingRescheduleBody,
     BookingTimelineStep,
     WasherPublic,
 )
@@ -155,6 +157,54 @@ def _estimate_eta_minutes(booking: Booking) -> int | None:
         if delta.total_seconds() > 0:
             return max(5, int(delta.total_seconds() // 60))
     return None
+
+
+async def _get_booking_for_customer_mutation(
+    db: AsyncSession, user: User, booking_id: UUID
+) -> Booking:
+    stmt = select(Booking).where(Booking.id == booking_id)
+    result = await db.execute(stmt)
+    booking = result.scalar_one_or_none()
+    if booking is None:
+        raise NotFoundError("Booking not found")
+    if user.role != UserRole.customer or booking.customer_id != user.id:
+        raise ForbiddenError("Not allowed to modify this booking")
+    return booking
+
+
+async def cancel_booking_for_customer(
+    db: AsyncSession, user: User, booking_id: UUID, payload: BookingCancelBody
+) -> Booking:
+    booking = await _get_booking_for_customer_mutation(db, user, booking_id)
+    if booking.status != BookingStatus.pending:
+        raise ValidationError(
+            "Only bookings that are still open before washer acceptance can be cancelled here."
+        )
+    booking.status = BookingStatus.cancelled
+    detail = (payload.reason_detail or "").strip()
+    reason_line = f"{payload.reason_key}"
+    if detail:
+        reason_line += f" | {detail}"
+    suffix = f"\n[Customer cancel] {reason_line}"
+    combined = (booking.notes or "").strip() + suffix
+    if len(combined) > 2000:
+        combined = combined[-2000:]
+    booking.notes = combined or None
+    await db.commit()
+    await db.refresh(booking)
+    return booking
+
+
+async def reschedule_booking_for_customer(
+    db: AsyncSession, user: User, booking_id: UUID, payload: BookingRescheduleBody
+) -> Booking:
+    booking = await _get_booking_for_customer_mutation(db, user, booking_id)
+    if booking.status != BookingStatus.pending:
+        raise ValidationError("Only open bookings can be rescheduled.")
+    booking.scheduled_at = payload.scheduled_at
+    await db.commit()
+    await db.refresh(booking)
+    return booking
 
 
 async def get_booking_detail(db: AsyncSession, user: User, booking_id: UUID) -> BookingDetailRead:

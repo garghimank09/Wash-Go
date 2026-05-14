@@ -1,9 +1,10 @@
 import { useState } from 'react';
 import { Link, Navigate } from 'react-router-dom';
 
-import { Button } from '../components/Button';
-import { Input } from '../components/Input';
+import { Button } from '../ui/button';
+import { Input } from '../ui/input';
 import { useAuth } from '../context/AuthContext';
+import { defaultAppPathForRole } from '../lib/appPaths';
 import { getErrorMessage } from '../services/api';
 import { isValidEmail, validatePassword } from '../utils/validators';
 
@@ -16,7 +17,7 @@ export function SignupPage() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
-  if (user) return <Navigate to="/dashboard" replace />;
+  if (user) return <Navigate to={defaultAppPathForRole(user)} replace />;
 
   const submit = async (e) => {
     e.preventDefault();
@@ -51,8 +52,8 @@ export function SignupPage() {
 
   return (
     <div>
-      <h1 className="text-2xl font-black text-white">Create account</h1>
-      <p className="mt-1 text-sm text-slate-400">Join WashGo in under a minute.</p>
+      <h1 className="text-2xl font-black tracking-tight text-white">Create account</h1>
+      <p className="mt-1 text-sm text-white/65">Join WashGo in under a minute.</p>
       <form className="mt-8 space-y-4" onSubmit={submit}>
         <Input label="Full name" name="full_name" value={fullName} onChange={(e) => setFullName(e.target.value)} />
         <Input label="Email" name="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
@@ -71,7 +72,7 @@ export function SignupPage() {
           Sign up
         </Button>
       </form>
-      <p className="mt-6 text-center text-sm text-slate-400">
+      <p className="mt-6 text-center text-sm text-white/65">
         Already have an account?{' '}
         <Link to="/login" className="font-semibold text-cyan-400 hover:text-cyan-300">
           Log in

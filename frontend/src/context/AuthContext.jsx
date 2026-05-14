@@ -18,12 +18,13 @@ export function AuthProvider({ children }) {
     authService.setToken(data.access_token);
     const me = await authService.me();
     setUser(me);
+    return me;
   }, []);
 
   const signup = useCallback(
     async (payload) => {
       await authService.signup(payload);
-      await login(payload.email, payload.password);
+      return await login(payload.email, payload.password);
     },
     [login],
   );

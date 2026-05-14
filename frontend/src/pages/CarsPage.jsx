@@ -1,48 +1,29 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 
-import { Button } from '../components/Button';
-import { Card } from '../components/Card';
-import { Input } from '../components/Input';
-import { Loader } from '../components/Loader';
+import { GarageAddVehicleForm } from '../features/garage/GarageAddVehicleForm';
+import { GarageHero } from '../features/garage/GarageHero';
+import { GarageVehicleGrid } from '../features/garage/GarageVehicleGrid';
+import { useBookings } from '../hooks/useBookings';
+import { useCars } from '../hooks/useCars';
 import { carsService } from '../services/carsService';
 import { getErrorMessage } from '../services/api';
 
 export function CarsPage() {
-  const [cars, setCars] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
-  const [form, setForm] = useState({ make: '', model: '', year: '', plate: '', color: '' });
+  const { cars, loading, error: carsError, reload } = useCars();
+  const { items: bookings, loading: bookingsLoading, error: bookingsError, reload: reloadBookings } = useBookings();
   const [saving, setSaving] = useState(false);
+  const [actionError, setActionError] = useState('');
 
-  const load = async () => {
-    setError('');
-    setLoading(true);
-    try {
-      const data = await carsService.list();
-      setCars(data);
-    } catch (e) {
-      setError(getErrorMessage(e));
-    } finally {
-      setLoading(false);
-    }
-  };
+  const fuseError = actionError || carsError || bookingsError || '';
 
-  useEffect(() => {
-    const t = setTimeout(() => {
-      void load();
-    }, 0);
-    return () => clearTimeout(t);
-  }, []);
-
-  const addCar = async (e) => {
-    e.preventDefault();
+  const handleAdd = async (form) => {
+    setActionError('');
     setSaving(true);
     try {
       const year = form.year.trim() ? parseInt(form.year, 10) : null;
       if (form.year.trim() && Number.isNaN(year)) {
-        setError('Year must be numeric');
-        setSaving(false);
-        return;
+        setActionError('Year must be numeric');
+        throw new Error('validation');
       }
       await carsService.create({
         make: form.make.trim(),
@@ -51,80 +32,63 @@ export function CarsPage() {
         license_plate: form.plate.trim(),
         color: form.color.trim() || null,
       });
-      setForm({ make: '', model: '', year: '', plate: '', color: '' });
-      await load();
+      await reload();
+      void reloadBookings();
     } catch (e) {
-      setError(getErrorMessage(e));
+      if (e?.message !== 'validation') {
+        setActionError(getErrorMessage(e));
+      }
+      throw e;
     } finally {
       setSaving(false);
     }
   };
 
-  const remove = async (car) => {
-    if (!window.confirm(`Remove ${car.make} ${car.model} (${car.license_plate})?`)) return;
+  const removeCar = async (car) => {
+    if (!window.confirm(`Remove ${car.make} ${car.model} (${car.license_plate}) from your garage?`)) return;
+    setActionError('');
     try {
       await carsService.remove(car.id);
-      await load();
+      await reload();
+      void reloadBookings();
     } catch (e) {
-      setError(getErrorMessage(e));
+      setActionError(getErrorMessage(e));
     }
   };
 
   return (
-    <div className="space-y-8">
-      <div>
-        <h1 className="text-3xl font-black text-slate-900 dark:text-white">Cars</h1>
-        <p className="text-slate-600 dark:text-slate-400">Synced with `GET/POST/DELETE /cars`.</p>
-      </div>
+    <div className="space-y-6 lg:space-y-7">
+      <GarageHero vehicleCount={cars.length} loading={loading} />
 
-      <Card>
-        <h2 className="text-lg font-bold text-slate-900 dark:text-white">Add vehicle</h2>
-        <form className="mt-4 grid gap-4 md:grid-cols-2" onSubmit={addCar}>
-          <Input label="Make" value={form.make} onChange={(e) => setForm((f) => ({ ...f, make: e.target.value }))} required />
-          <Input label="Model" value={form.model} onChange={(e) => setForm((f) => ({ ...f, model: e.target.value }))} required />
-          <Input label="Year" value={form.year} onChange={(e) => setForm((f) => ({ ...f, year: e.target.value }))} />
-          <Input label="License plate" value={form.plate} onChange={(e) => setForm((f) => ({ ...f, plate: e.target.value }))} required />
-          <Input
-            className="md:col-span-2"
-            label="Color (optional)"
-            value={form.color}
-            onChange={(e) => setForm((f) => ({ ...f, color: e.target.value }))}
-          />
-          <div className="md:col-span-2">
-            <Button type="submit" loading={saving}>
-              Save car
-            </Button>
+      {fuseError ? (
+        <p className="rounded-xl border border-rose-500/30 bg-rose-500/10 px-4 py-3 text-sm font-medium text-rose-800 dark:text-rose-200">
+          {fuseError}
+        </p>
+      ) : null}
+
+      <div className="grid items-start gap-6 lg:grid-cols-12 lg:gap-8">
+        <aside className="lg:col-span-5 xl:col-span-4">
+          <div className="lg:sticky lg:top-20">
+            <GarageAddVehicleForm onAdd={handleAdd} saving={saving} />
           </div>
-        </form>
-      </Card>
+        </aside>
 
-      {error ? <p className="text-sm text-rose-600">{error}</p> : null}
-
-      {loading ? (
-        <Loader />
-      ) : (
-        <div className="grid gap-4 md:grid-cols-2">
-          {cars.map((c) => (
-            <Card key={c.id}>
-              <div className="flex items-start justify-between gap-2">
-                <div>
-                  <h3 className="text-lg font-bold text-slate-900 dark:text-white">
-                    {c.make} {c.model}
-                  </h3>
-                  <p className="text-sm text-slate-600 dark:text-slate-400">
-                    {c.license_plate}
-                    {c.year ? ` · ${c.year}` : ''}
-                    {c.color ? ` · ${c.color}` : ''}
-                  </p>
-                </div>
-                <Button type="button" variant="danger" size="sm" onClick={() => remove(c)}>
-                  Delete
-                </Button>
-              </div>
-            </Card>
-          ))}
-        </div>
-      )}
+        <section className="min-w-0 lg:col-span-7 xl:col-span-8">
+          <div className="mb-4 flex items-end justify-between gap-3">
+            <div>
+              <h2 className="text-sm font-black uppercase tracking-[0.14em] text-wg-muted">Saved vehicles</h2>
+              <p className="mt-1 text-xs text-wg-muted">Live data from your bookings · tap through to manage washes</p>
+            </div>
+          </div>
+          <GarageVehicleGrid
+            cars={cars}
+            bookings={bookings}
+            loading={loading}
+            bookingsLoading={bookingsLoading}
+            onRemoveCar={removeCar}
+          />
+        </section>
+      </div>
     </div>
   );
 }

@@ -1,5 +1,7 @@
 import { useState } from 'react';
 
+import { cn } from '../lib/cn';
+
 function EyeIcon({ open }) {
   if (open) {
     return (
@@ -16,33 +18,32 @@ function EyeIcon({ open }) {
   );
 }
 
-export function Input({ label, error, id, className = '', as: Comp = 'input', type, passwordToggle, ...rest }) {
+export function Input({ label, error, id, className, as: Comp = 'input', type, passwordToggle, ...rest }) {
   const [showPassword, setShowPassword] = useState(false);
   const inputId = id || rest.name || label?.replace(/\s+/g, '-').toLowerCase();
   const isPasswordField = Comp === 'input' && type === 'password' && passwordToggle;
   const resolvedType = isPasswordField ? (showPassword ? 'text' : 'password') : type;
 
-  const fieldClassName = `w-full rounded-xl border bg-white py-2.5 text-slate-900 shadow-sm transition placeholder:text-slate-400 focus:border-cyan-500 focus:outline-none focus:ring-2 focus:ring-cyan-500/30 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:placeholder:text-slate-500 ${
-    error ? 'border-rose-500' : 'border-slate-200 dark:border-slate-700'
-  } ${Comp === 'textarea' ? 'min-h-[120px] resize-y px-4' : ''} ${
-    isPasswordField ? 'px-4 pr-12' : Comp === 'input' ? 'px-4' : ''
-  }`;
-
-  const field = (
-    <Comp id={inputId} type={resolvedType} className={fieldClassName} {...rest} />
+  const fieldClassName = cn(
+    'w-full rounded-xl border bg-wg-surface-elevated py-2.5 text-wg-text shadow-sm transition placeholder:text-wg-muted',
+    'focus:border-cyan-500 focus:outline-none focus:ring-2 focus:ring-cyan-500/30 dark:focus:border-cyan-400',
+    error ? 'border-rose-500' : 'border-wg-border',
+    Comp === 'textarea' && 'min-h-[120px] resize-y px-4',
+    isPasswordField && 'px-4 pr-12',
+    Comp === 'input' && !isPasswordField && 'px-4',
   );
 
+  const field = <Comp id={inputId} type={resolvedType} className={fieldClassName} {...rest} />;
+
   return (
-    <label className={`block ${className}`} htmlFor={inputId}>
-      {label ? (
-        <span className="mb-1.5 block text-sm font-medium text-slate-600 dark:text-slate-300">{label}</span>
-      ) : null}
+    <label className={cn('block', className)} htmlFor={inputId}>
+      {label ? <span className="mb-1.5 block text-sm font-medium text-wg-muted">{label}</span> : null}
       {isPasswordField ? (
         <div className="relative">
           {field}
           <button
             type="button"
-            className="absolute right-2 top-1/2 -translate-y-1/2 rounded-lg p-1.5 text-slate-500 transition hover:bg-slate-100 hover:text-slate-800 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200"
+            className="absolute right-2 top-1/2 -translate-y-1/2 rounded-lg p-1.5 text-wg-muted transition hover:bg-wg-surface hover:text-wg-text dark:hover:bg-slate-800"
             onClick={() => setShowPassword((v) => !v)}
             aria-label={showPassword ? 'Hide password' : 'Show password'}
           >

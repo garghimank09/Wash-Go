@@ -25,6 +25,15 @@ class Settings(BaseSettings):
     OPENAI_API_KEY: str | None = None
     OPENAI_MODEL: str = "gpt-4o-mini"
     CORS_ORIGINS: str = "*"
+    # Email verification links point here (no trailing slash).
+    FRONTEND_BASE_URL: str = "http://127.0.0.1:5173"
+    EMAIL_VERIFY_TOKEN_MINUTES: int = 60 * 48
+    # Optional SMTP — if SMTP_HOST is unset, verification links are logged only (dev-friendly).
+    SMTP_HOST: str | None = None
+    SMTP_PORT: int = 587
+    SMTP_USER: str | None = None
+    SMTP_PASSWORD: str | None = None
+    SMTP_FROM: str | None = None
 
     @field_validator("DATABASE_URL")
     @classmethod

@@ -7,7 +7,14 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.auth.dependencies import get_current_active_user, require_roles
 from app.database.database import get_db
 from app.models.user import User, UserRole
-from app.schemas.booking_schema import BookingCreate, BookingDetailRead, BookingRead, BookingReadList
+from app.schemas.booking_schema import (
+    BookingCancelBody,
+    BookingCreate,
+    BookingDetailRead,
+    BookingRead,
+    BookingReadList,
+    BookingRescheduleBody,
+)
 from app.services import booking_service
 
 router = APIRouter(prefix="/bookings", tags=["Bookings"])
@@ -39,3 +46,25 @@ async def get_booking(
     current: Annotated[User, Depends(get_current_active_user)],
 ) -> BookingDetailRead:
     return await booking_service.get_booking_detail(db, current, booking_id)
+
+
+@router.post("/{booking_id}/cancel", response_model=BookingRead)
+async def cancel_booking(
+    booking_id: UUID,
+    payload: BookingCancelBody,
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current: Annotated[User, Depends(require_roles(UserRole.customer))],
+) -> BookingRead:
+    booking = await booking_service.cancel_booking_for_customer(db, current, booking_id, payload)
+    return BookingRead.model_validate(booking)
+
+
+@router.patch("/{booking_id}/schedule", response_model=BookingRead)
+async def reschedule_booking(
+    booking_id: UUID,
+    payload: BookingRescheduleBody,
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current: Annotated[User, Depends(require_roles(UserRole.customer))],
+) -> BookingRead:
+    booking = await booking_service.reschedule_booking_for_customer(db, current, booking_id, payload)
+    return BookingRead.model_validate(booking)

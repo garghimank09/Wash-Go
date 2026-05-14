@@ -3,6 +3,9 @@ export const API_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000';
 
 export const TOKEN_KEY = 'washgo_access_token';
 
+/** Separate JWT for partner (washer) app — keeps customer and field sessions independent. */
+export const PARTNER_TOKEN_KEY = 'washgo_partner_token';
+
 export const PACKAGES = [
   { id: 'basic', label: 'Basic wash', desc: 'Exterior rinse & dry' },
   { id: 'deluxe', label: 'Deluxe', desc: 'Exterior + wheels & trim' },

@@ -2,12 +2,62 @@
 
 @custom-variant dark (&:where(.dark, .dark *));
 
+/* Semantic tokens — light */
+:root {
+  --wg-surface: #f8fafc;
+  --wg-surface-elevated: #ffffff;
+  --wg-border: rgb(226 232 240 / 0.85);
+  --wg-muted: #64748b;
+  --wg-text: #0f172a;
+  --wg-brand-from: #06b6d4;
+  --wg-brand-to: #4f46e5;
+  --wg-focus-ring: rgb(34 211 238 / 0.45);
+  --wg-card-shadow: 0 1px 2px rgb(15 23 42 / 0.04), 0 4px 12px rgb(15 23 42 / 0.06);
+  /* Glass surfaces */
+  --wg-glass-bg: rgb(255 255 255 / 0.72);
+  --wg-glass-border: rgb(255 255 255 / 0.55);
+  --wg-glass-highlight: rgb(255 255 255 / 0.35);
+  --wg-glass-blur: 18px;
+  --wg-mesh: radial-gradient(ellipse 80% 50% at 50% -20%, rgb(6 182 212 / 0.12), transparent),
+    radial-gradient(ellipse 60% 40% at 100% 0%, rgb(79 70 229 / 0.08), transparent);
+}
+
+.dark {
+  --wg-surface: #020617;
+  --wg-surface-elevated: rgb(15 23 42 / 0.85);
+  --wg-border: rgb(51 65 85 / 0.6);
+  --wg-muted: #94a3b8;
+  --wg-text: #f1f5f9;
+  --wg-brand-from: #22d3ee;
+  --wg-brand-to: #818cf8;
+  --wg-focus-ring: rgb(34 211 238 / 0.35);
+  --wg-card-shadow: 0 1px 2px rgb(0 0 0 / 0.2), 0 8px 24px rgb(0 0 0 / 0.35);
+  --wg-glass-bg: rgb(15 23 42 / 0.55);
+  --wg-glass-border: rgb(148 163 184 / 0.12);
+  --wg-glass-highlight: rgb(255 255 255 / 0.06);
+  --wg-mesh: radial-gradient(ellipse 80% 50% at 50% -20%, rgb(34 211 238 / 0.14), transparent),
+    radial-gradient(ellipse 50% 40% at 100% 0%, rgb(129 140 248 / 0.1), transparent);
+}
+
+@theme {
+  --color-wg-surface: var(--wg-surface);
+  --color-wg-surface-elevated: var(--wg-surface-elevated);
+  --color-wg-border: var(--wg-border);
+  --color-wg-muted: var(--wg-muted);
+  --color-wg-text: var(--wg-text);
+  --color-brand-from: var(--wg-brand-from);
+  --color-brand-to: var(--wg-brand-to);
+  --shadow-wg-card: var(--wg-card-shadow);
+  --radius-wg-card: 1rem;
+  --radius-wg-xl: 1.25rem;
+}
+
 @layer base {
   html {
     @apply scroll-smooth antialiased;
   }
   body {
-    @apply min-h-dvh bg-slate-50 font-sans text-slate-900 transition-colors duration-300 dark:bg-slate-950 dark:text-slate-100;
+    @apply min-h-dvh bg-wg-surface font-sans text-wg-text transition-colors duration-300;
     font-family: 'Plus Jakarta Sans', ui-sans-serif, system-ui, sans-serif;
   }
   #root {
@@ -15,17 +65,92 @@
   }
 }
 
-@keyframes wg-fade-up {
-  from {
-    opacity: 0;
-    transform: translateY(10px);
-  }
+/* react-loading-skeleton — match WashGo surfaces */
+.react-loading-skeleton {
+  --base-color: rgb(226 232 240);
+  --highlight-color: rgb(241 245 249);
+  border-radius: var(--radius-wg-card);
+}
+
+.dark .react-loading-skeleton {
+  --base-color: rgb(30 41 59);
+  --highlight-color: rgb(51 65 85);
+}
+
+@utility wg-heading-display {
+  @apply text-3xl font-black tracking-tight text-wg-text sm:text-4xl;
+}
+
+@utility wg-heading-section {
+  @apply text-lg font-bold text-wg-text;
+}
+
+@utility wg-focus-ring {
+  @apply outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/50 focus-visible:ring-offset-2 focus-visible:ring-offset-wg-surface dark:focus-visible:ring-offset-wg-surface;
+}
+
+/* Premium type scale — tighter display tracking (Tesla-like) */
+@utility wg-hero {
+  @apply text-4xl font-black tracking-[-0.03em] text-wg-text sm:text-5xl md:text-6xl;
+}
+
+@utility wg-title {
+  @apply text-2xl font-black tracking-tight text-wg-text sm:text-3xl;
+}
+
+@utility wg-subtitle {
+  @apply text-lg font-medium leading-relaxed text-wg-muted;
+}
+
+@utility wg-body {
+  @apply text-base leading-relaxed text-wg-text;
+}
+
+@utility wg-caption {
+  @apply text-sm leading-snug text-wg-muted;
+}
+
+@utility wg-glass-surface {
+  background-color: var(--wg-glass-bg);
+  border-color: var(--wg-glass-border);
+  backdrop-filter: blur(var(--wg-glass-blur));
+  -webkit-backdrop-filter: blur(var(--wg-glass-blur));
+}
+
+/* Partner field-ops — animated route / live pulse */
+@keyframes wg-partner-route-dash {
   to {
-    opacity: 1;
-    transform: translateY(0);
+    stroke-dashoffset: -360;
   }
 }
 
-.wg-fade-up {
-  animation: wg-fade-up 0.45s ease-out forwards;
+@keyframes wg-partner-live-pulse {
+  0%,
+  100% {
+    opacity: 0.45;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.08);
+  }
+}
+
+@keyframes wg-partner-shimmer {
+  to {
+    background-position: 200% center;
+  }
+}
+
+.wg-partner-route-animate {
+  animation: wg-partner-route-dash 12s linear infinite;
+}
+
+.wg-partner-live-dot {
+  animation: wg-partner-live-pulse 1.8s ease-in-out infinite;
+}
+
+.wg-partner-shimmer-bg {
+  background-size: 200% auto;
+  animation: wg-partner-shimmer 4s linear infinite;
 }

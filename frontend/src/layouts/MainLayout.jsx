@@ -1,15 +1,16 @@
 import { useState } from 'react';
-import { Outlet } from 'react-router-dom';
 
 import { AssistantDock } from '../components/AssistantDock';
 import { Navbar } from '../components/Navbar';
 import { Sidebar } from '../components/Sidebar';
+import { PageShell } from './PageShell';
+import { PageTransition } from './PageTransition';
 
 export function MainLayout() {
   const [mobileMenu, setMobileMenu] = useState(false);
 
   return (
-    <div className="flex min-h-dvh bg-slate-50 dark:bg-slate-950">
+    <div className="flex min-h-dvh bg-wg-surface">
       {mobileMenu ? (
         <button
           type="button"
@@ -22,9 +23,9 @@ export function MainLayout() {
       <div className="flex min-w-0 flex-1 flex-col">
         <Navbar variant="dashboard" onMenuClick={() => setMobileMenu((v) => !v)} />
         <main className="flex-1 p-4 md:p-8">
-          <div className="mx-auto max-w-6xl wg-fade-up">
-            <Outlet />
-          </div>
+          <PageShell>
+            <PageTransition />
+          </PageShell>
         </main>
         <AssistantDock />
       </div>

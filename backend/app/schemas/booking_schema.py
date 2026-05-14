@@ -51,6 +51,40 @@ class BookingReadList(BaseModel):
     items: list[BookingRead]
 
 
+CANCEL_REASON_KEYS = frozenset(
+    {
+        "change_of_plans",
+        "wrong_time",
+        "emergency",
+        "price_issue",
+        "vehicle_unavailable",
+        "other",
+    }
+)
+
+
+class BookingCancelBody(BaseModel):
+    reason_key: str = Field(min_length=3, max_length=64)
+    reason_detail: str | None = Field(default=None, max_length=500)
+
+    @field_validator("reason_key")
+    @classmethod
+    def known_reason(cls, v: str) -> str:
+        if v not in CANCEL_REASON_KEYS:
+            raise ValueError("invalid cancellation reason")
+        return v
+
+
+class BookingRescheduleBody(BaseModel):
+    scheduled_at: datetime
+
+    @model_validator(mode="after")
+    def scheduled_in_future(self) -> "BookingRescheduleBody":
+        if self.scheduled_at <= datetime.now(UTC):
+            raise ValueError("scheduled_at must be in the future")
+        return self
+
+
 class WasherPublic(BaseModel):
     id: UUID
     full_name: str
