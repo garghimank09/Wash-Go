@@ -37,7 +37,7 @@ export function AdminDataNotice({ className }) {
     >
       <Database className="mt-0.5 size-4 shrink-0 text-cyan-600 dark:text-cyan-400" strokeWidth={1.75} aria-hidden />
       <p className="leading-relaxed">
-        <span className="font-semibold text-wg-text">Sample analytics dataset.</span> Connect admin APIs to stream live bookings, payouts, and complaints — UI is wired for a drop-in data layer.
+        <span className="font-semibold text-wg-text">Live bookings & fleet sync.</span> Bookings, washer roster (e.g. partner names from signup), dispatch queue, and ops counters refresh from the API (SSE ~4s). Demo mode uses your login token with dev admin APIs enabled. Revenue charts and complaints remain sample data.
       </p>
     </div>
   );

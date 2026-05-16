@@ -1,6 +1,8 @@
 import { useMemo, useState } from 'react';
 
-import { adminBookingsRows, adminComplaintsRows } from '../mock/adminMock';
+import { useAdminBookings } from '../../../hooks/useAdminBookings';
+import { toAdminTableRow } from '../../../lib/adminBookingsMap';
+import { adminComplaintsRows } from '../mock/adminMock';
 
 function norm(s) {
   return String(s || '')
@@ -9,12 +11,13 @@ function norm(s) {
 }
 
 export function useAdminOperations() {
+  const { items, loading, error, reload } = useAdminBookings();
   const [query, setQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [complaintStatus, setComplaintStatus] = useState('all');
 
   const bookings = useMemo(() => {
-    let rows = [...adminBookingsRows];
+    let rows = items.map(toAdminTableRow);
     const q = norm(query);
     if (q) {
       rows = rows.filter(
@@ -22,14 +25,15 @@ export function useAdminOperations() {
           norm(r.customer).includes(q) ||
           norm(r.washer).includes(q) ||
           norm(r.city).includes(q) ||
-          norm(r.id).includes(q),
+          norm(r.id).includes(q) ||
+          norm(r.rawId).includes(q),
       );
     }
     if (statusFilter !== 'all') {
       rows = rows.filter((r) => r.status === statusFilter);
     }
     return rows;
-  }, [query, statusFilter]);
+  }, [items, query, statusFilter]);
 
   const complaints = useMemo(() => {
     let rows = [...adminComplaintsRows];
@@ -54,7 +58,8 @@ export function useAdminOperations() {
     setStatusFilter,
     complaintStatus,
     setComplaintStatus,
-    loading: false,
-    error: null,
+    loading,
+    error,
+    reload,
   };
 }

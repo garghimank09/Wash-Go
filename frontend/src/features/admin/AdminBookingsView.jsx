@@ -11,8 +11,7 @@ import { useAdminOperations } from './hooks/useAdminOperations';
 
 export function AdminBookingsView() {
   const reduced = useReducedMotion();
-  const { bookings, query, setQuery, statusFilter, setStatusFilter, complaintStatus, setComplaintStatus } =
-    useAdminOperations();
+  const { bookings, query, setQuery, statusFilter, setStatusFilter } = useAdminOperations();
 
   return (
     <m.div
@@ -41,12 +40,11 @@ export function AdminBookingsView() {
 
       <m.div variants={adminSectionItem(reduced)}>
         <AdminOperationsToolbar
+          scope="bookings"
           query={query}
           onQueryChange={setQuery}
           statusFilter={statusFilter}
           onStatusFilter={setStatusFilter}
-          complaintStatus={complaintStatus}
-          onComplaintStatus={setComplaintStatus}
         />
       </m.div>
 

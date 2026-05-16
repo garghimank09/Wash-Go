@@ -5,31 +5,24 @@ import { PieChart } from 'lucide-react';
 import { useReducedMotion } from '../../lib/useReducedMotion';
 import { adminSectionContainer, adminSectionItem } from './adminMotion';
 import { AdminAssignmentQueueViz } from './components/AdminAssignmentQueueViz';
-import { AdminBookingsTable } from './components/AdminBookingsTable';
-import { AdminComplaintsTable } from './components/AdminComplaintsTable';
 import { AdminDataNotice } from './components/AdminDataNotice';
 import { AdminDispatchConsole } from './components/AdminDispatchConsole';
 import { AdminFleetMetricsGrid } from './components/AdminFleetMetricsGrid';
-import { AdminOperationsToolbar } from './components/AdminOperationsToolbar';
 import { AdminRefundQueueCard } from './components/AdminRefundQueueCard';
 import { AdminTopPerformerCards } from './components/AdminTopPerformerCards';
+import { useMemo } from 'react';
+
+import { fleetWashersToGridRows, mergeFleetWithDemo } from '../../lib/adminBookingsMap';
 import { useAdminDispatch } from './hooks/useAdminDispatch';
-import { useAdminOperations } from './hooks/useAdminOperations';
 import { adminComplaintsRows, adminTopPerformers, adminWashers } from './mock/adminMock';
 
 export function AdminOperationsView() {
   const reduced = useReducedMotion();
-  const {
-    bookings,
-    complaints,
-    query,
-    setQuery,
-    statusFilter,
-    setStatusFilter,
-    complaintStatus,
-    setComplaintStatus,
-  } = useAdminOperations();
   const dispatch = useAdminDispatch();
+  const fleetGrid = useMemo(() => {
+    const live = fleetWashersToGridRows(dispatch.fleetWashers);
+    return mergeFleetWithDemo(live, adminWashers);
+  }, [dispatch.fleetWashers]);
 
   return (
     <m.div
@@ -39,10 +32,10 @@ export function AdminOperationsView() {
       animate="show"
     >
       <m.div variants={adminSectionItem(reduced)} className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="wg-heading-display">Operations desk</h1>
+        <div className="min-w-0">
+          <h1 className="wg-heading-display">Operations hub</h1>
           <p className="mt-1 max-w-2xl text-sm text-wg-muted">
-            Search, filter, and triage bookings and complaints. Mock dataset until admin APIs ship.
+            Dispatch, fleet health, and assignment queue. Select a pending booking, then Assign a partner (e.g. vikas) from suggestions.
           </p>
         </div>
         <Link
@@ -69,24 +62,8 @@ export function AdminOperationsView() {
           onAssign={dispatch.assignWasher}
         />
         <AdminTopPerformerCards performers={adminTopPerformers} />
-        <AdminFleetMetricsGrid washers={adminWashers} />
+        <AdminFleetMetricsGrid washers={fleetGrid} />
         <AdminRefundQueueCard rows={adminComplaintsRows} />
-      </m.div>
-
-      <m.div variants={adminSectionItem(reduced)}>
-        <AdminOperationsToolbar
-          query={query}
-          onQueryChange={setQuery}
-          statusFilter={statusFilter}
-          onStatusFilter={setStatusFilter}
-          complaintStatus={complaintStatus}
-          onComplaintStatus={setComplaintStatus}
-        />
-      </m.div>
-
-      <m.div variants={adminSectionItem(reduced)} className="space-y-8">
-        <AdminBookingsTable rows={bookings} />
-        <AdminComplaintsTable rows={complaints} />
       </m.div>
     </m.div>
   );

@@ -15,7 +15,7 @@ export function WasherTopBar({ av }) {
         className="pointer-events-none absolute inset-x-0 bottom-0 h-px bg-gradient-to-r from-transparent via-cyan-400/40 to-transparent dark:via-cyan-300/35"
         aria-hidden
       />
-      <div className="mx-auto flex max-w-lg items-center justify-between gap-3">
+      <div className="mx-auto flex w-full items-center justify-between gap-3">
         <Link to="/partner" className="min-w-0">
           <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-wg-muted">WashGo</p>
           <p className="truncate text-lg font-black tracking-tight text-wg-text">
@@ -42,7 +42,7 @@ export function WasherTopBar({ av }) {
           </Button>
         </div>
       </div>
-      <div className="mx-auto mt-2 flex max-w-lg flex-wrap items-center gap-2">
+      <div className="mx-auto mt-2 flex w-full flex-wrap items-center gap-2">
         <span className="inline-flex items-center gap-1 rounded-full bg-wg-surface/90 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-wg-muted ring-1 ring-wg-border dark:bg-white/[0.06]">
           <Sparkles className="size-3 text-cyan-600 dark:text-cyan-400" strokeWidth={2} aria-hidden />
           {av.summary}

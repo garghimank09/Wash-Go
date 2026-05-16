@@ -12,6 +12,7 @@ from app.database.database import Base
 if TYPE_CHECKING:
     from app.models.booking import Booking
     from app.models.user import User
+    from app.models.washer_location import WasherLocation
 
 
 class Washer(Base):
@@ -44,4 +45,10 @@ class Washer(Base):
     user: Mapped["User"] = relationship("User", back_populates="washer_profile")
     bookings: Mapped[list["Booking"]] = relationship(
         "Booking", back_populates="washer", foreign_keys="Booking.washer_id"
+    )
+    live_location: Mapped["WasherLocation | None"] = relationship(
+        "WasherLocation",
+        back_populates="washer",
+        uselist=False,
+        cascade="all, delete-orphan",
     )

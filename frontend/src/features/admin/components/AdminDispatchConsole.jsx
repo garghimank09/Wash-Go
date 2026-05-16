@@ -11,10 +11,14 @@ import { formatCents, formatDateTime } from '../../../utils/format';
 export function AdminDispatchConsole({ queue, selected, selectedId, onSelect, suggestions, onAssign }) {
   const reduced = useReducedMotion();
 
-  const handleAssign = (washerId, washerName) => {
+  const handleAssign = async (washerId, washerName) => {
     if (!selected) return;
-    onAssign(selected.id, washerId, washerName);
-    toast.success(`Assigned ${washerName} → ${selected.customer} (demo)`, { duration: 2400 });
+    try {
+      await onAssign(selected.id, washerId, washerName);
+      toast.success(`Assigned ${washerName} → ${selected.customer}`, { duration: 2400 });
+    } catch (e) {
+      toast.error(e?.message || 'Could not assign washer');
+    }
   };
 
   const hold = () => {
@@ -29,7 +33,7 @@ export function AdminDispatchConsole({ queue, selected, selectedId, onSelect, su
       >
         <div className="border-b border-white/10 px-4 py-3 dark:border-white/5">
           <h2 className="wg-heading-section">Assignment queue</h2>
-          <p className="mt-0.5 text-xs text-wg-muted">Pending dispatch · priority sorted (mock).</p>
+          <p className="mt-0.5 text-xs text-wg-muted">Pending dispatch · live from open bookings.</p>
         </div>
         <ul className="max-h-[320px] divide-y divide-wg-border/60 overflow-y-auto">
           {queue.length === 0 ? (
@@ -93,6 +97,12 @@ export function AdminDispatchConsole({ queue, selected, selectedId, onSelect, su
                 Nearby washer suggestions
               </p>
               <ul className="mt-3 space-y-3">
+                {suggestions.length === 0 ? (
+                  <li className="rounded-xl border border-dashed border-amber-500/35 bg-amber-500/5 px-3 py-4 text-xs text-wg-muted">
+                    No washers available for dispatch. Partners must be <strong className="text-wg-text">online and accepting jobs</strong> (not
+                    paused) — status syncs from the washer app.
+                  </li>
+                ) : null}
                 {suggestions.map((s, idx) => (
                   <li
                     key={s.washerId}

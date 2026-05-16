@@ -4,6 +4,7 @@ import { Activity, AlertTriangle, Bell, CreditCard, Info, MessageSquare, Sparkle
 import { Card } from '../../../ui/card';
 import { cn } from '../../../lib/cn';
 import { useReducedMotion } from '../../../lib/useReducedMotion';
+import { AdminDataSourceBadge } from './AdminDataSourceBadge';
 
 const ICONS = {
   booking: Sparkles,
@@ -35,7 +36,7 @@ export function AdminLiveFeed({ items, className }) {
       <div className="flex shrink-0 items-start justify-between gap-2">
         <div>
           <h2 className="wg-heading-section">Live activity</h2>
-          <p className="mt-1 text-xs text-wg-muted">Operational stream — throttled synthetic alerts (mock).</p>
+          <p className="mt-1 text-xs text-wg-muted">Booking events from API first; demo samples tagged below.</p>
         </div>
       </div>
       <ul className="mt-4 min-h-0 flex-1 space-y-2 overflow-y-auto pr-0.5">
@@ -62,7 +63,10 @@ export function AdminLiveFeed({ items, className }) {
                 </span>
               </span>
               <div className="min-w-0 flex-1">
-                <p className="text-sm font-semibold leading-snug text-wg-text">{ev.title}</p>
+                <div className="flex flex-wrap items-center gap-2">
+                  <p className="text-sm font-semibold leading-snug text-wg-text">{ev.title}</p>
+                  <AdminDataSourceBadge source={ev.source || 'demo'} />
+                </div>
                 <p className="mt-0.5 text-xs font-medium text-wg-muted">{ev.time}</p>
               </div>
             </m.li>

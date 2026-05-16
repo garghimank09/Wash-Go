@@ -57,6 +57,8 @@ export function BookingWizard() {
   const [packageId, setPackageId] = useState('deluxe');
   const [vehicleSize, setVehicleSize] = useState('sedan');
   const [address, setAddress] = useState('');
+  const [serviceLat, setServiceLat] = useState(null);
+  const [serviceLng, setServiceLng] = useState(null);
   const [hours, setHours] = useState(24);
   const [priceCents, setPriceCents] = useState(null);
   const [pricingLoading, setPricingLoading] = useState(false);
@@ -122,14 +124,17 @@ export function BookingWizard() {
   const canNextFrom = (s) => {
     if (s === 0) return cars.length > 0 && !!carId;
     if (s === 1) return true;
-    if (s === 2) return address.trim().length >= 5;
+    if (s === 2) return address.trim().length >= 5 && serviceLat != null && serviceLng != null;
     return false;
   };
 
   const goNext = () => {
     if (step >= STEP_META.length - 1) return;
     if (!canNextFrom(step)) {
-      if (step === 2) toast.error('Enter a complete service address (at least 5 characters).');
+      if (step === 2) {
+        if (address.trim().length < 5) toast.error('Enter a complete service address (at least 5 characters).');
+        else toast.error('Set your exact location on the map (drag pin or use my location).');
+      }
       return;
     }
     setDirection(1);
@@ -151,6 +156,10 @@ export function BookingWizard() {
       toast.error('Enter a complete service address.');
       return;
     }
+    if (serviceLat == null || serviceLng == null) {
+      toast.error('Set your exact location on the map.');
+      return;
+    }
     if (priceCents == null) {
       toast.error('Pricing unavailable — check API connection.');
       return;
@@ -163,11 +172,16 @@ export function BookingWizard() {
         washer_id: null,
         scheduled_at: scheduledIso,
         service_address: address.trim(),
+        latitude: serviceLat,
+        longitude: serviceLng,
         price_cents: priceCents,
         currency: 'USD',
         notes,
       });
       toast.success('Booking confirmed — taking you to the detail.');
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('washgo:bookings-sync', { detail: { source: 'create' } }));
+      }
       navigate(`/bookings/${booking.id}`, { replace: true });
     } catch (err) {
       toast.error(getErrorMessage(err));
@@ -344,6 +358,12 @@ export function BookingWizard() {
                   <ScheduleStep
                     address={address}
                     setAddress={setAddress}
+                    serviceLat={serviceLat}
+                    serviceLng={serviceLng}
+                    onLocationChange={({ lat, lng }) => {
+                      setServiceLat(lat);
+                      setServiceLng(lng);
+                    }}
                     hours={hours}
                     setHours={setHours}
                     scheduledLabel={scheduledLabel}
@@ -356,6 +376,8 @@ export function BookingWizard() {
                     packageId={packageId}
                     vehicleSize={vehicleSize}
                     address={address}
+                    serviceLat={serviceLat}
+                    serviceLng={serviceLng}
                     scheduledLabel={scheduledLabel}
                     priceCents={priceCents}
                     pricingLoading={pricingLoading}

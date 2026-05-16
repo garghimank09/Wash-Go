@@ -7,7 +7,13 @@ import { EmptyState } from '../../../ui/empty-state';
 import { Calendar } from 'lucide-react';
 import { formatCents, formatDateTime } from '../../../utils/format';
 
-export function AdminBookingsTable({ rows }) {
+export function AdminBookingsTable({
+  rows,
+  title = 'Booking management',
+  description = 'Live queue — syncs with customer & washer apps.',
+  emptyTitle = 'No bookings match',
+  emptyDescription = 'Try clearing filters or search.',
+}) {
   const onOpen = () => {
     toast('Demo data — connect admin APIs to open live bookings.', { icon: 'ℹ️' });
   };
@@ -15,7 +21,7 @@ export function AdminBookingsTable({ rows }) {
   if (!rows?.length) {
     return (
       <Card variant="glass" className="min-w-0 p-8">
-        <EmptyState icon={Calendar} title="No bookings match" description="Try clearing filters or search." />
+        <EmptyState icon={Calendar} title={emptyTitle} description={emptyDescription} />
       </Card>
     );
   }
@@ -23,8 +29,8 @@ export function AdminBookingsTable({ rows }) {
   return (
     <Card variant="glass" className="min-w-0 overflow-hidden border-white/35 p-0 dark:border-white/10">
       <div className="border-b border-white/15 px-6 py-4 dark:border-white/10">
-        <h2 className="wg-heading-section">Booking management</h2>
-        <p className="mt-1 text-xs text-wg-muted">Queue and lifecycle (mock rows).</p>
+        <h2 className="wg-heading-section">{title}</h2>
+        <p className="mt-1 text-xs text-wg-muted">{description}</p>
       </div>
       <div className="overflow-x-auto">
         <table className="w-full min-w-[720px] text-left text-sm">

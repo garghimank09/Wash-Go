@@ -6,6 +6,8 @@ import { CheckSquare, PartyPopper, Phone, User } from 'lucide-react';
 
 import { WasherDashboardOpsBanner } from '../../features/washer/WasherDashboardOpsBanner';
 import { WasherEtaRouteCard } from '../../features/washer/WasherEtaRouteCard';
+import { useBookingTracking } from '../../hooks/useBookingTracking';
+import { useWasherGeolocation } from '../../hooks/useWasherGeolocation';
 import { WasherJobProgress } from '../../features/washer/WasherJobProgress';
 import { WasherJobSkeleton } from '../../features/washer/WasherJobSkeleton';
 import { WasherJobStickyDock } from '../../features/washer/WasherJobStickyDock';
@@ -14,8 +16,16 @@ import { WasherJobServiceContext } from '../../features/washer/WasherJobServiceC
 import { DEMO_JOB } from '../../features/washer/mock/demoJob';
 import { partnerBookingsService } from '../../services/partnerBookingsService';
 import { getErrorMessage } from '../../services/api';
+import { onBookingsSync } from '../../lib/bookingSyncEvents';
 import { enrichPartnerJob } from '../../lib/partnerFieldDemo';
-import { advanceWasherPhase, effectiveWasherPhase } from '../../lib/washerJobPhase';
+import {
+  advanceWasherPhase,
+  apiStatusForPhase,
+  effectiveWasherPhase,
+  getNextWasherPhase,
+  setStoredPhase,
+} from '../../lib/washerJobPhase';
+import { dispatchBookingsSync } from '../../lib/bookingSyncEvents';
 import { useReducedMotion } from '../../lib/useReducedMotion';
 import { cn } from '../../lib/cn';
 import { Card } from '../../ui/card';
@@ -24,7 +34,7 @@ import { formatCents, formatDateTime } from '../../utils/format';
 const CHECKLIST_PREFIX = 'washgo:washer:checklist:';
 
 const DEFAULT_CHECKLIST = [
-  { id: 'c1', label: 'Arrival photo & plate check', done: false },
+  { id: 'c1', label: 'Before wash photo uploaded', done: false },
   { id: 'c2', label: 'Pre-wash walkaround', done: false },
   { id: 'c3', label: 'Waterless safe on trim', done: false },
   { id: 'c4', label: 'Tire dressing consent', done: false },
@@ -63,33 +73,44 @@ export function WasherJobPage() {
   const [phaseTick, setPhaseTick] = useState(0);
   const [checklist, setChecklist] = useState(() => (id ? loadChecklist(id) : DEFAULT_CHECKLIST.map((c) => ({ ...c }))));
   const [celebrate, setCelebrate] = useState(false);
+  const [advancing, setAdvancing] = useState(false);
   const prevPhaseRef = useRef(null);
 
   const reloadPhase = useCallback(() => setPhaseTick((t) => t + 1), []);
 
-  const load = useCallback(async () => {
+  const load = useCallback(async (silent = false) => {
     if (!id || isDemo) {
       setJob(DEMO_JOB);
       setLoading(false);
       return;
     }
-    setLoading(true);
-    setError('');
+    if (!silent) {
+      setLoading(true);
+      setError('');
+    }
     try {
       const data = await partnerBookingsService.get(id);
       setJob(data);
+      setError('');
     } catch (e) {
-      setError(getErrorMessage(e));
-      setJob(null);
+      if (!silent) {
+        setError(getErrorMessage(e));
+        setJob(null);
+      }
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   }, [id, isDemo]);
 
   useEffect(() => {
-    const tid = setTimeout(() => void load(), 0);
+    const tid = setTimeout(() => void load(false), 0);
     return () => clearTimeout(tid);
   }, [load]);
+
+  useEffect(() => {
+    if (!id || isDemo) return undefined;
+    return onBookingsSync(() => void load(true));
+  }, [id, isDemo, load]);
 
   useEffect(() => {
     const tid = setTimeout(() => {
@@ -102,6 +123,16 @@ export function WasherJobPage() {
   const displayJob = useMemo(() => enrichPartnerJob(job), [job]);
   // eslint-disable-next-line react-hooks/exhaustive-deps -- phaseTick forces re-read of sessionStorage after advanceWasherPhase
   const phase = useMemo(() => effectiveWasherPhase(id, apiStatus), [id, apiStatus, phaseTick]);
+
+  const trackActive = !isDemo && Boolean(id) && phase !== 'completed';
+  const { tracking, error: trackingError } = useBookingTracking(id, {
+    enabled: trackActive,
+    asPartner: true,
+  });
+  useWasherGeolocation({
+    enabled: !isDemo && Boolean(id) && (phase === 'accepted' || phase === 'on_the_way'),
+    bookingId: id,
+  });
 
   useEffect(() => {
     const prev = prevPhaseRef.current;
@@ -124,11 +155,36 @@ export function WasherJobPage() {
     if (id) saveChecklist(id, next);
   };
 
-  const onAdvance = () => {
+  const onAdvance = async () => {
     if (!id) return;
-    const next = advanceWasherPhase(id, apiStatus);
-    toast.success(`Status · ${next.replace(/_/g, ' ')}`, { duration: 2200 });
-    reloadPhase();
+    if (isDemo) {
+      const next = advanceWasherPhase(id, apiStatus);
+      toast.success(`Status · ${next.replace(/_/g, ' ')}`, { duration: 2200 });
+      reloadPhase();
+      return;
+    }
+    const current = effectiveWasherPhase(id, apiStatus);
+    const nextPhase = getNextWasherPhase(current);
+    setAdvancing(true);
+    try {
+      if (apiStatus === 'pending') {
+        await partnerBookingsService.accept(id);
+      } else {
+        const targetStatus = apiStatusForPhase(nextPhase);
+        if (targetStatus !== apiStatus) {
+          await partnerBookingsService.updateStatus(id, targetStatus);
+        }
+      }
+      setStoredPhase(id, nextPhase);
+      await load(true);
+      dispatchBookingsSync();
+      toast.success(`Status · ${nextPhase.replace(/_/g, ' ')}`, { duration: 2200 });
+      reloadPhase();
+    } catch (e) {
+      toast.error(getErrorMessage(e));
+    } finally {
+      setAdvancing(false);
+    }
   };
 
   if (loading) {
@@ -165,7 +221,7 @@ export function WasherJobPage() {
         <div>
           <h1 className="text-2xl font-black tracking-tight text-wg-text">{isDemo ? 'Demo job' : 'Active job'}</h1>
           <p className="mt-1 text-sm text-wg-muted">
-            {isDemo ? 'Full field workflow — premium driver UX (local phase state).' : 'Live booking from your roster.'}
+            {isDemo ? 'Full field workflow — premium driver UX (local phase state).' : 'Live booking — status syncs to customer in real time.'}
           </p>
         </div>
         <AnimatePresence>
@@ -181,7 +237,18 @@ export function WasherJobPage() {
         </AnimatePresence>
       </m.div>
 
-      <WasherEtaRouteCard etaMinutes={displayJob.etaMinutes ?? 22} address={displayJob.service_address} phase={phase} />
+      {trackingError && trackActive && !tracking ? (
+        <p className="rounded-xl border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs font-medium text-amber-900 dark:text-amber-100">
+          Map unavailable: {trackingError}
+        </p>
+      ) : null}
+
+      <WasherEtaRouteCard
+        etaMinutes={displayJob.etaMinutes ?? tracking?.eta_minutes ?? 22}
+        address={displayJob.service_address}
+        phase={phase}
+        tracking={trackActive ? tracking : undefined}
+      />
 
       <Card variant="glass" className="border-white/15 !p-5 dark:border-white/10">
         <h2 className="wg-heading-section">Customer</h2>
@@ -232,7 +299,7 @@ export function WasherJobPage() {
         </div>
       </Card>
 
-      <WasherPhotoProofSection key={id || 'job'} jobId={id} />
+      <WasherPhotoProofSection key={id || 'job'} jobId={id} isDemo={isDemo} />
 
       <Card variant="glass" className="border-white/15 !p-5 dark:border-white/10">
         <div className="flex items-center justify-between gap-2">

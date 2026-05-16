@@ -14,8 +14,7 @@ import { Card } from '../../ui/card';
 
 export function AdminComplaintsView() {
   const reduced = useReducedMotion();
-  const { complaints, query, setQuery, statusFilter, setStatusFilter, complaintStatus, setComplaintStatus } =
-    useAdminOperations();
+  const { complaints, query, setQuery, complaintStatus, setComplaintStatus } = useAdminOperations();
 
   const stats = useMemo(() => {
     const rows = adminComplaintsRows;
@@ -80,10 +79,9 @@ export function AdminComplaintsView() {
 
       <m.div variants={adminSectionItem(reduced)}>
         <AdminOperationsToolbar
+          scope="complaints"
           query={query}
           onQueryChange={setQuery}
-          statusFilter={statusFilter}
-          onStatusFilter={setStatusFilter}
           complaintStatus={complaintStatus}
           onComplaintStatus={setComplaintStatus}
         />

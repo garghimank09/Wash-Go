@@ -11,6 +11,8 @@ import { EmptyState } from '../../ui/empty-state';
 import { Loader } from '../../ui/loader';
 import { StatusPill } from '../../ui/status-pill';
 import { useReducedMotion } from '../../lib/useReducedMotion';
+import { LiveTrackingMap } from '../../components/LiveTrackingMap';
+import { useBookingTracking } from '../../hooks/useBookingTracking';
 import { formatCustomerWashTiming } from './dashboardEta';
 
 function timelineProgress(timeline) {
@@ -32,6 +34,10 @@ export function DashboardActiveSection({
   const reduced = useReducedMotion();
   const timing = useMemo(() => formatCustomerWashTiming(active, detail), [active, detail]);
   const progressPct = useMemo(() => timelineProgress(detail?.timeline), [detail?.timeline]);
+  const trackEnabled =
+    Boolean(active?.id && detail?.washer) &&
+    ['confirmed', 'in_progress'].includes(active?.status ?? '');
+  const { tracking } = useBookingTracking(active?.id, { enabled: trackEnabled });
 
   const onRefresh = () => {
     onReloadList?.();
@@ -64,6 +70,20 @@ export function DashboardActiveSection({
           >
             <BookingCard booking={active} />
           </Link>
+
+          {trackEnabled && tracking ? (
+            <div className="mt-5 overflow-hidden rounded-2xl border border-cyan-500/25 shadow-inner ring-1 ring-cyan-500/10 dark:border-cyan-500/15">
+              <div className="flex items-center justify-between gap-2 border-b border-wg-border/50 bg-wg-surface/80 px-3 py-2 dark:border-white/10">
+                <p className="text-[10px] font-bold uppercase tracking-wide text-wg-muted">Live map</p>
+                <span className="text-xs font-bold tabular-nums text-cyan-700 dark:text-cyan-300">
+                  {tracking.eta_minutes != null ? `${tracking.eta_minutes} min` : 'En route'}
+                </span>
+              </div>
+              <div className="h-40 sm:h-44">
+                <LiveTrackingMap tracking={tracking} compact perspective="customer" />
+              </div>
+            </div>
+          ) : null}
 
           <div className="mt-5 grid gap-4 sm:grid-cols-2">
             <div className="rounded-2xl border border-cyan-500/25 bg-gradient-to-br from-cyan-500/10 via-wg-surface/60 to-transparent p-4 dark:border-cyan-500/15 dark:from-cyan-500/12">

@@ -39,7 +39,7 @@ function OpsGrid({ children, className }) {
 
 export function AdminOverviewView() {
   const reduced = useReducedMotion();
-  const { data, chartsReady } = useAdminOverview();
+  const { data, chartsReady, loading } = useAdminOverview();
   const { snapshot, feedItems, tickVersion } = useAdminLiveOps(true);
 
   return (
@@ -53,7 +53,7 @@ export function AdminOverviewView() {
         <div>
           <h1 className="wg-heading-display">Command center</h1>
           <p className="mt-1 max-w-3xl text-sm text-wg-muted">
-            Live operations, dispatch health, and executive analytics — modular 12-column ops grid (mock data until admin APIs ship).
+            Live bookings, dispatch, and fleet sync from the API; charts and complaints use sample data where noted.
           </p>
         </div>
         <Link
@@ -79,7 +79,11 @@ export function AdminOverviewView() {
             <AdminSurgeZonesCard zones={data.surgeZones} />
           </div>
           <div className="col-span-12 min-w-0 lg:col-span-7 xl:col-span-8">
-            <AdminActiveBookingsMonitor rows={data.activeMonitorRows} />
+            <AdminActiveBookingsMonitor
+              rows={data.activeMonitorRows}
+              liveCount={data.activeMonitorLiveCount}
+              loading={loading}
+            />
           </div>
         </OpsGrid>
       </m.div>
@@ -143,7 +147,7 @@ export function AdminOverviewView() {
       <m.div variants={adminSectionItem(reduced)}>
         <OpsGrid className="min-h-[240px] items-stretch max-xl:min-h-0">
           <div className="col-span-12 min-h-0 min-w-0 md:col-span-6 xl:col-span-4">
-            <AdminDispatchQueuePreview queue={data.dispatchQueue} />
+            <AdminDispatchQueuePreview queue={data.dispatchQueue} isLive={data.dispatchQueue?.length > 0} />
           </div>
           <div className="col-span-12 min-h-0 min-w-0 md:col-span-6 xl:col-span-4">
             <AdminSlaAlertsCard items={data.slaAlerts} />

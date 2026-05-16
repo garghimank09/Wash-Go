@@ -75,11 +75,11 @@ export function WasherJobStickyDock({ phase, reduced, onAdvance, showSwipeComple
   return (
     <div
       className={cn(
-        'fixed bottom-0 left-0 right-0 z-50 border-t border-white/18 bg-[color:var(--wg-glass-bg)]/96 px-4 pt-3 shadow-[0_-16px_48px_-14px_rgb(0_0_0/0.4)] backdrop-blur-2xl dark:border-white/10 dark:bg-slate-950/92',
-        'pb-[calc(4.5rem+env(safe-area-inset-bottom))]',
+        'fixed bottom-0 left-0 right-0 z-50 border-t border-white/18 bg-[color:var(--wg-glass-bg)]/96 px-4 pt-3 shadow-[0_-16px_48px_-14px_rgb(0_0_0/0.4)] backdrop-blur-2xl dark:border-white/10 dark:bg-slate-950/92 md:left-64',
+        'pb-[calc(4.5rem+env(safe-area-inset-bottom))] md:pb-6',
       )}
     >
-      <div className="mx-auto max-w-lg space-y-2">
+      <div className="mx-auto w-full max-w-3xl space-y-2">
         {showCelebrationBanner ? (
           <m.div
             initial={reduced ? false : { scale: 0.96, opacity: 0 }}

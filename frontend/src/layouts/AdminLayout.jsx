@@ -1,5 +1,6 @@
 import { useState } from 'react';
 
+import { AdminBookingSyncBridge } from '../components/BookingSyncBridge';
 import { AdminHeader } from '../components/AdminHeader';
 import { AdminSidebar } from '../components/AdminSidebar';
 import { AssistantDock } from '../components/AssistantDock';
@@ -11,6 +12,7 @@ export function AdminLayout() {
 
   return (
     <div className="relative flex min-h-dvh bg-wg-surface">
+      <AdminBookingSyncBridge />
       <div
         className="pointer-events-none absolute inset-0 opacity-70 dark:opacity-100"
         style={{ background: 'var(--wg-mesh)' }}

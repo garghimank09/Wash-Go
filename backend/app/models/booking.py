@@ -11,6 +11,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.database.database import Base
 
 if TYPE_CHECKING:
+    from app.models.booking_photo import BookingPhoto
     from app.models.car import Car
     from app.models.payment import Payment
     from app.models.review import Review
@@ -74,3 +75,6 @@ class Booking(Base):
     washer: Mapped["Washer | None"] = relationship("Washer", back_populates="bookings", foreign_keys=[washer_id])
     payments: Mapped[list["Payment"]] = relationship("Payment", back_populates="booking", cascade="all, delete-orphan")
     reviews: Mapped[list["Review"]] = relationship("Review", back_populates="booking", cascade="all, delete-orphan")
+    photos: Mapped[list["BookingPhoto"]] = relationship(
+        "BookingPhoto", back_populates="booking", cascade="all, delete-orphan"
+    )

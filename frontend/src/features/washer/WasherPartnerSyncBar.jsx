@@ -58,7 +58,7 @@ function WasherPartnerSyncBarInner() {
 
   return (
     <div className="border-b border-white/10 bg-black/[0.03] px-4 py-1.5 dark:bg-white/[0.04]">
-      <div className="mx-auto flex max-w-lg items-center justify-center gap-2">
+      <div className="mx-auto flex w-full items-center justify-center gap-2">
         <AnimatePresence mode="wait">
           <m.div
             key={mode}

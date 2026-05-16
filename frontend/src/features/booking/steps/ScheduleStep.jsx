@@ -1,6 +1,7 @@
 import { m } from 'framer-motion';
 import { Clock, MapPin, Timer } from 'lucide-react';
 
+import { ServiceLocationPicker } from '../../../components/ServiceLocationPicker';
 import { Card } from '../../../ui/card';
 import { Input } from '../../../ui/input';
 import { SelectableChip } from '../../../ui/selectable-chip';
@@ -19,7 +20,16 @@ const chipVariants = {
   show: { opacity: 1, scale: 1, transition: { duration: 0.22, ease: [0.16, 1, 0.3, 1] } },
 };
 
-export function ScheduleStep({ address, setAddress, hours, setHours, scheduledLabel }) {
+export function ScheduleStep({
+  address,
+  setAddress,
+  serviceLat,
+  serviceLng,
+  onLocationChange,
+  hours,
+  setHours,
+  scheduledLabel,
+}) {
   const reduced = useReducedMotion();
 
   return (
@@ -35,6 +45,8 @@ export function ScheduleStep({ address, setAddress, hours, setHours, scheduledLa
       </div>
 
       <Input label="Service address" as="textarea" value={address} onChange={(e) => setAddress(e.target.value)} />
+
+      <ServiceLocationPicker lat={serviceLat} lng={serviceLng} onChange={onLocationChange} />
 
       <Card variant="glass" className="border-white/35 dark:border-white/10">
         <div className="flex flex-wrap items-center justify-between gap-3 border-b border-white/15 pb-4 dark:border-white/5">

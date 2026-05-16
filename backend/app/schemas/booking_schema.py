@@ -1,4 +1,4 @@
-from datetime import UTC, datetime
+from datetime import datetime, timezone
 from decimal import Decimal
 from uuid import UUID
 
@@ -25,7 +25,7 @@ class BookingCreate(BaseModel):
 
     @model_validator(mode="after")
     def scheduled_in_future(self) -> "BookingCreate":
-        if self.scheduled_at <= datetime.now(UTC):
+        if self.scheduled_at <= datetime.now(timezone.utc):
             raise ValueError("scheduled_at must be in the future")
         return self
 
@@ -49,6 +49,92 @@ class BookingRead(BaseModel):
 
 class BookingReadList(BaseModel):
     items: list[BookingRead]
+
+
+class BookingAdminRead(BookingRead):
+    """Admin list row — includes display names for ops consoles."""
+
+    customer_name: str | None = None
+    washer_name: str | None = None
+    city: str | None = None
+    created_at: datetime | None = None
+    updated_at: datetime | None = None
+
+    model_config = {"from_attributes": True}
+
+
+class BookingAdminReadList(BaseModel):
+    items: list[BookingAdminRead]
+
+
+class BookingAssignBody(BaseModel):
+    washer_id: UUID
+
+
+class WasherDispatchRead(BaseModel):
+    id: UUID
+    full_name: str
+    service_area: str | None = None
+    is_available: bool
+    rating_avg: float
+
+    model_config = {"from_attributes": True}
+
+
+class WasherDispatchList(BaseModel):
+    items: list[WasherDispatchRead]
+
+
+class WasherAdminFleetRead(BaseModel):
+    """Admin fleet roster — all partners with live availability + job counts."""
+
+    id: UUID
+    full_name: str
+    service_area: str | None = None
+    is_available: bool
+    rating_avg: float
+    active_jobs: int = 0
+    completed7d: int = 0
+    updated_at: datetime | None = None
+
+    model_config = {"from_attributes": True}
+
+
+class WasherAdminFleetList(BaseModel):
+    items: list[WasherAdminFleetRead]
+
+
+class BookingOfferRead(BaseModel):
+    """Open dispatch offer — pending booking awaiting a washer."""
+
+    id: UUID
+    scheduled_at: datetime
+    service_address: str
+    price_cents: int
+    currency: str
+    car_label: str | None = None
+    customer_name: str | None = None
+
+    model_config = {"from_attributes": True}
+
+
+class BookingOfferList(BaseModel):
+    items: list[BookingOfferRead]
+
+
+class BookingStatusUpdate(BaseModel):
+    status: BookingStatus
+
+    @field_validator("status")
+    @classmethod
+    def washer_allowed_status(cls, v: BookingStatus) -> BookingStatus:
+        if v not in (
+            BookingStatus.confirmed,
+            BookingStatus.in_progress,
+            BookingStatus.completed,
+        ):
+            raise ValueError("status must be confirmed, in_progress, or completed")
+        return v
 
 
 CANCEL_REASON_KEYS = frozenset(
@@ -80,7 +166,7 @@ class BookingRescheduleBody(BaseModel):
 
     @model_validator(mode="after")
     def scheduled_in_future(self) -> "BookingRescheduleBody":
-        if self.scheduled_at <= datetime.now(UTC):
+        if self.scheduled_at <= datetime.now(timezone.utc):
             raise ValueError("scheduled_at must be in the future")
         return self
 
@@ -101,6 +187,15 @@ class BookingTimelineStep(BaseModel):
     at: datetime | None = None
 
 
+class BookingPhotoSummary(BaseModel):
+    """Lightweight photo ref embedded in booking detail."""
+
+    id: UUID
+    kind: str
+    url: str
+    created_at: datetime
+
+
 class BookingDetailRead(BaseModel):
     id: UUID
     customer_id: UUID
@@ -116,8 +211,11 @@ class BookingDetailRead(BaseModel):
     notes: str | None
     created_at: datetime
     car_label: str | None = None
+    customer_name: str | None = None
+    customer_phone: str | None = None
     washer: WasherPublic | None = None
     eta_minutes: int | None = None
     timeline: list[BookingTimelineStep]
+    photos: list[BookingPhotoSummary] = []
 
     model_config = {"from_attributes": True}

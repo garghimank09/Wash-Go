@@ -1,4 +1,7 @@
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+
+import { dispatchBookingsSync } from '../lib/bookingSyncEvents';
+import { partnerAvailabilityService } from '../services/partnerAvailabilityService';
 
 const KEY = 'washgo:washer:availability';
 
@@ -9,7 +12,7 @@ const defaultState = () => ({
   onBreak: false,
 });
 
-function read() {
+function readLocal() {
   if (typeof window === 'undefined') return defaultState();
   try {
     const raw = window.localStorage.getItem(KEY);
@@ -21,7 +24,7 @@ function read() {
   }
 }
 
-function write(state) {
+function writeLocal(state) {
   if (typeof window === 'undefined') return;
   try {
     window.localStorage.setItem(KEY, JSON.stringify(state));
@@ -30,57 +33,118 @@ function write(state) {
   }
 }
 
-export function useWasherAvailability() {
-  const [state, setState] = useState(() => read());
+/** True when washer should appear in admin dispatch pool. */
+function dispatchAvailable(state) {
+  return Boolean(state.online && state.acceptingJobs && !state.busy && !state.onBreak);
+}
 
-  const setOnline = useCallback(
-    (online) => {
+export function useWasherAvailability() {
+  const [state, setState] = useState(() => readLocal());
+  const [profile, setProfile] = useState(null);
+  const syncTimer = useRef(null);
+  const skipNextSync = useRef(false);
+
+  const pushAvailability = useCallback(async (nextState) => {
+    try {
+      await partnerAvailabilityService.update(dispatchAvailable(nextState));
+      dispatchBookingsSync();
+    } catch {
+      /* offline / logged out */
+    }
+  }, []);
+
+  const applyState = useCallback(
+    (updater, { sync = true } = {}) => {
       setState((prev) => {
-        const next = {
-          ...prev,
-          online,
-          acceptingJobs: online ? prev.acceptingJobs : false,
-          busy: online ? prev.busy : false,
-          onBreak: online ? prev.onBreak : false,
-        };
-        write(next);
+        const next = typeof updater === 'function' ? updater(prev) : updater;
+        writeLocal(next);
+        if (sync && !skipNextSync.current) {
+          if (syncTimer.current) clearTimeout(syncTimer.current);
+          syncTimer.current = setTimeout(() => void pushAvailability(next), 280);
+        }
         return next;
       });
     },
-    [],
+    [pushAvailability],
   );
 
-  const setAcceptingJobs = useCallback((acceptingJobs) => {
-    setState((prev) => {
-      if (!prev.online) return prev;
-      const next = { ...prev, acceptingJobs, busy: acceptingJobs ? prev.busy : false };
-      write(next);
-      return next;
-    });
-  }, []);
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const data = await partnerAvailabilityService.get();
+        if (cancelled) return;
+        setProfile(data);
+        skipNextSync.current = true;
+        applyState((prev) => {
+          const available = Boolean(data.is_available);
+          if (!available) {
+            return { ...prev, online: prev.online, acceptingJobs: false, busy: false, onBreak: false };
+          }
+          return { ...prev, online: true, acceptingJobs: true };
+        }, { sync: false });
+        skipNextSync.current = false;
+      } catch {
+        /* partner not logged in */
+      }
+    })();
+    return () => {
+      cancelled = true;
+      if (syncTimer.current) clearTimeout(syncTimer.current);
+    };
+  }, [applyState]);
 
-  const setBusy = useCallback((busy) => {
-    setState((prev) => {
-      if (!prev.online) return prev;
-      const next = { ...prev, busy, acceptingJobs: busy ? false : prev.acceptingJobs };
-      write(next);
-      return next;
-    });
-  }, []);
-
-  const setOnBreak = useCallback((onBreak) => {
-    setState((prev) => {
-      if (!prev.online) return prev;
-      const next = {
+  const setOnline = useCallback(
+    (online) => {
+      applyState((prev) => ({
         ...prev,
-        onBreak,
-        acceptingJobs: onBreak ? false : prev.acceptingJobs,
-        busy: onBreak ? false : prev.busy,
-      };
-      write(next);
-      return next;
-    });
-  }, []);
+        online,
+        acceptingJobs: online ? prev.acceptingJobs : false,
+        busy: online ? prev.busy : false,
+        onBreak: online ? prev.onBreak : false,
+      }));
+    },
+    [applyState],
+  );
+
+  const setAcceptingJobs = useCallback(
+    (acceptingJobs) => {
+      applyState((prev) => {
+        if (!prev.online) return prev;
+        return {
+          ...prev,
+          acceptingJobs,
+          busy: acceptingJobs ? prev.busy : false,
+        };
+      });
+    },
+    [applyState],
+  );
+
+  const setBusy = useCallback(
+    (busy) => {
+      applyState((prev) => {
+        if (!prev.online) return prev;
+        return { ...prev, busy, acceptingJobs: busy ? false : prev.acceptingJobs };
+      });
+    },
+    [applyState],
+  );
+
+  const setOnBreak = useCallback(
+    (onBreak) => {
+      applyState((prev) => {
+        if (!prev.online) return prev;
+        return {
+          ...prev,
+          onBreak,
+          acceptingJobs: onBreak ? false : prev.acceptingJobs,
+          busy: onBreak ? false : prev.busy,
+        };
+      });
+    },
+    [applyState],
+  );
 
   const summary = useMemo(() => {
     if (!state.online) return 'Offline';
@@ -90,5 +154,13 @@ export function useWasherAvailability() {
     return 'Accepting jobs';
   }, [state]);
 
-  return { ...state, summary, setOnline, setAcceptingJobs, setBusy, setOnBreak };
-}
+  return {
+    ...state,
+    summary,
+    profile,
+    setOnline,
+    setAcceptingJobs,
+    setBusy,
+    setOnBreak,
+  };
+};

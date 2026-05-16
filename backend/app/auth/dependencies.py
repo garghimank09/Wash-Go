@@ -9,8 +9,17 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.auth.jwt_handler import decode_access_token
+from app.config.settings import settings
 from app.database.database import get_db
 from app.models.user import User, UserRole
+
+
+def admin_console_demo_allowed() -> bool:
+    return settings.ENVIRONMENT != "production" and settings.ADMIN_UI_DEMO_ALLOW
+
+
+def user_has_admin_console_access(user: User) -> bool:
+    return user.role == UserRole.admin or admin_console_demo_allowed()
 
 security = HTTPBearer(auto_error=False)
 
@@ -59,6 +68,20 @@ def require_roles(*allowed: UserRole) -> Callable[..., User]:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="Insufficient permissions",
+            )
+        return user
+
+    return _dependency
+
+
+def require_admin_console() -> Callable[..., User]:
+    """Admin role, or any authenticated user when ADMIN_UI_DEMO_ALLOW (dev/preview)."""
+
+    async def _dependency(user: Annotated[User, Depends(get_current_active_user)]) -> User:
+        if not user_has_admin_console_access(user):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Admin console access required",
             )
         return user
 

@@ -6,6 +6,7 @@ import { Card } from '../../../ui/card';
 import { cn } from '../../../lib/cn';
 import { useReducedMotion } from '../../../lib/useReducedMotion';
 import { formatCents } from '../../../utils/format';
+import { AdminDataSourceBadge } from './AdminDataSourceBadge';
 
 function trustTone(score) {
   const n = Number(score) || 0;
@@ -38,7 +39,7 @@ export function AdminWasherGrid({ washers }) {
             Washer performance
           </h2>
           <p className="mt-1 max-w-xl text-xs leading-relaxed text-wg-muted">
-            Fleet snapshot — primary signals at a glance; expand for volume, utilization, and revenue (mock).
+            Live partner names from fleet API (SSE). Demo cards tagged when roster is thin.
           </p>
         </div>
         <p className="text-[10px] font-semibold uppercase tracking-wide text-wg-muted">Scroll →</p>
@@ -106,7 +107,10 @@ export function AdminWasherGrid({ washers }) {
                   </div>
                 </div>
 
-                <h3 className="mt-4 text-lg font-black leading-tight tracking-tight text-wg-text">{w.name}</h3>
+                <div className="mt-4 flex flex-wrap items-center gap-2">
+                  <h3 className="text-lg font-black leading-tight tracking-tight text-wg-text">{w.name}</h3>
+                  {w.source ? <AdminDataSourceBadge source={w.source} /> : null}
+                </div>
                 {w.region ? (
                   <p className="mt-1.5 flex items-start gap-1.5 text-xs font-medium leading-snug text-wg-muted">
                     <MapPin className="mt-0.5 size-3.5 shrink-0 text-cyan-600/80 dark:text-cyan-400/90" strokeWidth={2} aria-hidden />

@@ -43,7 +43,7 @@ export function AdminFleetMetricsGrid({ washers }) {
   return (
     <Card variant="glass" className="min-w-0 border-l-4 border-l-teal-500/50 border-white/20 p-5 dark:border-white/10">
       <h2 className="wg-heading-section">Fleet utilization</h2>
-      <p className="mt-1 text-xs text-wg-muted">Network aggregates · 7d completions (mock).</p>
+      <p className="mt-1 text-xs text-wg-muted">Network aggregates from live fleet API (SSE-synced).</p>
 
       <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <div className="rounded-xl border border-white/12 bg-white/[0.03] px-4 py-3.5 dark:bg-white/[0.04]">

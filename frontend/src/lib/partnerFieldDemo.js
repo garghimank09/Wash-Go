@@ -44,7 +44,9 @@ export function enrichDispatchOffer(offer) {
  */
 export function enrichPartnerJob(job) {
   if (!job) return null;
-  const h = hashString(`${job.id}|${job.service_address}|${job.customerName}|${job.vehicle || job.car_label}`);
+  const customerName = job.customer_name ?? job.customerName ?? 'Customer';
+  const customerPhone = job.customer_phone ?? job.customerPhone ?? null;
+  const h = hashString(`${job.id}|${job.service_address}|${customerName}|${job.vehicle || job.car_label}`);
   const tiers = ['Silver', 'Gold', 'Platinum'];
   const tagPools = [
     ['Ceramic-safe soap', 'Soft-close doors'],
@@ -66,6 +68,8 @@ export function enrichPartnerJob(job) {
         : 'Silver · standard care perks';
   return {
     ...job,
+    customerName,
+    customerPhone,
     partnerFieldUx: {
       vehicleConditionWarning: warning,
       specialHandlingTags: job.specialHandlingTags ?? tagPools[h % tagPools.length],

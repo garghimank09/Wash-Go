@@ -11,15 +11,17 @@ const SLA_RING = {
   info: 'border-l-4 border-l-cyan-500/50 bg-cyan-500/[0.03]',
 };
 
-/** Read-only dispatch queue slice for command center (mock). */
-export function AdminDispatchQueuePreview({ queue }) {
+/** Read-only dispatch queue slice — live from API when bookings exist. */
+export function AdminDispatchQueuePreview({ queue, isLive = false }) {
   const rows = (queue || []).slice(0, 4);
   return (
     <Card variant="glass" className="flex h-full min-h-0 min-w-0 flex-col border-l-4 border-l-violet-500/55 border-white/20 dark:border-white/10">
       <div className="flex flex-wrap items-start justify-between gap-2 border-b border-white/10 px-4 py-3 dark:border-white/5">
         <div>
           <h2 className="wg-heading-section">Dispatch monitor</h2>
-          <p className="mt-0.5 text-xs text-wg-muted">Unassigned queue · priority order (mock).</p>
+          <p className="mt-0.5 text-xs text-wg-muted">
+            {isLive ? 'Unassigned queue · live from API (SSE).' : 'Unassigned queue · sample data.'}
+          </p>
         </div>
         <Link
           to="/admin/operations"

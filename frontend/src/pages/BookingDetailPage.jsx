@@ -17,10 +17,14 @@ import {
   requiresAssistedCancellation,
 } from '../lib/customerBookingPhase';
 import { useReducedMotion } from '../lib/useReducedMotion';
+import { onBookingsSync } from '../lib/bookingSyncEvents';
+import { LiveTrackingMap } from '../components/LiveTrackingMap';
+import { useBookingTracking } from '../hooks/useBookingTracking';
 import { bookingsService } from '../services/bookingsService';
 import { getErrorMessage } from '../services/api';
 import { Button } from '../ui/button';
 import { Card } from '../ui/card';
+import { photoUrl } from '../services/partnerPhotoService';
 import { formatCents, formatDateTime } from '../utils/format';
 
 function BookingDetailSkeleton() {
@@ -53,31 +57,48 @@ export function BookingDetailPage() {
   const [submittingCancel, setSubmittingCancel] = useState(false);
   const [submittingReschedule, setSubmittingReschedule] = useState(false);
 
-  const load = useCallback(async () => {
+  const load = useCallback(async (silent = false) => {
     if (!id) return;
-    setError('');
-    setLoading(true);
+    if (!silent) {
+      setError('');
+      setLoading(true);
+    }
     try {
       const data = await bookingsService.get(id);
       setB(data);
+      setError('');
     } catch (e) {
-      setError(getErrorMessage(e));
-      setB(null);
+      if (!silent) {
+        setError(getErrorMessage(e));
+        setB(null);
+      }
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   }, [id]);
 
   useEffect(() => {
     let cancelled = false;
     const tid = setTimeout(() => {
-      if (!cancelled) void load();
+      if (!cancelled) void load(false);
     }, 0);
     return () => {
       cancelled = true;
       clearTimeout(tid);
     };
   }, [load]);
+
+  useEffect(() => {
+    if (!id) return undefined;
+    return onBookingsSync(() => void load(true));
+  }, [id, load]);
+
+  const trackEnabled =
+    Boolean(id && b?.washer_id) &&
+    b?.status !== 'cancelled' &&
+    b?.status !== 'completed' &&
+    ['confirmed', 'in_progress'].includes(b?.status ?? '');
+  const { tracking } = useBookingTracking(id, { enabled: trackEnabled });
 
   const handleCancel = async (payload) => {
     if (!id) return;
@@ -206,6 +227,20 @@ export function BookingDetailPage() {
         </Card>
       ) : null}
 
+      {trackEnabled && tracking ? (
+        <Card variant="glass" className="overflow-hidden border-cyan-500/25 p-0 shadow-wg-card">
+          <div className="flex items-center justify-between gap-2 border-b border-wg-border/60 px-4 py-3 dark:border-white/10">
+            <p className="text-[10px] font-bold uppercase tracking-wide text-wg-muted">Live tracking</p>
+            <span className="text-xs font-semibold tabular-nums text-cyan-700 dark:text-cyan-300">
+              {tracking.eta_minutes != null ? `${tracking.eta_minutes} min ETA` : 'En route'}
+            </span>
+          </div>
+          <div className="h-52 sm:h-60">
+            <LiveTrackingMap tracking={tracking} perspective="customer" />
+          </div>
+        </Card>
+      ) : null}
+
       {b.status !== 'cancelled' && b.status !== 'completed' ? (
         <Card variant="glass" className="border-cyan-500/20 shadow-wg-card">
           <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-wide text-wg-muted">
@@ -248,6 +283,28 @@ export function BookingDetailPage() {
                 Cancel booking
               </Button>
             ) : null}
+          </div>
+        </Card>
+      ) : null}
+
+      {b.photos?.length ? (
+        <Card variant="glass" className="border-emerald-500/20">
+          <h2 className="wg-heading-section">Wash photo proof</h2>
+          <p className="mt-1 text-sm text-wg-muted">Before and after photos from your washer.</p>
+          <div className="mt-4 grid gap-3 sm:grid-cols-2">
+            {b.photos.map((p) => (
+              <div key={p.id} className="overflow-hidden rounded-xl border border-wg-border/80 dark:border-white/10">
+                <p className="border-b border-wg-border/60 bg-wg-surface-elevated/80 px-3 py-2 text-[10px] font-bold uppercase tracking-wide text-wg-muted dark:border-white/10">
+                  {p.kind === 'before' ? 'Before wash' : 'After wash'}
+                </p>
+                <img
+                  src={photoUrl(p.url)}
+                  alt=""
+                  className="aspect-[4/3] w-full object-cover"
+                  loading="lazy"
+                />
+              </div>
+            ))}
           </div>
         </Card>
       ) : null}

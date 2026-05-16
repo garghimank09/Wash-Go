@@ -1,6 +1,7 @@
 import { useState } from 'react';
 
 import { AssistantDock } from '../components/AssistantDock';
+import { CustomerBookingSyncBridge } from '../components/BookingSyncBridge';
 import { Navbar } from '../components/Navbar';
 import { Sidebar } from '../components/Sidebar';
 import { PageShell } from './PageShell';
@@ -11,6 +12,7 @@ export function MainLayout() {
 
   return (
     <div className="flex min-h-dvh bg-wg-surface">
+      <CustomerBookingSyncBridge />
       {mobileMenu ? (
         <button
           type="button"

@@ -56,7 +56,13 @@ function formatSlaRemaining(iso) {
   return { text, overdue: false };
 }
 
-export function AdminComplaintsTable({ rows }) {
+export function AdminComplaintsTable({
+  rows,
+  title = 'Complaints',
+  description = 'SLA timers, escalation, refunds (mock).',
+  emptyTitle = 'No complaints match',
+  emptyDescription = 'Adjust filters or search.',
+}) {
   const [pulse, setPulse] = useState(0);
   useEffect(() => {
     const id = window.setInterval(() => setPulse((p) => p + 1), 30000);
@@ -70,7 +76,7 @@ export function AdminComplaintsTable({ rows }) {
   if (!rows?.length) {
     return (
       <Card variant="glass" className="min-w-0 p-8">
-        <EmptyState icon={MessageSquareWarning} title="No complaints match" description="Adjust filters or search." />
+        <EmptyState icon={MessageSquareWarning} title={emptyTitle} description={emptyDescription} />
       </Card>
     );
   }
@@ -78,8 +84,8 @@ export function AdminComplaintsTable({ rows }) {
   return (
     <Card variant="glass" className="min-w-0 overflow-hidden border-white/35 p-0 dark:border-white/10">
       <div className="border-b border-white/15 px-6 py-4 dark:border-white/10">
-        <h2 className="wg-heading-section">Complaints</h2>
-        <p className="mt-1 text-xs text-wg-muted">SLA timers, escalation, refunds (mock).</p>
+        <h2 className="wg-heading-section">{title}</h2>
+        <p className="mt-1 text-xs text-wg-muted">{description}</p>
       </div>
       <div className="overflow-x-auto">
         <table className="w-full min-w-[1040px] text-left text-sm" aria-label={`Complaints SLA refresh ${pulse}`}>

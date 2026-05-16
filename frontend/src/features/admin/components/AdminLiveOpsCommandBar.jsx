@@ -1,18 +1,36 @@
 import { Link } from 'react-router-dom';
 import { m } from 'framer-motion';
-import { Activity, AlertTriangle, Clock, Radio, Truck, Users } from 'lucide-react';
+import { Activity, AlertTriangle, ArrowRight, Clock, Gauge, Radio, Truck } from 'lucide-react';
 
 import { useReducedMotion } from '../../../lib/useReducedMotion';
 import { cn } from '../../../lib/cn';
 import { Card } from '../../../ui/card';
 
-function HealthPill({ label, value }) {
-  const tone =
-    value >= 85 ? 'text-emerald-700 dark:text-emerald-300' : value >= 72 ? 'text-amber-800 dark:text-amber-200' : 'text-rose-700 dark:text-rose-300';
+function scoreTone(value) {
+  if (value >= 85) return 'text-emerald-600 dark:text-emerald-400';
+  if (value >= 72) return 'text-amber-700 dark:text-amber-300';
+  return 'text-rose-600 dark:text-rose-400';
+}
+
+function scoreBarTone(value) {
+  if (value >= 85) return 'bg-emerald-500';
+  if (value >= 72) return 'bg-amber-500';
+  return 'bg-rose-500';
+}
+
+function HealthScore({ label, value }) {
   return (
-    <div className="flex min-w-[5.5rem] flex-col rounded-xl border border-white/15 bg-white/40 px-3 py-2 dark:border-white/10 dark:bg-white/[0.04]">
-      <span className="text-[9px] font-bold uppercase tracking-wide text-wg-muted">{label}</span>
-      <span className={cn('text-lg font-black tabular-nums', tone)}>{value}</span>
+    <div className="flex flex-col gap-2 rounded-lg border border-wg-border/60 bg-wg-surface/80 px-3 py-3 dark:border-white/10 dark:bg-black/20">
+      <div className="flex items-center justify-between gap-2">
+        <span className="text-[11px] font-bold uppercase tracking-wide text-wg-muted">{label}</span>
+        <span className={cn('text-xl font-black tabular-nums', scoreTone(value))}>{value}</span>
+      </div>
+      <div className="h-2 overflow-hidden rounded-full bg-wg-border/80 dark:bg-white/10">
+        <div
+          className={cn('h-full rounded-full', scoreBarTone(value))}
+          style={{ width: `${Math.min(100, Math.max(0, value))}%` }}
+        />
+      </div>
     </div>
   );
 }
@@ -21,70 +39,79 @@ export function AdminLiveOpsCommandBar({ snapshot }) {
   const reduced = useReducedMotion();
   if (!snapshot) return null;
 
+  const washerTotal = (snapshot.washersOnline ?? 0) + (snapshot.washersOffline ?? 0);
+
   return (
     <Card
       variant="glass"
-      className="min-w-0 border-l-4 border-l-cyan-500/70 border-white/25 bg-gradient-to-br from-cyan-500/[0.07] via-transparent to-indigo-500/[0.06] p-4 shadow-wg-card dark:border-white/10"
+      className="min-w-0 overflow-hidden border border-white/25 p-0 shadow-wg-card dark:border-white/10"
     >
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div className="flex min-w-0 flex-1 flex-wrap items-center gap-3">
-          <m.span
-            className="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/35 bg-emerald-500/12 px-2.5 py-1 text-[10px] font-black uppercase tracking-wide text-emerald-900 dark:text-emerald-100"
-            animate={reduced ? undefined : { opacity: [1, 0.72, 1] }}
-            transition={{ duration: 2.8, repeat: Infinity, ease: 'easeInOut' }}
-          >
-            <Radio className="size-3.5" strokeWidth={2} aria-hidden />
-            Live ops
-          </m.span>
-          <h2 className="text-sm font-black uppercase tracking-[0.12em] text-wg-muted">Command strip</h2>
+      <div className="flex flex-col gap-4 border-b border-wg-border/60 bg-gradient-to-r from-cyan-500/[0.08] via-transparent to-indigo-500/[0.06] px-5 py-4 sm:flex-row sm:items-center sm:justify-between dark:border-white/10">
+        <div className="min-w-0">
+          <div className="flex flex-wrap items-center gap-2">
+            <m.span
+              className="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/35 bg-emerald-500/12 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-emerald-800 dark:text-emerald-200"
+              animate={reduced ? undefined : { opacity: [1, 0.7, 1] }}
+              transition={{ duration: 2.8, repeat: Infinity, ease: 'easeInOut' }}
+            >
+              <Radio className="size-3" strokeWidth={2.5} aria-hidden />
+              Live sync
+            </m.span>
+            <h2 className="text-base font-black tracking-tight text-wg-text sm:text-lg">Live operations</h2>
+          </div>
+          <p className="mt-1 text-sm text-wg-muted">Bookings + fleet counters refresh via SSE (~4s).</p>
         </div>
         <Link
           to="/admin/operations"
-          className="shrink-0 text-xs font-bold text-cyan-700 underline-offset-2 hover:underline dark:text-cyan-300"
+          className="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl bg-cyan-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-cyan-500 dark:bg-cyan-500 dark:hover:bg-cyan-400"
         >
-          Dispatch desk →
+          Open dispatch
+          <ArrowRight className="size-4" strokeWidth={2} aria-hidden />
         </Link>
       </div>
 
-      <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-6">
-        <div className="rounded-xl border border-white/15 bg-black/[0.02] p-3 dark:bg-white/[0.03]">
-          <p className="flex items-center gap-1 text-[10px] font-bold uppercase text-wg-muted">
-            <Activity className="size-3" strokeWidth={2} aria-hidden />
+      <div className="grid grid-cols-1 gap-3 p-4 sm:grid-cols-3 sm:gap-4 lg:p-5">
+        <div className="rounded-xl border border-wg-border/80 bg-wg-surface-elevated/60 p-4 dark:border-white/10 dark:bg-white/[0.04]">
+          <p className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-wide text-wg-muted">
+            <Activity className="size-4 text-cyan-600 dark:text-cyan-400" strokeWidth={2} aria-hidden />
             Active bookings
           </p>
-          <p className="mt-1 text-2xl font-black tabular-nums text-wg-text">{snapshot.activeBookings}</p>
-          <p className="text-[10px] text-wg-muted">{snapshot.inProgressBookings} in progress</p>
+          <p className="mt-2 text-3xl font-black tabular-nums text-wg-text">{snapshot.activeBookings}</p>
+          <p className="mt-1 text-xs text-wg-muted">{snapshot.inProgressBookings} in progress</p>
         </div>
-        <div className="rounded-xl border border-white/15 bg-black/[0.02] p-3 dark:bg-white/[0.03]">
-          <p className="flex items-center gap-1 text-[10px] font-bold uppercase text-wg-muted">
-            <Clock className="size-3" strokeWidth={2} aria-hidden />
-            Assignment queue
+        <div className="rounded-xl border border-wg-border/80 bg-wg-surface-elevated/60 p-4 dark:border-white/10 dark:bg-white/[0.04]">
+          <p className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-wide text-wg-muted">
+            <Clock className="size-4 text-amber-600 dark:text-amber-400" strokeWidth={2} aria-hidden />
+            Needs assignment
           </p>
-          <p className="mt-1 text-2xl font-black tabular-nums text-amber-800 dark:text-amber-200">{snapshot.pendingAssignment}</p>
-          <p className="text-[10px] text-wg-muted">Pending match</p>
+          <p className="mt-2 text-3xl font-black tabular-nums text-amber-700 dark:text-amber-300">{snapshot.pendingAssignment}</p>
+          <p className="mt-1 text-xs text-wg-muted">Pending washer match</p>
         </div>
-        <div className="rounded-xl border border-white/15 bg-black/[0.02] p-3 dark:bg-white/[0.03]">
-          <p className="flex items-center gap-1 text-[10px] font-bold uppercase text-wg-muted">
-            <Truck className="size-3" strokeWidth={2} aria-hidden />
-            Washers
+        <div className="rounded-xl border border-wg-border/80 bg-wg-surface-elevated/60 p-4 dark:border-white/10 dark:bg-white/[0.04]">
+          <p className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-wide text-wg-muted">
+            <Truck className="size-4 text-cyan-600 dark:text-cyan-400" strokeWidth={2} aria-hidden />
+            Field partners
           </p>
-          <p className="mt-1 text-2xl font-black tabular-nums text-wg-text">
+          <p className="mt-2 text-3xl font-black tabular-nums">
             <span className="text-emerald-600 dark:text-emerald-400">{snapshot.washersOnline}</span>
-            <span className="mx-0.5 text-wg-muted">/</span>
-            <span className="text-wg-muted">{snapshot.washersOffline}</span>
+            <span className="ml-1.5 text-lg font-bold text-wg-muted">online</span>
           </p>
-          <p className="text-[10px] text-wg-muted">Online / offline</p>
+          <p className="mt-1 text-xs text-wg-muted">
+            {washerTotal > 0 ? `${snapshot.washersOffline} offline · ${washerTotal} roster` : 'No roster data'}
+          </p>
         </div>
-        <div className="rounded-xl border border-white/15 bg-black/[0.02] p-3 dark:bg-white/[0.03]">
-          <p className="flex items-center gap-1 text-[10px] font-bold uppercase text-wg-muted">
-            <Users className="size-3" strokeWidth={2} aria-hidden />
-            Health
-          </p>
-          <div className="mt-2 flex flex-wrap gap-2">
-            <HealthPill label="Dispatch" value={snapshot.health.dispatch} />
-            <HealthPill label="Fleet" value={snapshot.health.fleet} />
-            <HealthPill label="CSAT" value={snapshot.health.csat} />
-          </div>
+      </div>
+
+      <div className="border-t border-wg-border/60 px-4 pb-4 pt-3 dark:border-white/10 lg:px-5 lg:pb-5">
+        <div className="mb-3 flex flex-wrap items-center gap-2">
+          <Gauge className="size-4 text-cyan-600 dark:text-cyan-400" strokeWidth={2} aria-hidden />
+          <p className="text-[11px] font-bold uppercase tracking-wide text-wg-muted">Platform health</p>
+          <span className="text-[10px] text-wg-muted">· from live queue + fleet</span>
+        </div>
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-3 sm:gap-4">
+          <HealthScore label="Dispatch" value={snapshot.health.dispatch} />
+          <HealthScore label="Fleet" value={snapshot.health.fleet} />
+          <HealthScore label="CSAT" value={snapshot.health.csat} />
         </div>
       </div>
 

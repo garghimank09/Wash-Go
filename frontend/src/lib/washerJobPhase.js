@@ -25,6 +25,21 @@ export function minPhaseFromApiStatus(status) {
   return 'received';
 }
 
+/** Map UI phase to API status for persistence. */
+export function apiStatusForPhase(phase) {
+  if (phase === 'completed') return 'completed';
+  if (['wash_started', 'qc_review', 'awaiting_approval'].includes(phase)) return 'in_progress';
+  if (['accepted', 'on_the_way', 'arrived'].includes(phase)) return 'confirmed';
+  return 'pending';
+}
+
+/** Next phase in the field workflow (pure). */
+export function getNextWasherPhase(current) {
+  const idx = WASHER_PHASE_ORDER.indexOf(current);
+  if (idx === -1 || idx >= WASHER_PHASE_ORDER.length - 1) return current;
+  return WASHER_PHASE_ORDER[idx + 1];
+}
+
 /** Normalize legacy stored phases after workflow expansion. */
 function normalizeStoredPhase(stored) {
   if (!stored || typeof stored !== 'string') return null;
@@ -59,7 +74,7 @@ export function clearStoredPhase(bookingId) {
   }
 }
 
-/** Effective phase = max(stored demo progression, floor from API). */
+/** Effective phase = max(stored progression, floor from API). */
 export function effectiveWasherPhase(bookingId, apiStatus) {
   const floor = minPhaseFromApiStatus(apiStatus);
   const raw = getStoredPhase(bookingId);
@@ -68,11 +83,10 @@ export function effectiveWasherPhase(bookingId, apiStatus) {
   return phaseRank(stored) >= phaseRank(floor) ? stored : floor;
 }
 
+/** Advance local UI phase (call API separately for real bookings). */
 export function advanceWasherPhase(bookingId, apiStatus) {
   const current = effectiveWasherPhase(bookingId, apiStatus);
-  const idx = WASHER_PHASE_ORDER.indexOf(current);
-  if (idx === -1 || idx >= WASHER_PHASE_ORDER.length - 1) return current;
-  const next = WASHER_PHASE_ORDER[idx + 1];
+  const next = getNextWasherPhase(current);
   setStoredPhase(bookingId, next);
   return next;
 }

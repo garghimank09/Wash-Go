@@ -19,12 +19,17 @@ class Settings(BaseSettings):
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24
     ENVIRONMENT: str = "development"
+    # Allow any authenticated user to call admin console APIs in non-production (matches VITE_ADMIN_UI_DEMO).
+    ADMIN_UI_DEMO_ALLOW: bool = True
     OLLAMA_BASE_URL: str = "http://localhost:11434"
     OLLAMA_MODEL: str = "llama3.2"
     AI_PROVIDER: str = "ollama"
     OPENAI_API_KEY: str | None = None
     OPENAI_MODEL: str = "gpt-4o-mini"
     CORS_ORIGINS: str = "*"
+    BOOKING_SYNC_POLL_SECONDS: float = 4.0
+    UPLOAD_DIR: str = "uploads"
+    BOOKING_PHOTO_MAX_BYTES: int = 5 * 1024 * 1024
     # Email verification links point here (no trailing slash).
     FRONTEND_BASE_URL: str = "http://127.0.0.1:5173"
     EMAIL_VERIFY_TOKEN_MINUTES: int = 60 * 48

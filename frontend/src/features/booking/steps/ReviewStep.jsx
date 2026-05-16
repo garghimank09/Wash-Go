@@ -12,6 +12,8 @@ export function ReviewStep({
   packageId,
   vehicleSize,
   address,
+  serviceLat,
+  serviceLng,
   scheduledLabel,
   priceCents,
   pricingLoading,
@@ -47,7 +49,10 @@ export function ReviewStep({
       key: 'address',
       label: 'Service address',
       value: address.trim() || '—',
-      sub: null,
+      sub:
+        serviceLat != null && serviceLng != null
+          ? `Pin · ${serviceLat.toFixed(4)}, ${serviceLng.toFixed(4)}`
+          : null,
       Icon: MapPin,
     },
     {
