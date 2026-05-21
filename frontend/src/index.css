@@ -196,3 +196,522 @@
 .wg-vehicle-marker--live {
   animation: wg-partner-live-pulse 1.6s ease-in-out infinite;
 }
+
+/* Marketing — subtle CTA shimmer (respect prefers-reduced-motion via component gates) */
+@keyframes wg-marketing-shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+.wg-marketing-cta-shimmer::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    105deg,
+    transparent 40%,
+    rgb(255 255 255 / 0.22) 50%,
+    transparent 60%
+  );
+  transform: translateX(-100%);
+  animation: wg-marketing-cta-sweep 4s ease-in-out infinite;
+  pointer-events: none;
+}
+
+@keyframes wg-marketing-cta-sweep {
+  0%,
+  70%,
+  100% {
+    transform: translateX(-100%);
+  }
+  85% {
+    transform: translateX(100%);
+  }
+}
+
+.wg-marketing-hero-cta {
+  @apply hover:brightness-110;
+  box-shadow:
+    0 1px 0 rgb(255 255 255 / 0.25) inset,
+    0 10px 28px rgb(6 182 212 / 0.22),
+    0 4px 12px rgb(14 116 144 / 0.12);
+}
+
+.wg-marketing-hero-cta:hover {
+  box-shadow:
+    0 1px 0 rgb(255 255 255 / 0.3) inset,
+    0 14px 36px rgb(6 182 212 / 0.32),
+    0 6px 16px rgb(14 116 144 / 0.14);
+}
+
+/* Hero — eco-luxury ambient (CSS transforms only) */
+.wg-hero-ambient {
+  z-index: 0;
+  background: linear-gradient(180deg, rgb(248 250 252) 0%, rgb(240 253 250 / 0.6) 45%, rgb(255 255 255) 100%);
+}
+
+.wg-hero-mesh {
+  background:
+    linear-gradient(165deg, rgb(236 254 255 / 0.55) 0%, rgb(248 250 252) 35%, rgb(255 255 255) 70%),
+    radial-gradient(ellipse 90% 70% at 0% 18%, rgb(167 243 208 / 0.26), transparent 58%),
+    radial-gradient(ellipse 75% 55% at 92% 28%, rgb(186 230 253 / 0.3), transparent 52%),
+    radial-gradient(ellipse 55% 40% at 48% 88%, rgb(224 242 254 / 0.35), transparent 60%);
+}
+
+.wg-hero-mesh::before {
+  content: '';
+  position: absolute;
+  inset: -15%;
+  background:
+    radial-gradient(circle at 22% 35%, rgb(125 211 252 / 0.22), transparent 42%),
+    radial-gradient(circle at 78% 55%, rgb(110 231 183 / 0.2), transparent 44%);
+  will-change: transform;
+}
+
+.wg-hero-mesh--animate::before {
+  animation: wg-hero-mesh-drift 20s ease-in-out infinite alternate;
+}
+
+@keyframes wg-hero-mesh-drift {
+  from {
+    transform: translate3d(-2%, 0, 0) scale(1);
+  }
+  to {
+    transform: translate3d(3%, -2%, 0) scale(1.04);
+  }
+}
+
+.wg-hero-gloss-sheen {
+  will-change: transform, opacity;
+}
+
+.wg-hero-gloss--animate .wg-hero-gloss-sheen:first-child {
+  animation: wg-hero-gloss-float 16s ease-in-out infinite alternate;
+}
+
+.wg-hero-gloss--animate .wg-hero-gloss-sheen:last-child {
+  animation: wg-hero-gloss-float 14s ease-in-out infinite alternate-reverse;
+}
+
+@keyframes wg-hero-gloss-float {
+  from {
+    transform: translate3d(0, 0, 0) rotate(-8deg);
+    opacity: 0.35;
+  }
+  to {
+    transform: translate3d(12px, -8px, 0) rotate(-4deg);
+    opacity: 0.55;
+  }
+}
+
+.wg-hero-wave-svg {
+  will-change: transform;
+}
+
+.wg-hero-wave--animate .wg-hero-wave-svg {
+  animation: wg-hero-wave-slide 22s linear infinite;
+}
+
+@keyframes wg-hero-wave-slide {
+  0% {
+    transform: translate3d(0, 0, 0);
+  }
+  100% {
+    transform: translate3d(-50%, 0, 0);
+  }
+}
+
+.wg-hero-bubble {
+  background: radial-gradient(
+    circle at 32% 28%,
+    rgb(255 255 255 / 0.92) 0%,
+    rgb(224 242 254 / 0.45) 38%,
+    rgb(186 230 253 / 0.15) 72%
+  );
+  border: 1px solid rgb(255 255 255 / 0.7);
+  box-shadow:
+    inset 0 -6px 14px rgb(125 211 252 / 0.12),
+    inset 0 2px 8px rgb(255 255 255 / 0.8),
+    0 6px 20px rgb(125 211 252 / 0.1);
+  opacity: 0.38;
+  backdrop-filter: blur(2px);
+  will-change: transform;
+  animation: wg-hero-bubble-rise linear infinite;
+}
+
+@media (max-width: 767px) {
+  .wg-hero-bubble {
+    opacity: 0.28;
+    backdrop-filter: blur(1px);
+    box-shadow:
+      inset 0 -4px 10px rgb(125 211 252 / 0.1),
+      0 4px 14px rgb(125 211 252 / 0.08);
+  }
+}
+
+.wg-hero-bubble--static {
+  animation: none;
+  opacity: 0.2;
+}
+
+@keyframes wg-hero-bubble-rise {
+  0% {
+    transform: translate3d(0, 10vh, 0) scale(0.85);
+    opacity: 0;
+  }
+  10% {
+    opacity: 0.38;
+  }
+  85% {
+    opacity: 0.22;
+  }
+  100% {
+    transform: translate3d(var(--wg-bubble-drift, 0px), -115vh, 0) scale(1);
+    opacity: 0;
+  }
+}
+
+.wg-hero-orb {
+  border-radius: 9999px;
+  filter: blur(80px);
+  will-change: transform, opacity;
+}
+
+.wg-hero-orb--mint {
+  background: rgb(110 231 183 / 0.2);
+}
+
+.wg-hero-orb--aqua {
+  background: rgb(34 211 238 / 0.16);
+}
+
+.wg-hero-orb--sky {
+  background: rgb(186 230 253 / 0.22);
+}
+
+.wg-hero-orbs--animate .wg-hero-orb--mint {
+  animation: wg-hero-orb-pulse 14s ease-in-out infinite;
+}
+
+.wg-hero-orbs--animate .wg-hero-orb--aqua {
+  animation: wg-hero-orb-pulse 12s ease-in-out infinite reverse;
+}
+
+.wg-hero-orbs--animate .wg-hero-orb--sky {
+  animation: wg-hero-orb-pulse 16s ease-in-out infinite 2s;
+}
+
+@keyframes wg-hero-orb-pulse {
+  0%,
+  100% {
+    opacity: 0.55;
+    transform: translate3d(0, 0, 0);
+  }
+  50% {
+    opacity: 0.85;
+    transform: translate3d(8px, -6px, 0);
+  }
+}
+
+/* Hero — right visual: car PNG + minimal water ambience */
+.wg-hero-visual,
+.wg-hero-visual__stage,
+.wg-hero-visual__car-group {
+  background: transparent;
+}
+
+.wg-hero-visual__stage {
+  transform-style: preserve-3d;
+  isolation: isolate;
+}
+
+.wg-hero-visual__ambience {
+  z-index: 0;
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  overflow: visible;
+  -webkit-mask-image: radial-gradient(ellipse 92% 88% at 50% 58%, #000 30%, transparent 78%);
+  mask-image: radial-gradient(ellipse 92% 88% at 50% 58%, #000 30%, transparent 78%);
+}
+
+.wg-hero-visual__flow {
+  position: absolute;
+  inset: -20%;
+  background:
+    radial-gradient(ellipse 72% 58% at 48% 58%, rgb(186 230 253 / 0.38), transparent 70%),
+    radial-gradient(ellipse 58% 48% at 68% 38%, rgb(167 243 208 / 0.26), transparent 68%);
+  animation: wg-hero-visual-flow 18s ease-in-out infinite alternate;
+  will-change: transform;
+}
+
+.wg-hero-visual__wave {
+  position: absolute;
+  inset: -25%;
+  background: linear-gradient(
+    120deg,
+    transparent 38%,
+    rgb(255 255 255 / 0.18) 50%,
+    transparent 62%
+  );
+  opacity: 0.45;
+  -webkit-mask-image: radial-gradient(ellipse 90% 85% at 50% 55%, #000 20%, transparent 75%);
+  mask-image: radial-gradient(ellipse 90% 85% at 50% 55%, #000 20%, transparent 75%);
+  animation: wg-hero-visual-wave 14s ease-in-out infinite;
+  will-change: transform, opacity;
+}
+
+.wg-hero-visual__caustics {
+  position: absolute;
+  inset: -10%;
+  background:
+    radial-gradient(circle at 30% 40%, rgb(255 255 255 / 0.28) 0%, transparent 30%),
+    radial-gradient(circle at 65% 55%, rgb(125 211 252 / 0.2) 0%, transparent 34%),
+    radial-gradient(circle at 50% 70%, rgb(167 243 208 / 0.16) 0%, transparent 38%);
+  mix-blend-mode: soft-light;
+  -webkit-mask-image: radial-gradient(ellipse 88% 82% at 50% 58%, #000 25%, transparent 76%);
+  mask-image: radial-gradient(ellipse 88% 82% at 50% 58%, #000 25%, transparent 76%);
+  animation: wg-hero-visual-caustics 12s ease-in-out infinite alternate;
+  will-change: transform, opacity;
+}
+
+.wg-hero-visual__mist {
+  position: absolute;
+  inset: -15%;
+  background: radial-gradient(ellipse 88% 72% at 50% 62%, rgb(255 255 255 / 0.22), transparent 74%);
+  animation: wg-hero-visual-mist 16s ease-in-out infinite;
+  will-change: opacity;
+}
+
+.wg-hero-visual__bloom {
+  position: absolute;
+  inset: 5%;
+  background: radial-gradient(
+    circle,
+    rgb(34 211 238 / calc(0.12 * var(--wg-hero-glow, 0.6))) 0%,
+    transparent 72%
+  );
+  filter: blur(32px);
+  transition: opacity 0.5s ease;
+  will-change: opacity;
+}
+
+.wg-hero-visual__car-group {
+  isolation: isolate;
+}
+
+@keyframes wg-hero-visual-flow {
+  0% {
+    transform: translate3d(-2%, 1%, 0) scale(1);
+  }
+  100% {
+    transform: translate3d(3%, -2%, 0) scale(1.04);
+  }
+}
+
+@keyframes wg-hero-visual-wave {
+  0%,
+  100% {
+    transform: translate3d(-6%, 0, 0);
+    opacity: 0.35;
+  }
+  50% {
+    transform: translate3d(8%, 2%, 0);
+    opacity: 0.55;
+  }
+}
+
+@keyframes wg-hero-visual-caustics {
+  0% {
+    transform: translate3d(0, 0, 0) scale(1);
+    opacity: 0.45;
+  }
+  100% {
+    transform: translate3d(4%, -3%, 0) scale(1.06);
+    opacity: 0.7;
+  }
+}
+
+@keyframes wg-hero-visual-mist {
+  0%,
+  100% {
+    opacity: 0.4;
+  }
+  50% {
+    opacity: 0.65;
+  }
+}
+
+.wg-hero-visual__drop {
+  position: absolute;
+  width: 3px;
+  height: 3px;
+  border-radius: 9999px;
+  background: rgb(255 255 255 / 0.85);
+  box-shadow: 0 0 6px rgb(186 230 253 / 0.5);
+  animation: wg-hero-visual-drop-float 11s ease-in-out infinite;
+  will-change: transform, opacity;
+}
+
+@keyframes wg-hero-visual-drop-float {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0);
+    opacity: 0.35;
+  }
+  50% {
+    transform: translate3d(0, -8px, 0);
+    opacity: 0.6;
+  }
+}
+
+.wg-hero-visual__underglow {
+  background: radial-gradient(ellipse, rgb(34 211 238 / 0.22) 0%, rgb(167 243 208 / 0.08) 50%, transparent 75%);
+  filter: blur(14px);
+}
+
+.wg-hero-visual__shadow {
+  background: radial-gradient(ellipse, rgb(15 23 42 / 0.22) 0%, transparent 70%);
+  filter: blur(12px);
+}
+
+.wg-hero-visual__car {
+  display: block;
+  background: transparent;
+  mix-blend-mode: screen;
+  filter: saturate(1.05) contrast(1.04);
+}
+
+.wg-hero-visual__ripple {
+  border: 1px solid rgb(125 211 252 / 0.45);
+  box-shadow: 0 0 16px rgb(34 211 238 / 0.12);
+  background: radial-gradient(circle, rgb(255 255 255 / 0.12) 0%, transparent 70%);
+}
+
+.wg-hero-visual__particle {
+  background: radial-gradient(circle, rgb(255 255 255 / 0.9), rgb(186 230 253 / 0.5));
+  box-shadow: 0 0 6px rgb(186 230 253 / 0.45);
+}
+
+.wg-hero-headline-glow {
+  background: linear-gradient(
+    95deg,
+    rgb(34 211 238 / 0.22) 0%,
+    rgb(110 231 183 / 0.18) 45%,
+    rgb(224 242 254 / 0.08) 100%
+  );
+}
+
+.wg-hero-glass-pill {
+  background: rgb(255 255 255 / 0.78);
+  box-shadow:
+    0 1px 0 rgb(255 255 255 / 0.9) inset,
+    0 4px 16px rgb(125 211 252 / 0.08);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .wg-marketing-cta-shimmer::after {
+    animation: none;
+  }
+  .wg-marketing-hover-card {
+    transform: none !important;
+  }
+  .wg-hero-mesh--animate::before,
+  .wg-hero-gloss--animate .wg-hero-gloss-sheen,
+  .wg-hero-wave--animate .wg-hero-wave-svg,
+  .wg-hero-bubble,
+  .wg-hero-ambient .wg-hero-orb,
+  .wg-hero-visual--motion .wg-hero-visual__flow,
+  .wg-hero-visual--motion .wg-hero-visual__wave,
+  .wg-hero-visual--motion .wg-hero-visual__caustics,
+  .wg-hero-visual--motion .wg-hero-visual__mist,
+  .wg-hero-visual__drop {
+    animation: none !important;
+  }
+}
+
+/* Marketing — premium surfaces & atmosphere */
+.wg-marketing-hover-card {
+  transition:
+    box-shadow 0.45s cubic-bezier(0.22, 1, 0.36, 1),
+    border-color 0.35s ease;
+}
+
+.wg-marketing-preview-window {
+  transform-style: preserve-3d;
+  perspective: 1200px;
+}
+
+.wg-marketing-section-glow {
+  background-image: radial-gradient(ellipse 70% 50% at 50% 0%, rgb(6 182 212 / 0.06), transparent 70%);
+}
+
+.wg-marketing-noise::after {
+  content: '';
+  pointer-events: none;
+  position: absolute;
+  inset: 0;
+  opacity: 0.035;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+.dark .wg-marketing-noise::after {
+  opacity: 0.05;
+}
+
+.wg-marketing-stat-pill {
+  @apply rounded-2xl border border-white/20 bg-wg-surface-elevated/80 px-5 py-4 shadow-sm backdrop-blur-sm transition duration-300 dark:border-white/10;
+}
+
+.wg-marketing-stat-pill:hover {
+  @apply -translate-y-0.5 border-cyan-500/25 shadow-md;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .wg-marketing-stat-pill:hover {
+    transform: none;
+  }
+}
+
+/* Footer — social links (footer-only) */
+.wg-footer-social-link {
+  @apply rounded-full outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/45 focus-visible:ring-offset-2 focus-visible:ring-offset-wg-surface;
+}
+
+.wg-footer-social-icon {
+  transition:
+    transform 0.35s cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 0.4s cubic-bezier(0.22, 1, 0.36, 1),
+    border-color 0.35s ease,
+    color 0.35s ease,
+    background-color 0.35s ease;
+}
+
+.wg-footer-social-link:hover .wg-footer-social-icon,
+.wg-footer-social-link:focus-visible .wg-footer-social-icon {
+  background: linear-gradient(145deg, rgb(255 255 255 / 0.85), rgb(236 254 255 / 0.65));
+  box-shadow:
+    0 1px 0 rgb(255 255 255 / 0.9) inset,
+    0 10px 28px rgb(34 211 238 / 0.22),
+    0 4px 14px rgb(16 185 129 / 0.12);
+}
+
+.dark .wg-footer-social-link:hover .wg-footer-social-icon,
+.dark .wg-footer-social-link:focus-visible .wg-footer-social-icon {
+  background: linear-gradient(145deg, rgb(255 255 255 / 0.1), rgb(6 182 212 / 0.12));
+  box-shadow:
+    0 0 0 1px rgb(34 211 238 / 0.2),
+    0 10px 28px rgb(34 211 238 / 0.18);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .wg-footer-social-link:hover .wg-footer-social-icon,
+  .wg-footer-social-link:focus-visible .wg-footer-social-icon,
+  .wg-footer-social-icon {
+    transform: none !important;
+  }
+}
