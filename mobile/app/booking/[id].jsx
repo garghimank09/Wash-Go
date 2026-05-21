@@ -36,6 +36,8 @@ import AppIcon from '../../components/customer/AppIcon';
 import StepHeader from '../../components/customer/StepHeader';
 import PhasePill from '../../components/customer/PhasePill';
 import ServiceTimeline from '../../components/customer/ServiceTimeline';
+import CustomerSkeleton from '../../components/customer/ui/CustomerSkeleton';
+import { CUSTOMER_LAYOUT } from '../../constants/customerTheme';
 import DateTimeField, { formatScheduledLabel } from '../../components/customer/DateTimeField';
 
 const DETAIL_POLL_MS = 8000;
@@ -139,9 +141,7 @@ export default function BookingDetail() {
     return (
       <SafeAreaView style={s.safe} edges={['top']}>
         <StepHeader title="Booking" onBack={handleBack} />
-        <View style={s.center}>
-          <ActivityIndicator size="large" color={theme.accent.primary} />
-        </View>
+        <CustomerSkeleton />
       </SafeAreaView>
     );
   }

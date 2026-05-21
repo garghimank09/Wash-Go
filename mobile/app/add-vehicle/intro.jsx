@@ -6,6 +6,9 @@ import { useTheme } from '../../context/ThemeContext';
 import { useAddVehicle } from '../../context/AddVehicleContext';
 import AppIcon from '../../components/customer/AppIcon';
 import StepHeader from '../../components/customer/StepHeader';
+import CustomerFooterBar from '../../components/customer/ui/CustomerFooterBar';
+import CustomerPrimaryButton from '../../components/customer/ui/CustomerPrimaryButton';
+import CustomerGhostButton from '../../components/customer/ui/CustomerGhostButton';
 import VehicleArt from '../../components/customer/VehicleArt';
 
 const BENEFITS = [
@@ -98,27 +101,15 @@ export default function AddVehicleIntro() {
         </View>
       </ScrollView>
 
-      <View style={[s.footer, { paddingBottom: insets.bottom + 16 }]}>
-        <TouchableOpacity
-          style={s.primaryBtn}
+      <CustomerFooterBar>
+        <CustomerPrimaryButton
+          label={continuing ? 'Continue setup' : 'Add Vehicle'}
           onPress={handleStart}
-          activeOpacity={0.88}
-        >
-          <Text style={s.primaryBtnText}>
-            {continuing ? 'Continue setup' : 'Add Vehicle'}
-          </Text>
-          <AppIcon name="arrow-forward" size={20} color={theme.button.primary.text} />
-        </TouchableOpacity>
+        />
         {continuing ? (
-          <TouchableOpacity
-            style={s.secondaryBtn}
-            onPress={handleStartFresh}
-            activeOpacity={0.7}
-          >
-            <Text style={s.secondaryBtnText}>Start fresh</Text>
-          </TouchableOpacity>
+          <CustomerGhostButton label="Start fresh" onPress={handleStartFresh} />
         ) : null}
-      </View>
+      </CustomerFooterBar>
     </SafeAreaView>
   );
 }

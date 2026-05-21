@@ -16,6 +16,8 @@ import { useTheme } from '../../context/ThemeContext';
 import { useAddVehicle } from '../../context/AddVehicleContext';
 import AppIcon from '../../components/customer/AppIcon';
 import StepHeader from '../../components/customer/StepHeader';
+import CustomerFooterBar from '../../components/customer/ui/CustomerFooterBar';
+import CustomerPrimaryButton from '../../components/customer/ui/CustomerPrimaryButton';
 import PickerSheet from '../../components/customer/PickerSheet';
 
 const MAKES = [
@@ -152,15 +154,9 @@ export default function VehicleDetails() {
           </Field>
         </ScrollView>
 
-        <View style={[s.footer, { paddingBottom: insets.bottom + 16 }]}>
-          <TouchableOpacity
-            style={s.primaryBtn}
-            onPress={handleContinue}
-            activeOpacity={0.88}
-          >
-            <Text style={s.primaryBtnText}>Continue</Text>
-          </TouchableOpacity>
-        </View>
+        <CustomerFooterBar>
+          <CustomerPrimaryButton label="Continue" onPress={handleContinue} />
+        </CustomerFooterBar>
       </KeyboardAvoidingView>
 
       <PickerSheet

@@ -8,6 +8,7 @@ import {
 } from 'react';
 import { authService } from '../services/authService';
 import { setUnauthorizedHandler } from '../lib/sessionStore';
+import { setLastActiveRole } from '../lib/partnerSessionStore';
 
 const AuthContext = createContext(null);
 
@@ -25,7 +26,7 @@ export function AuthProvider({ children }) {
     if (bootUser?.role === 'customer') {
       setUser(bootUser);
     } else if (bootUser) {
-      // Washer/admin tokens from a previous session — clear until partner app exists
+      // Washer/admin tokens never belonged in the customer session — clear them.
       await authService.logout();
       setUser(null);
     } else {
@@ -45,12 +46,14 @@ export function AuthProvider({ children }) {
   const login = useCallback(async (email, password) => {
     const result = await authService.customerLogin(email, password);
     setUser(result.user);
+    await setLastActiveRole('customer');
     return result.user;
   }, []);
 
   const signup = useCallback(async (payload) => {
     const result = await authService.signup(payload);
     setUser(result.user);
+    await setLastActiveRole('customer');
     return result.user;
   }, []);
 

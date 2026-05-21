@@ -15,6 +15,11 @@ import { useNewBooking } from '../../context/NewBookingContext';
 import { garageService } from '../../services/garageService';
 import AppIcon from '../../components/customer/AppIcon';
 import StepHeader from '../../components/customer/StepHeader';
+import CustomerStepProgress from '../../components/customer/CustomerStepProgress';
+import CustomerFooterBar from '../../components/customer/ui/CustomerFooterBar';
+import CustomerPrimaryButton from '../../components/customer/ui/CustomerPrimaryButton';
+import CustomerSkeleton from '../../components/customer/ui/CustomerSkeleton';
+import { CUSTOMER_LAYOUT } from '../../constants/customerTheme';
 import VehicleArt, { resolveBodyColor } from '../../components/customer/VehicleArt';
 
 export default function NewWashVehicle() {
@@ -69,6 +74,7 @@ export default function NewWashVehicle() {
   return (
     <SafeAreaView style={s.safe} edges={['top']}>
       <StepHeader title="Choose your vehicle" step="Step 1 of 4" onBack={handleBack} />
+      <CustomerStepProgress currentStep="vehicle" />
       <ScrollView
         contentContainerStyle={[s.scroll, { paddingBottom: insets.bottom + 140 }]}
         showsVerticalScrollIndicator={false}
@@ -82,9 +88,7 @@ export default function NewWashVehicle() {
         ) : null}
 
         {loading ? (
-          <View style={s.loading}>
-            <ActivityIndicator color={theme.accent.primary} />
-          </View>
+          <CustomerSkeleton />
         ) : vehicles.length === 0 ? (
           <View style={s.emptyCard}>
             <VehicleArt width={180} height={104} accentColor={theme.accent.primary} />
@@ -157,19 +161,13 @@ export default function NewWashVehicle() {
         )}
       </ScrollView>
 
-      <View style={[s.footer, { paddingBottom: insets.bottom + 16 }]}>
-        <TouchableOpacity
-          style={[s.primaryBtn, !form.carId && s.primaryBtnDisabled]}
+      <CustomerFooterBar>
+        <CustomerPrimaryButton
+          label={showContinueSetup ? 'Continue setup' : 'Continue'}
           onPress={showContinueSetup ? () => router.push(`/new-wash/${lastStep}`) : handleContinue}
           disabled={!form.carId}
-          activeOpacity={0.88}
-        >
-          <Text style={s.primaryBtnText}>
-            {showContinueSetup ? 'Continue setup' : 'Continue'}
-          </Text>
-          <AppIcon name="arrow-forward" size={18} color={theme.button.primary.text} />
-        </TouchableOpacity>
-      </View>
+        />
+      </CustomerFooterBar>
     </SafeAreaView>
   );
 }

@@ -3,16 +3,19 @@ import {
   View,
   Text,
   ScrollView,
-  TouchableOpacity,
   StyleSheet,
   RefreshControl,
-  ActivityIndicator,
   AppState,
   Pressable,
 } from 'react-native';
 import { useRouter, useFocusEffect } from 'expo-router';
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../../context/ThemeContext';
+import { useCustomerScrollEndPadding } from '../../hooks/useCustomerContentPadding';
+import CustomerSkeleton from '../../components/customer/ui/CustomerSkeleton';
+import CustomerEmptyState from '../../components/customer/ui/CustomerEmptyState';
+import CustomerPrimaryButton from '../../components/customer/ui/CustomerPrimaryButton';
+import { CUSTOMER_LAYOUT } from '../../constants/customerTheme';
 import { useNewBooking } from '../../context/NewBookingContext';
 import { bookingService } from '../../services/bookingService';
 import {
@@ -36,7 +39,7 @@ const STEP_LABEL = {
 export default function Bookings() {
   const { theme } = useTheme();
   const router = useRouter();
-  const insets = useSafeAreaInsets();
+  const scrollEndPadding = useCustomerScrollEndPadding();
   const { hasDraft, lastStep, reset: resetDraft } = useNewBooking();
   const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -102,9 +105,7 @@ export default function Bookings() {
   if (loading) {
     return (
       <SafeAreaView style={s.safe}>
-        <View style={s.center}>
-          <ActivityIndicator size="large" color={theme.accent.primary} />
-        </View>
+        <CustomerSkeleton />
       </SafeAreaView>
     );
   }
@@ -133,10 +134,7 @@ export default function Bookings() {
       </View>
 
       <ScrollView
-        contentContainerStyle={[
-          s.scroll,
-          { paddingBottom: insets.bottom + 120 },
-        ]}
+        contentContainerStyle={[s.scroll, { paddingBottom: scrollEndPadding + 24 }]}
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
@@ -170,26 +168,23 @@ export default function Bookings() {
         ) : null}
 
         {filteredBookings.length === 0 ? (
-          <View style={s.emptyState}>
-            <View style={s.emptyIconWrap}>
-              <AppIcon name="local-car-wash" size={36} color={theme.accent.primary} />
-            </View>
-            <Text style={s.emptyTitle}>
-              {activeFilter === 'All' ? 'No bookings yet' : `No ${activeFilter.toLowerCase()} bookings`}
-            </Text>
-            <Text style={s.emptySub}>
-              {activeFilter === 'All'
+          <CustomerEmptyState
+            icon="local-car-wash"
+            title={
+              activeFilter === 'All' ? 'No bookings yet' : `No ${activeFilter.toLowerCase()} bookings`
+            }
+            body={
+              activeFilter === 'All'
                 ? 'Book your first wash to get started.'
-                : 'Try a different filter or book a new wash.'}
-            </Text>
-            <TouchableOpacity
-              style={s.primaryBtn}
-              onPress={() => router.push('/new-wash/vehicle')}
-              activeOpacity={0.88}
-            >
-              <Text style={s.primaryBtnText}>Book a wash</Text>
-            </TouchableOpacity>
-          </View>
+                : 'Try a different filter or book a new wash.'
+            }
+            action={
+              <CustomerPrimaryButton
+                label="Book a wash"
+                onPress={() => router.push('/new-wash/vehicle')}
+              />
+            }
+          />
         ) : (
           filteredBookings.map((b) => (
             <BookingCard
@@ -218,10 +213,10 @@ const styles = (theme) => {
       justifyContent: 'space-between',
     },
     pageTitle: {
-      fontSize: 26,
+      fontSize: 24,
       fontWeight: '800',
       color: theme.text.primary,
-      letterSpacing: -0.5,
+      letterSpacing: -0.4,
     },
     subTitle: {
       fontSize: 12,
@@ -233,7 +228,10 @@ const styles = (theme) => {
       alignItems: 'center',
       gap: 10,
     },
-    scroll: { paddingHorizontal: 20, paddingTop: 12 },
+    scroll: {
+      paddingHorizontal: CUSTOMER_LAYOUT.screenPadding,
+      paddingTop: 12,
+    },
     resumeCard: {
       flexDirection: 'row',
       alignItems: 'center',
@@ -241,7 +239,7 @@ const styles = (theme) => {
       padding: 12,
       paddingRight: 8,
       marginBottom: 12,
-      borderRadius: theme.radius.lg,
+      borderRadius: CUSTOMER_LAYOUT.card.radius,
       backgroundColor: c.primaryBg,
       borderWidth: 1,
       borderColor: theme.accent.primary + '40',

@@ -3,6 +3,8 @@ import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../../context/ThemeContext';
 import AppIcon from '../../components/customer/AppIcon';
+import CustomerPrimaryButton from '../../components/customer/ui/CustomerPrimaryButton';
+import { CUSTOMER_LAYOUT } from '../../constants/customerTheme';
 
 export default function ForgotPassword() {
   const { theme } = useTheme();
@@ -25,12 +27,10 @@ export default function ForgotPassword() {
           Password reset is coming soon. If you need help accessing your account,
           please contact support.
         </Text>
-        <Pressable
+        <CustomerPrimaryButton
+          label="Back to sign in"
           onPress={() => router.replace('/(auth)/login')}
-          style={s.primaryBtn}
-        >
-          <Text style={s.primaryBtnText}>Back to sign in</Text>
-        </Pressable>
+        />
       </View>
     </SafeAreaView>
   );

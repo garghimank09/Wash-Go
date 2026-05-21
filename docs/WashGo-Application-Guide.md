@@ -200,6 +200,8 @@ The landing page and dashboard may show **membership plans** (for example, month
 
 ## 4. Partner (washer) experience
 
+> **Engineering detail:** For the full washer/partner workflow specification (lifecycle, phases, APIs, area-based dispatch, notifications, and architecture), see [Washer Partner Workflow](./Washer-Partner-Workflow.md).
+
 Partners are the people who perform washes in the field. They use a **separate part of the website** (partner login and signup—not the customer login).
 
 ### 4.1 Getting started as a partner

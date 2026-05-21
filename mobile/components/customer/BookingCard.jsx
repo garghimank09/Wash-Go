@@ -1,5 +1,6 @@
 import { Pressable, View, Text, StyleSheet } from 'react-native';
 import { useTheme } from '../../context/ThemeContext';
+import { CUSTOMER_LAYOUT, getCustomerShadow } from '../../constants/customerTheme';
 import AppIcon from './AppIcon';
 import PhasePill from './PhasePill';
 import { decodeBookingMeta, formatPriceCents } from '../../services/bookingService';
@@ -23,9 +24,8 @@ function formatScheduled(iso) {
 }
 
 export default function BookingCard({ booking, onPress }) {
-  const { theme } = useTheme();
-  const c = theme.customer;
-  const s = styles(theme);
+  const { theme, isDark } = useTheme();
+  const shadows = getCustomerShadow(isDark);
 
   const phase = deriveCustomerPhase(booking);
   const { packageId } = decodeBookingMeta(booking.notes);
@@ -36,36 +36,44 @@ export default function BookingCard({ booking, onPress }) {
     <Pressable
       onPress={onPress}
       style={({ pressed }) => [
-        s.card,
-        active && s.cardActive,
+        styles.card,
+        shadows.rim,
+        {
+          backgroundColor: theme.customer.surfaceContainerLowest,
+          borderColor: active ? theme.accent.primary : theme.customer.outlineVariant,
+          borderLeftColor: active ? theme.accent.primary : theme.customer.outlineVariant,
+        },
+        active && styles.cardActive,
         pressed && { opacity: 0.92 },
       ]}
     >
-      <View style={s.topRow}>
+      <View style={styles.topRow}>
         <PhasePill phase={phase} />
-        <Text style={s.price}>{formatPriceCents(booking.price_cents, booking.currency)}</Text>
+        <Text style={[styles.price, { color: theme.text.primary }]}>
+          {formatPriceCents(booking.price_cents, booking.currency)}
+        </Text>
       </View>
 
-      <Text style={s.title} numberOfLines={1}>
+      <Text style={[styles.title, { color: theme.text.primary }]} numberOfLines={1}>
         {pkg?.label || 'Wash'}
       </Text>
 
-      <View style={s.metaRow}>
+      <View style={styles.metaRow}>
         <AppIcon name="place" size={14} color={theme.text.muted} />
-        <Text style={s.metaText} numberOfLines={1}>
+        <Text style={[styles.metaText, { color: theme.text.secondary }]} numberOfLines={1}>
           {booking.service_address || 'Address pending'}
         </Text>
       </View>
 
-      <View style={s.metaRow}>
+      <View style={styles.metaRow}>
         <AppIcon name="schedule" size={14} color={theme.text.muted} />
-        <Text style={s.metaText} numberOfLines={1}>
+        <Text style={[styles.metaText, { color: theme.text.secondary }]} numberOfLines={1}>
           {formatScheduled(booking.scheduled_at)}
         </Text>
       </View>
 
-      <View style={s.footerRow}>
-        <Text style={s.cta}>
+      <View style={[styles.footerRow, { borderTopColor: theme.customer.outlineVariant }]}>
+        <Text style={[styles.cta, { color: theme.accent.primary }]}>
           {active ? 'Track booking' : 'View details'}
         </Text>
         <AppIcon name="arrow-forward" size={16} color={theme.accent.primary} />
@@ -74,60 +82,49 @@ export default function BookingCard({ booking, onPress }) {
   );
 }
 
-const styles = (theme) => {
-  const c = theme.customer;
-  return StyleSheet.create({
-    card: {
-      backgroundColor: c.surfaceContainerLowest,
-      borderRadius: theme.radius.lg,
-      borderWidth: 1,
-      borderColor: c.outlineVariant + '80',
-      padding: 16,
-      marginBottom: 12,
-      ...theme.shadow.sm,
-    },
-    cardActive: {
-      borderColor: theme.accent.primary + '60',
-      ...theme.shadow.md,
-    },
-    topRow: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'space-between',
-      marginBottom: 10,
-    },
-    price: {
-      fontSize: 16,
-      fontWeight: '800',
-      color: theme.text.primary,
-      letterSpacing: -0.3,
-    },
-    title: {
-      fontSize: 16,
-      fontWeight: '700',
-      color: theme.text.primary,
-      letterSpacing: -0.2,
-    },
-    metaRow: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: 6,
-      marginTop: 6,
-    },
-    metaText: {
-      flex: 1,
-      fontSize: 12,
-      color: theme.text.secondary,
-    },
-    footerRow: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'space-between',
-      marginTop: 12,
-      paddingTop: 12,
-      borderTopWidth: StyleSheet.hairlineWidth,
-      borderTopColor: c.outlineVariant,
-    },
-    cta: { fontSize: 12, fontWeight: '700', color: theme.accent.primary, letterSpacing: 0.3 },
-  });
-};
+const styles = StyleSheet.create({
+  card: {
+    borderRadius: CUSTOMER_LAYOUT.card.radius,
+    borderWidth: 1,
+    borderLeftWidth: 3,
+    padding: 16,
+    marginBottom: 10,
+  },
+  cardActive: {},
+  topRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 10,
+  },
+  price: {
+    fontSize: 16,
+    fontWeight: '800',
+    letterSpacing: -0.3,
+  },
+  title: {
+    fontSize: 15,
+    fontWeight: '800',
+    letterSpacing: -0.2,
+  },
+  metaRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginTop: 6,
+  },
+  metaText: {
+    flex: 1,
+    fontSize: 12,
+    fontWeight: '500',
+  },
+  footerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: 12,
+    paddingTop: 12,
+    borderTopWidth: StyleSheet.hairlineWidth,
+  },
+  cta: { fontSize: 12, fontWeight: '800', letterSpacing: 0.2 },
+});

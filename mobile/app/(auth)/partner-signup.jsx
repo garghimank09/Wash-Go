@@ -13,11 +13,12 @@ import {
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../../context/ThemeContext';
-import { authService } from '../../services/authService';
+import { usePartnerAuth } from '../../context/PartnerAuthContext';
 
 export default function PartnerSignup() {
   const { theme } = useTheme();
   const router = useRouter();
+  const { signupPartner } = usePartnerAuth();
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
@@ -35,7 +36,13 @@ export default function PartnerSignup() {
     setError('');
     setLoading(true);
     try {
-      await authService.partnerSignup(fullName, email, password, phone, serviceArea);
+      await signupPartner({
+        full_name: fullName,
+        email,
+        password,
+        phone,
+        service_area: serviceArea,
+      });
       router.replace('/(partner)/home');
     } catch (err) {
       setError(err.message);

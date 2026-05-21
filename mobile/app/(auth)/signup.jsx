@@ -17,6 +17,8 @@ import { useTheme } from '../../context/ThemeContext';
 import { useAuth } from '../../context/AuthContext';
 import { validateSignup } from '../../lib/authValidation';
 import AppIcon from '../../components/customer/AppIcon';
+import CustomerPrimaryButton from '../../components/customer/ui/CustomerPrimaryButton';
+import { CUSTOMER_LAYOUT } from '../../constants/customerTheme';
 
 export default function Signup() {
   const { theme } = useTheme();
@@ -181,18 +183,12 @@ export default function Signup() {
               )}
             </View>
 
-            <TouchableOpacity
-              style={[s.primaryBtn, loading && s.btnDisabled]}
+            <CustomerPrimaryButton
+              label="Create account"
               onPress={handleSignup}
+              loading={loading}
               disabled={loading}
-              activeOpacity={0.88}
-            >
-              {loading ? (
-                <ActivityIndicator color={theme.button.primary.text} />
-              ) : (
-                <Text style={s.primaryBtnText}>Create account</Text>
-              )}
-            </TouchableOpacity>
+            />
           </View>
 
           <TouchableOpacity

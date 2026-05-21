@@ -17,6 +17,9 @@ import { useTheme } from '../../context/ThemeContext';
 import { useAuth } from '../../context/AuthContext';
 import { validateLogin } from '../../lib/authValidation';
 import AppIcon from '../../components/customer/AppIcon';
+import CustomerPrimaryButton from '../../components/customer/ui/CustomerPrimaryButton';
+import CustomerGhostButton from '../../components/customer/ui/CustomerGhostButton';
+import { CUSTOMER_LAYOUT } from '../../constants/customerTheme';
 
 export default function Login() {
   const { theme } = useTheme();
@@ -143,18 +146,12 @@ export default function Login() {
               ) : null}
             </View>
 
-            <TouchableOpacity
-              style={[s.primaryBtn, loading && s.btnDisabled]}
+            <CustomerPrimaryButton
+              label="Sign in"
               onPress={handleLogin}
+              loading={loading}
               disabled={loading}
-              activeOpacity={0.88}
-            >
-              {loading ? (
-                <ActivityIndicator color={theme.button.primary.text} />
-              ) : (
-                <Text style={s.primaryBtnText}>Sign in</Text>
-              )}
-            </TouchableOpacity>
+            />
 
             <View style={s.dividerRow}>
               <View style={s.dividerLine} />
@@ -162,14 +159,11 @@ export default function Login() {
               <View style={s.dividerLine} />
             </View>
 
-            <TouchableOpacity
-              style={s.ghostBtn}
+            <CustomerGhostButton
+              label="Create an account"
               onPress={() => router.push('/(auth)/signup')}
               disabled={loading}
-              activeOpacity={0.88}
-            >
-              <Text style={s.ghostBtnText}>Create an account</Text>
-            </TouchableOpacity>
+            />
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
@@ -213,7 +207,7 @@ const styles = (theme) => {
     },
     card: {
       backgroundColor: c.surfaceContainerLowest,
-      borderRadius: theme.radius.xl,
+      borderRadius: CUSTOMER_LAYOUT.card.radiusLg,
       borderWidth: 1,
       borderColor: c.outlineVariant,
       padding: 24,

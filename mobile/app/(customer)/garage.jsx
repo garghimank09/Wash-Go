@@ -7,13 +7,15 @@ import {
   TouchableOpacity,
   StyleSheet,
   RefreshControl,
-  ActivityIndicator,
   Modal,
   Alert,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../../context/ThemeContext';
+import { useCustomerScrollEndPadding } from '../../hooks/useCustomerContentPadding';
+import CustomerSkeleton from '../../components/customer/ui/CustomerSkeleton';
+import { CUSTOMER_LAYOUT } from '../../constants/customerTheme';
 import { useAddVehicle } from '../../context/AddVehicleContext';
 import { garageService } from '../../services/garageService';
 import AppIcon from '../../components/customer/AppIcon';
@@ -28,7 +30,7 @@ const STEP_LABEL = {
 export default function Garage() {
   const { theme } = useTheme();
   const router = useRouter();
-  const insets = useSafeAreaInsets();
+  const scrollEndPadding = useCustomerScrollEndPadding();
   const { form: draftForm, lastStep, hasDraft, reset: resetDraft } = useAddVehicle();
   const [vehicles, setVehicles] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -84,9 +86,7 @@ export default function Garage() {
   if (loading) {
     return (
       <SafeAreaView style={s.safe} edges={['top']}>
-        <View style={s.center}>
-          <ActivityIndicator size="large" color={theme.accent.primary} />
-        </View>
+        <CustomerSkeleton />
       </SafeAreaView>
     );
   }
@@ -101,7 +101,7 @@ export default function Garage() {
       </View>
 
       <ScrollView
-        contentContainerStyle={[s.scroll, { paddingBottom: insets.bottom + 120 }]}
+        contentContainerStyle={[s.scroll, { paddingBottom: scrollEndPadding + 24 }]}
         refreshControl={
           <RefreshControl
             refreshing={refreshing}

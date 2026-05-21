@@ -11,9 +11,10 @@ import {
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
-  withSpring,
+  withTiming,
   runOnJS,
 } from 'react-native-reanimated';
+import { CUSTOMER_MOTION, CUSTOMER_EASE } from '../../constants/customerMotion';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import { BlurView } from 'expo-blur';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -41,10 +42,12 @@ export default function NotificationPanel() {
 
   const translateX = useSharedValue(panelWidth);
 
+  const panelTiming = { duration: CUSTOMER_MOTION.duration.panel, easing: CUSTOMER_EASE };
+
   useEffect(() => {
     translateX.value = panelOpen
-      ? withSpring(0, { damping: 20, stiffness: 200 })
-      : withSpring(panelWidth, { damping: 20, stiffness: 200 });
+      ? withTiming(0, panelTiming)
+      : withTiming(panelWidth, panelTiming);
   }, [panelOpen, panelWidth, translateX]);
 
   const panelStyle = useAnimatedStyle(() => ({
@@ -60,11 +63,11 @@ export default function NotificationPanel() {
     })
     .onEnd((e) => {
       if (e.translationX > panelWidth * 0.25 || e.velocityX > 400) {
-        translateX.value = withSpring(panelWidth, { damping: 20, stiffness: 200 }, () => {
+        translateX.value = withTiming(panelWidth, panelTiming, () => {
           runOnJS(closePanel)();
         });
       } else {
-        translateX.value = withSpring(0, { damping: 20, stiffness: 200 });
+        translateX.value = withTiming(0, panelTiming);
       }
     });
 

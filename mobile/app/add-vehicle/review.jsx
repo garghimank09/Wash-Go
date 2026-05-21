@@ -13,6 +13,8 @@ import { useTheme } from '../../context/ThemeContext';
 import { useAddVehicle } from '../../context/AddVehicleContext';
 import { garageService } from '../../services/garageService';
 import StepHeader from '../../components/customer/StepHeader';
+import CustomerFooterBar from '../../components/customer/ui/CustomerFooterBar';
+import CustomerPrimaryButton from '../../components/customer/ui/CustomerPrimaryButton';
 import VehicleArt, { resolveBodyColor } from '../../components/customer/VehicleArt';
 
 export default function ReviewVehicle() {
@@ -116,19 +118,13 @@ export default function ReviewVehicle() {
         </View>
       </ScrollView>
 
-      <View style={[s.footer, { paddingBottom: insets.bottom + 12 }]}>
-        <TouchableOpacity
-          style={[s.primaryBtn, saving && { opacity: 0.7 }]}
+      <CustomerFooterBar>
+        <CustomerPrimaryButton
+          label="Save Vehicle"
           onPress={handleSave}
+          loading={saving}
           disabled={saving}
-          activeOpacity={0.88}
-        >
-          {saving ? (
-            <ActivityIndicator color={theme.button.primary.text} />
-          ) : (
-            <Text style={s.primaryBtnText}>Save Vehicle</Text>
-          )}
-        </TouchableOpacity>
+        />
         <TouchableOpacity
           style={s.secondaryBtn}
           onPress={() => router.back()}
@@ -136,7 +132,7 @@ export default function ReviewVehicle() {
         >
           <Text style={s.secondaryBtnText}>Edit Details</Text>
         </TouchableOpacity>
-      </View>
+      </CustomerFooterBar>
     </SafeAreaView>
   );
 }

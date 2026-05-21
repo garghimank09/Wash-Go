@@ -17,6 +17,9 @@ import { pricingService, PACKAGES, VEHICLE_SIZES } from '../../services/pricingS
 import { formatPriceCents } from '../../services/bookingService';
 import AppIcon from '../../components/customer/AppIcon';
 import StepHeader from '../../components/customer/StepHeader';
+import CustomerStepProgress from '../../components/customer/CustomerStepProgress';
+import CustomerFooterBar from '../../components/customer/ui/CustomerFooterBar';
+import CustomerPrimaryButton from '../../components/customer/ui/CustomerPrimaryButton';
 import PackageCard from '../../components/customer/PackageCard';
 import SizeChip from '../../components/customer/SizeChip';
 
@@ -107,6 +110,7 @@ export default function NewWashPackage() {
   return (
     <SafeAreaView style={s.safe} edges={['top']}>
       <StepHeader title="Pick a package" step="Step 2 of 4" onBack={handleBack} />
+      <CustomerStepProgress currentStep="package" />
       <ScrollView
         contentContainerStyle={[s.scroll, { paddingBottom: insets.bottom + 160 }]}
         showsVerticalScrollIndicator={false}
@@ -148,12 +152,7 @@ export default function NewWashPackage() {
         ) : null}
       </ScrollView>
 
-      <Animated.View
-        style={[
-          s.footer,
-          { paddingBottom: insets.bottom + 16 },
-        ]}
-      >
+      <CustomerFooterBar>
         <View style={s.totalRow}>
           <View>
             <Text style={s.totalLabel}>Estimated total</Text>
@@ -183,16 +182,12 @@ export default function NewWashPackage() {
             <ActivityIndicator color={theme.accent.primary} />
           ) : null}
         </View>
-        <TouchableOpacity
-          style={[s.primaryBtn, form.priceCents == null && s.primaryBtnDisabled]}
+        <CustomerPrimaryButton
+          label="Continue"
           onPress={handleContinue}
           disabled={form.priceCents == null}
-          activeOpacity={0.88}
-        >
-          <Text style={s.primaryBtnText}>Continue</Text>
-          <AppIcon name="arrow-forward" size={18} color={theme.button.primary.text} />
-        </TouchableOpacity>
-      </Animated.View>
+        />
+      </CustomerFooterBar>
     </SafeAreaView>
   );
 }

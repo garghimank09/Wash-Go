@@ -17,6 +17,12 @@ import { getPackage, getVehicleSize } from '../../services/pricingService';
 import { garageService } from '../../services/garageService';
 import AppIcon from '../../components/customer/AppIcon';
 import StepHeader from '../../components/customer/StepHeader';
+import CustomerStepProgress from '../../components/customer/CustomerStepProgress';
+import CustomerFooterBar from '../../components/customer/ui/CustomerFooterBar';
+import CustomerPrimaryButton from '../../components/customer/ui/CustomerPrimaryButton';
+import CustomerGhostButton from '../../components/customer/ui/CustomerGhostButton';
+import CustomerSkeleton from '../../components/customer/ui/CustomerSkeleton';
+import { CUSTOMER_LAYOUT } from '../../constants/customerTheme';
 import VehicleArt, { resolveBodyColor } from '../../components/customer/VehicleArt';
 import { formatScheduledLabel } from '../../components/customer/DateTimeField';
 
@@ -90,6 +96,7 @@ export default function NewWashReview() {
   return (
     <SafeAreaView style={s.safe} edges={['top']}>
       <StepHeader title="Review & confirm" step="Step 4 of 4" onBack={handleBack} />
+      <CustomerStepProgress currentStep="review" />
       <ScrollView
         contentContainerStyle={[s.scroll, { paddingBottom: insets.bottom + 180 }]}
         showsVerticalScrollIndicator={false}
@@ -101,9 +108,7 @@ export default function NewWashReview() {
         ) : null}
 
         {loading ? (
-          <View style={s.loading}>
-            <ActivityIndicator color={theme.accent.primary} />
-          </View>
+          <CustomerSkeleton />
         ) : (
           <View style={s.hero}>
             <VehicleArt
@@ -170,30 +175,18 @@ export default function NewWashReview() {
         </View>
       </ScrollView>
 
-      <View style={[s.footer, { paddingBottom: insets.bottom + 12 }]}>
-        <TouchableOpacity
-          style={[s.primaryBtn, submitting && { opacity: 0.7 }]}
+      <CustomerFooterBar>
+        <CustomerPrimaryButton
+          label="Confirm Booking"
           onPress={handleConfirm}
-          disabled={submitting}
-          activeOpacity={0.88}
-        >
-          {submitting ? (
-            <ActivityIndicator color={theme.button.primary.text} />
-          ) : (
-            <>
-              <Text style={s.primaryBtnText}>Confirm Booking</Text>
-              <AppIcon name="check" size={18} color={theme.button.primary.text} />
-            </>
-          )}
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={s.secondaryBtn}
+          loading={submitting}
+          disabled={loading}
+        />
+        <CustomerGhostButton
+          label="Edit details"
           onPress={() => router.push('/new-wash/schedule')}
-          activeOpacity={0.7}
-        >
-          <Text style={s.secondaryBtnText}>Edit details</Text>
-        </TouchableOpacity>
-      </View>
+        />
+      </CustomerFooterBar>
     </SafeAreaView>
   );
 }
@@ -284,7 +277,7 @@ const styles = (theme) => {
     hero: {
       alignItems: 'center',
       backgroundColor: c.surfaceContainerLow,
-      borderRadius: theme.radius.lg,
+      borderRadius: CUSTOMER_LAYOUT.card.radius,
       paddingVertical: 18,
       paddingHorizontal: 16,
     },

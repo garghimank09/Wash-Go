@@ -6,6 +6,8 @@ import Svg, { Circle } from 'react-native-svg';
 import { useTheme } from '../../context/ThemeContext';
 import { useAddVehicle } from '../../context/AddVehicleContext';
 import AppIcon from '../../components/customer/AppIcon';
+import CustomerFooterBar from '../../components/customer/ui/CustomerFooterBar';
+import CustomerPrimaryButton from '../../components/customer/ui/CustomerPrimaryButton';
 import VehicleArt, { resolveBodyColor } from '../../components/customer/VehicleArt';
 
 const CONFETTI = [
@@ -90,15 +92,9 @@ export default function VehicleAddedSuccess() {
         </View>
       </ScrollView>
 
-      <View style={[s.footer, { paddingBottom: insets.bottom + 16 }]}>
-        <TouchableOpacity
-          style={s.primaryBtn}
-          onPress={handleDone}
-          activeOpacity={0.88}
-        >
-          <Text style={s.primaryBtnText}>Done</Text>
-        </TouchableOpacity>
-      </View>
+      <CustomerFooterBar>
+        <CustomerPrimaryButton label="Done" onPress={handleDone} />
+      </CustomerFooterBar>
     </SafeAreaView>
   );
 }

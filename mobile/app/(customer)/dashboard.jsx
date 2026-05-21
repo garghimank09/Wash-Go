@@ -6,7 +6,6 @@ import {
   TouchableOpacity,
   StyleSheet,
   RefreshControl,
-  ActivityIndicator,
   Image,
   Pressable,
 } from 'react-native';
@@ -15,6 +14,9 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
 import { useTheme } from '../../context/ThemeContext';
+import { useCustomerScrollEndPadding } from '../../hooks/useCustomerContentPadding';
+import CustomerSkeleton from '../../components/customer/ui/CustomerSkeleton';
+import { CUSTOMER_LAYOUT } from '../../constants/customerTheme';
 import { useNewBooking } from '../../context/NewBookingContext';
 import { authService } from '../../services/authService';
 import { bookingService, decodeBookingMeta } from '../../services/bookingService';
@@ -66,6 +68,7 @@ export default function Dashboard() {
   const router = useRouter();
   const { hasDraft, lastStep, reset: resetDraft } = useNewBooking();
   const { unreadCount, openPanel, refreshFromBookings } = useNotifications();
+  const scrollEndPadding = useCustomerScrollEndPadding();
   const [user, setUser] = useState(null);
   const [activeBooking, setActiveBooking] = useState(null);
   const [vehicles, setVehicles] = useState([]);
@@ -148,9 +151,7 @@ export default function Dashboard() {
   if (loading) {
     return (
       <SafeAreaView style={s.safe} edges={['top']}>
-        <View style={s.center}>
-          <ActivityIndicator size="large" color={theme.accent.primary} />
-        </View>
+        <CustomerSkeleton />
       </SafeAreaView>
     );
   }
@@ -171,7 +172,7 @@ export default function Dashboard() {
       </View>
 
       <ScrollView
-        contentContainerStyle={s.scroll}
+        contentContainerStyle={[s.scroll, { paddingBottom: scrollEndPadding + 24 }]}
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
@@ -517,10 +518,9 @@ const styles = (theme) => {
       borderColor: c.surface,
     },
     scroll: {
-      paddingHorizontal: 20,
+      paddingHorizontal: CUSTOMER_LAYOUT.screenPadding,
       paddingTop: 16,
-      paddingBottom: 140,
-      gap: 24,
+      gap: CUSTOMER_LAYOUT.sectionGap + 10,
     },
     section: { gap: 8 },
     sectionRow: {
@@ -536,9 +536,9 @@ const styles = (theme) => {
     },
     greeting: {
       fontSize: 24,
-      fontWeight: '600',
+      fontWeight: '800',
       color: theme.text.primary,
-      letterSpacing: -0.3,
+      letterSpacing: -0.4,
     },
     greetingSub: {
       fontSize: 14,

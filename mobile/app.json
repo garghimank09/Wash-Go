@@ -48,7 +48,8 @@
         {
           "locationAlwaysAndWhenInUsePermission": "WashGo uses your location to set the wash service address and show your washer's live location."
         }
-      ]
+      ],
+      "expo-image"
     ],
     "experiments": {
       "typedRoutes": false

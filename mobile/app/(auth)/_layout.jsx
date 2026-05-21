@@ -11,6 +11,11 @@ export default function AuthLayout() {
         contentStyle: { backgroundColor: theme.background.primary },
         animation: 'slide_from_right',
       }}
-    />
+    >
+      <Stack.Screen
+        name="welcome"
+        options={{ animation: 'fade', animationDuration: 400 }}
+      />
+    </Stack>
   );
 }

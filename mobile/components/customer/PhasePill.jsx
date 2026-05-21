@@ -1,13 +1,11 @@
 import { View, Text, StyleSheet } from 'react-native';
 import { useTheme } from '../../context/ThemeContext';
+import { getCustomerPhaseTokens } from '../../constants/customerTheme';
 import { PHASE_LABEL } from '../../lib/customerBookingPhase';
 
 export default function PhasePill({ phase, size = 'md' }) {
-  const { theme } = useTheme();
-  const palette = theme.phases?.[phase] || {
-    fg: theme.text.secondary,
-    bg: theme.customer.surfaceContainerLow,
-  };
+  const { theme, isDark } = useTheme();
+  const palette = getCustomerPhaseTokens(phase, isDark);
 
   const small = size === 'sm';
 

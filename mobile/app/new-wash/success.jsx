@@ -7,6 +7,10 @@ import { useNewBooking } from '../../context/NewBookingContext';
 import { formatPriceCents } from '../../services/bookingService';
 import { getPackage } from '../../services/pricingService';
 import AppIcon from '../../components/customer/AppIcon';
+import CustomerFooterBar from '../../components/customer/ui/CustomerFooterBar';
+import CustomerPrimaryButton from '../../components/customer/ui/CustomerPrimaryButton';
+import CustomerGhostButton from '../../components/customer/ui/CustomerGhostButton';
+import { CUSTOMER_LAYOUT } from '../../constants/customerTheme';
 import { formatScheduledLabel } from '../../components/customer/DateTimeField';
 
 export default function NewWashSuccess() {
@@ -16,26 +20,27 @@ export default function NewWashSuccess() {
   const { id } = useLocalSearchParams();
   const { form, reset } = useNewBooking();
   const snapshot = useRef({ ...form });
-  const checkScale = useRef(new Animated.Value(0)).current;
+  const checkOpacity = useRef(new Animated.Value(0)).current;
   const contentOpacity = useRef(new Animated.Value(0)).current;
   const s = styles(theme);
 
   useEffect(() => {
-    Animated.sequence([
-      Animated.timing(checkScale, {
-        toValue: 1,
-        duration: 380,
-        easing: Easing.out(Easing.back(1.6)),
-        useNativeDriver: true,
-      }),
-      Animated.timing(contentOpacity, {
+    Animated.parallel([
+      Animated.timing(checkOpacity, {
         toValue: 1,
         duration: 280,
         easing: Easing.out(Easing.cubic),
         useNativeDriver: true,
       }),
+      Animated.timing(contentOpacity, {
+        toValue: 1,
+        duration: 280,
+        delay: 80,
+        easing: Easing.out(Easing.cubic),
+        useNativeDriver: true,
+      }),
     ]).start();
-  }, [checkScale, contentOpacity]);
+  }, [checkOpacity, contentOpacity]);
 
   const data = snapshot.current;
   const pkg = getPackage(data.packageId);
@@ -57,9 +62,7 @@ export default function NewWashSuccess() {
         <Animated.View
           style={[
             s.checkCircle,
-            {
-              transform: [{ scale: checkScale }],
-            },
+            { opacity: checkOpacity },
           ]}
         >
           <AppIcon name="check" size={44} color={theme.button.primary.text} />
@@ -91,19 +94,10 @@ export default function NewWashSuccess() {
         </Animated.View>
       </View>
 
-      <View style={[s.footer, { paddingBottom: insets.bottom + 16 }]}>
-        <TouchableOpacity
-          style={s.primaryBtn}
-          onPress={handleTrack}
-          activeOpacity={0.88}
-        >
-          <Text style={s.primaryBtnText}>Track booking</Text>
-          <AppIcon name="arrow-forward" size={18} color={theme.button.primary.text} />
-        </TouchableOpacity>
-        <TouchableOpacity onPress={handleHome} style={s.secondaryBtn} activeOpacity={0.7}>
-          <Text style={s.secondaryBtnText}>Back to home</Text>
-        </TouchableOpacity>
-      </View>
+      <CustomerFooterBar>
+        <CustomerPrimaryButton label="Track booking" onPress={handleTrack} />
+        <CustomerGhostButton label="Back to home" onPress={handleHome} />
+      </CustomerFooterBar>
     </SafeAreaView>
   );
 }

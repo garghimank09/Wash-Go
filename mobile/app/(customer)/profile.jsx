@@ -1,9 +1,12 @@
 import { useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { View, Text, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useTheme } from '../../context/ThemeContext';
 import { useAuth } from '../../context/AuthContext';
+import CustomerScreen from '../../components/customer/ui/CustomerScreen';
+import CustomerCard from '../../components/customer/ui/CustomerCard';
+import CustomerGhostButton from '../../components/customer/ui/CustomerGhostButton';
+import { CUSTOMER_LAYOUT } from '../../constants/customerTheme';
 import AppIcon from '../../components/customer/AppIcon';
 
 export default function ProfileScreen() {
@@ -11,7 +14,6 @@ export default function ProfileScreen() {
   const router = useRouter();
   const { user, logout } = useAuth();
   const [loggingOut, setLoggingOut] = useState(false);
-  const s = styles(theme);
 
   const handleLogout = async () => {
     setLoggingOut(true);
@@ -24,99 +26,67 @@ export default function ProfileScreen() {
   };
 
   return (
-    <SafeAreaView style={s.safe} edges={['top']}>
-      <View style={s.content}>
-        <View style={s.iconWrap}>
-          <AppIcon name="person" size={40} color={theme.accent.primary} />
+    <CustomerScreen edges={['top']} contentStyle={styles.content}>
+      <CustomerCard style={styles.heroCard} padding={20}>
+        <View style={[styles.avatar, { backgroundColor: theme.customer.primaryBg }]}>
+          <AppIcon name="person" size={36} color={theme.accent.primary} />
         </View>
-        <Text style={s.title}>{user?.full_name || 'Profile'}</Text>
+        <Text style={[styles.name, { color: theme.text.primary }]}>
+          {user?.full_name || 'Profile'}
+        </Text>
         {user?.email ? (
-          <Text style={s.email}>{user.email}</Text>
+          <Text style={[styles.email, { color: theme.text.secondary }]}>{user.email}</Text>
         ) : null}
-        <Text style={s.subtitle}>Account settings</Text>
-        <Text style={s.body}>
+        <Text style={[styles.hint, { color: theme.text.muted }]}>
           Payment methods and preferences will be available in a future update.
         </Text>
-        <TouchableOpacity
-          style={[s.logoutBtn, loggingOut && { opacity: 0.6 }]}
-          onPress={handleLogout}
-          disabled={loggingOut}
-          activeOpacity={0.85}
-        >
-          {loggingOut ? (
-            <ActivityIndicator color={theme.text.primary} />
-          ) : (
-            <>
-              <AppIcon name="logout" size={18} color={theme.customer.error} />
-              <Text style={s.logoutText}>Log out</Text>
-            </>
-          )}
-        </TouchableOpacity>
-      </View>
-    </SafeAreaView>
+      </CustomerCard>
+
+      <CustomerGhostButton
+        label={loggingOut ? 'Signing out…' : 'Sign out'}
+        onPress={handleLogout}
+        disabled={loggingOut}
+        style={styles.logout}
+      />
+    </CustomerScreen>
   );
 }
 
-const styles = (theme) => {
-  const c = theme.customer;
-  return StyleSheet.create({
-    safe: { flex: 1, backgroundColor: c.surface },
-    content: {
-      flex: 1,
-      alignItems: 'center',
-      justifyContent: 'center',
-      paddingHorizontal: 32,
-    },
-    iconWrap: {
-      width: 72,
-      height: 72,
-      borderRadius: 36,
-      backgroundColor: c.primaryBg,
-      alignItems: 'center',
-      justifyContent: 'center',
-      marginBottom: 16,
-    },
-    title: {
-      fontSize: 22,
-      fontWeight: '700',
-      color: theme.text.primary,
-      marginBottom: 4,
-      letterSpacing: -0.3,
-    },
-    email: {
-      fontSize: 14,
-      color: theme.text.secondary,
-      marginBottom: 12,
-    },
-    subtitle: {
-      fontSize: 13,
-      fontWeight: '600',
-      color: theme.accent.primary,
-      marginBottom: 8,
-      textTransform: 'uppercase',
-      letterSpacing: 0.6,
-    },
-    body: {
-      fontSize: 14,
-      color: theme.text.secondary,
-      textAlign: 'center',
-      lineHeight: 20,
-      marginBottom: 28,
-    },
-    logoutBtn: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: 8,
-      paddingVertical: 12,
-      paddingHorizontal: 28,
-      borderRadius: theme.radius.full,
-      borderWidth: 1,
-      borderColor: c.error + '60',
-    },
-    logoutText: {
-      fontSize: 14,
-      fontWeight: '700',
-      color: c.error,
-    },
-  });
-};
+const styles = StyleSheet.create({
+  content: {
+    paddingHorizontal: CUSTOMER_LAYOUT.screenPadding,
+    paddingTop: 16,
+    gap: 16,
+  },
+  heroCard: {
+    alignItems: 'center',
+    gap: 8,
+  },
+  avatar: {
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 4,
+  },
+  name: {
+    fontSize: 20,
+    fontWeight: '800',
+    letterSpacing: -0.3,
+  },
+  email: {
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  hint: {
+    fontSize: 13,
+    fontWeight: '500',
+    textAlign: 'center',
+    lineHeight: 19,
+    marginTop: 8,
+  },
+  logout: {
+    marginTop: 8,
+  },
+});

@@ -19,6 +19,8 @@ import { bookingService, decodeBookingMeta } from '../../services/bookingService
 import { getPackage } from '../../services/pricingService';
 import AppIcon from '../../components/customer/AppIcon';
 import StepHeader from '../../components/customer/StepHeader';
+import CustomerSkeleton from '../../components/customer/ui/CustomerSkeleton';
+import { CUSTOMER_LAYOUT } from '../../constants/customerTheme';
 import VehicleArt, { resolveBodyColor } from '../../components/customer/VehicleArt';
 
 export default function VehicleDetail() {
@@ -86,9 +88,7 @@ export default function VehicleDetail() {
     return (
       <SafeAreaView style={s.safe} edges={['top']}>
         <StepHeader title="Vehicle" onBack={handleBack} />
-        <View style={s.center}>
-          <ActivityIndicator size="large" color={theme.accent.primary} />
-        </View>
+        <CustomerSkeleton />
       </SafeAreaView>
     );
   }

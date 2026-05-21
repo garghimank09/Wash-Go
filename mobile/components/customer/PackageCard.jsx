@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react';
 import { Pressable, View, Text, StyleSheet, Animated, Easing } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme } from '../../context/ThemeContext';
+import { CUSTOMER_LAYOUT } from '../../constants/customerTheme';
 import AppIcon from './AppIcon';
 
 export default function PackageCard({
@@ -12,7 +13,6 @@ export default function PackageCard({
   recommended,
 }) {
   const { theme } = useTheme();
-  const scale = useRef(new Animated.Value(1)).current;
   const ring = useRef(new Animated.Value(selected ? 1 : 0)).current;
 
   useEffect(() => {
@@ -24,23 +24,16 @@ export default function PackageCard({
     }).start();
   }, [selected, ring]);
 
-  const handlePressIn = () =>
-    Animated.spring(scale, { toValue: 0.98, useNativeDriver: true, speed: 28, bounciness: 6 }).start();
-  const handlePressOut = () =>
-    Animated.spring(scale, { toValue: 1, useNativeDriver: true, speed: 28, bounciness: 6 }).start();
-
   const c = theme.customer;
   const s = styles(theme);
 
   return (
-    <Animated.View style={{ transform: [{ scale }] }}>
       <Pressable
         onPress={onPress}
-        onPressIn={handlePressIn}
-        onPressOut={handlePressOut}
-        style={[
+        style={({ pressed }) => [
           s.card,
           selected && s.cardSelected,
+          pressed && { opacity: 0.94 },
         ]}
       >
         {selected ? (
@@ -109,7 +102,6 @@ export default function PackageCard({
           </Text>
         </View>
       </Pressable>
-    </Animated.View>
   );
 }
 
@@ -118,7 +110,7 @@ const styles = (theme) => {
   return StyleSheet.create({
     card: {
       backgroundColor: c.surfaceContainerLowest,
-      borderRadius: theme.radius.lg,
+      borderRadius: CUSTOMER_LAYOUT.card.radius,
       borderWidth: 1.5,
       borderColor: c.outlineVariant,
       padding: 18,

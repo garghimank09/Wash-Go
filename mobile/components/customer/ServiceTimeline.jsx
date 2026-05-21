@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, Animated, Easing } from 'react-native';
 import { useTheme } from '../../context/ThemeContext';
+import { CUSTOMER_LAYOUT } from '../../constants/customerTheme';
 import AppIcon from './AppIcon';
 
 const STEPS = [
@@ -76,7 +77,7 @@ function TimelineRow({ step, isCompleted, isActive, isLast, theme }) {
     const loop = Animated.loop(
       Animated.sequence([
         Animated.timing(pulse, {
-          toValue: 1.16,
+          toValue: 0.55,
           duration: 900,
           easing: Easing.inOut(Easing.quad),
           useNativeDriver: true,
@@ -111,7 +112,7 @@ function TimelineRow({ step, isCompleted, isActive, isLast, theme }) {
             {
               backgroundColor: dotColor,
               borderColor: isCompleted || isActive ? dotColor : c.outlineVariant,
-              transform: [{ scale: isActive ? pulse : 1 }],
+              opacity: isActive ? pulse : 1,
             },
           ]}
         >
@@ -144,9 +145,9 @@ const styles = (theme) => {
     row: { flexDirection: 'row', alignItems: 'stretch' },
     iconCol: { width: 32, alignItems: 'center' },
     dot: {
-      width: 30,
-      height: 30,
-      borderRadius: 15,
+      width: 32,
+      height: 32,
+      borderRadius: CUSTOMER_LAYOUT.card.radiusSm,
       alignItems: 'center',
       justifyContent: 'center',
       borderWidth: 2,

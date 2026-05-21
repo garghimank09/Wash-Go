@@ -17,6 +17,7 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 import { useTheme } from '../../context/ThemeContext';
+import { CUSTOMER_LAYOUT } from '../../constants/customerTheme';
 import { BOOKING_FILTERS, getBookingFilterStyle } from '../../constants/bookingFilters';
 import AppIcon from './AppIcon';
 
@@ -247,7 +248,7 @@ const menuStyles = StyleSheet.create({
   },
   menu: {
     position: 'absolute',
-    borderRadius: 12,
+    borderRadius: CUSTOMER_LAYOUT.card.radiusSm,
     borderWidth: StyleSheet.hairlineWidth,
     overflow: 'hidden',
     paddingVertical: 4,

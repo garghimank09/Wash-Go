@@ -16,6 +16,9 @@ import { useTheme } from '../../context/ThemeContext';
 import { useNewBooking } from '../../context/NewBookingContext';
 import AppIcon from '../../components/customer/AppIcon';
 import StepHeader from '../../components/customer/StepHeader';
+import CustomerStepProgress from '../../components/customer/CustomerStepProgress';
+import CustomerFooterBar from '../../components/customer/ui/CustomerFooterBar';
+import CustomerPrimaryButton from '../../components/customer/ui/CustomerPrimaryButton';
 import MapPicker from '../../components/customer/MapPicker';
 import DateTimeField, { formatScheduledLabel } from '../../components/customer/DateTimeField';
 
@@ -88,6 +91,7 @@ export default function NewWashSchedule() {
   return (
     <SafeAreaView style={s.safe} edges={['top']}>
       <StepHeader title="Where & when" step="Step 3 of 4" onBack={handleBack} />
+      <CustomerStepProgress currentStep="schedule" />
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         style={{ flex: 1 }}
@@ -192,16 +196,9 @@ export default function NewWashSchedule() {
           </View>
         </ScrollView>
 
-        <View style={[s.footer, { paddingBottom: insets.bottom + 16 }]}>
-          <TouchableOpacity
-            style={s.primaryBtn}
-            onPress={handleContinue}
-            activeOpacity={0.88}
-          >
-            <Text style={s.primaryBtnText}>Continue</Text>
-            <AppIcon name="arrow-forward" size={18} color={theme.button.primary.text} />
-          </TouchableOpacity>
-        </View>
+        <CustomerFooterBar>
+          <CustomerPrimaryButton label="Continue" onPress={handleContinue} />
+        </CustomerFooterBar>
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
