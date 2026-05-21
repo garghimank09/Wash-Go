@@ -6,6 +6,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.auth.password_handler import hash_password
+from app.config.settings import settings
 from app.models.car import Car
 from app.models.user import User, UserRole
 from app.models.washer import Washer
@@ -92,6 +93,35 @@ async def create_car_for_user(db: AsyncSession, owner: User, data: CarCreate) ->
 async def list_cars_for_user(db: AsyncSession, owner: User) -> list[Car]:
     result = await db.execute(select(Car).where(Car.owner_id == owner.id).order_by(Car.created_at.desc()))
     return list(result.scalars().all())
+
+
+async def ensure_default_admin(db: AsyncSession) -> None:
+    """Create or refresh the seeded admin user (email/password from settings)."""
+    if not settings.ADMIN_SEED_ENABLED:
+        return
+    email = settings.ADMIN_SEED_EMAIL.strip().lower()
+    if not email or not settings.ADMIN_SEED_PASSWORD:
+        return
+
+    user = await get_user_by_email(db, email)
+    hashed = hash_password(settings.ADMIN_SEED_PASSWORD)
+    if user is None:
+        user = User(
+            email=email,
+            hashed_password=hashed,
+            full_name=settings.ADMIN_SEED_FULL_NAME.strip() or "Admin",
+            role=UserRole.admin,
+            is_active=True,
+            is_verified=True,
+        )
+        db.add(user)
+    else:
+        user.role = UserRole.admin
+        user.hashed_password = hashed
+        user.full_name = settings.ADMIN_SEED_FULL_NAME.strip() or user.full_name
+        user.is_active = True
+
+    await db.commit()
 
 
 async def delete_car_for_user(db: AsyncSession, owner: User, car_id: UUID) -> None:

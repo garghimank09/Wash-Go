@@ -2,12 +2,12 @@ import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ChevronDown, LogOut, User } from 'lucide-react';
 
-import { useAuth } from '../context/AuthContext';
+import { usePartnerAuth } from '../context/PartnerAuthContext';
 import { mediaUrl } from '../lib/mediaUrl';
 import { cn } from '../lib/cn';
 
-export function CustomerNavMenu() {
-  const { user, logout } = useAuth();
+export function PartnerNavMenu() {
+  const { user, logoutPartner } = usePartnerAuth();
   const [open, setOpen] = useState(false);
   const ref = useRef(null);
   const avatarSrc = mediaUrl(user?.avatar_url);
@@ -51,7 +51,7 @@ export function CustomerNavMenu() {
         </span>
         <span className="hidden min-w-0 flex-1 sm:block">
           <span className="block truncate font-semibold text-wg-text">{user.full_name}</span>
-          <span className="block truncate text-[11px] text-wg-muted">{user.role === 'admin' ? 'Admin' : 'Member'}</span>
+          <span className="block truncate text-[11px] text-wg-muted">Partner</span>
         </span>
         <ChevronDown className={cn('size-4 shrink-0 text-wg-muted transition', open && 'rotate-180')} strokeWidth={2} aria-hidden />
       </button>
@@ -66,7 +66,7 @@ export function CustomerNavMenu() {
             <p className="truncate text-xs text-wg-muted">{user.email}</p>
           </div>
           <Link
-            to="/profile"
+            to="/partner/profile"
             role="menuitem"
             className="flex items-center gap-2 px-4 py-2.5 text-sm font-semibold text-wg-text transition hover:bg-wg-surface/80 dark:hover:bg-white/[0.06]"
             onClick={() => setOpen(false)}
@@ -80,7 +80,7 @@ export function CustomerNavMenu() {
             className="flex w-full items-center gap-2 px-4 py-2.5 text-left text-sm font-semibold text-wg-text transition hover:bg-wg-surface/80 dark:hover:bg-white/[0.06]"
             onClick={() => {
               setOpen(false);
-              logout();
+              logoutPartner();
             }}
           >
             <LogOut className="size-4 shrink-0 text-wg-muted" strokeWidth={1.75} aria-hidden />

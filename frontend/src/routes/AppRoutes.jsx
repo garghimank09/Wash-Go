@@ -22,6 +22,7 @@ import { BookingDetailPage } from '../pages/BookingDetailPage';
 import { BookingPage } from '../pages/BookingPage';
 import { BookingsPage } from '../pages/BookingsPage';
 import { CarsPage } from '../pages/CarsPage';
+import { CustomerProfilePage } from '../pages/CustomerProfilePage';
 import { DashboardPage } from '../pages/DashboardPage';
 import { LandingPage } from '../pages/LandingPage';
 import { LoginPage } from '../pages/LoginPage';
@@ -32,6 +33,7 @@ import { WasherDashboardPage } from '../pages/washer/WasherDashboardPage';
 import { WasherEarningsPage } from '../pages/washer/WasherEarningsPage';
 import { WasherJobPage } from '../pages/washer/WasherJobPage';
 import { WasherRequestsPage } from '../pages/washer/WasherRequestsPage';
+import { WasherProfilePage } from '../pages/washer/WasherProfilePage';
 import { WasherSchedulePage } from '../pages/washer/WasherSchedulePage';
 
 export function AppRoutes() {
@@ -60,6 +62,7 @@ export function AppRoutes() {
                 <Route path="schedule" element={<WasherSchedulePage />} />
                 <Route path="jobs/:id" element={<WasherJobPage />} />
                 <Route path="earnings" element={<WasherEarningsPage />} />
+                <Route path="profile" element={<WasherProfilePage />} />
               </Route>
             </Route>
           </Route>
@@ -73,6 +76,7 @@ export function AppRoutes() {
               <Route path="/booking" element={<BookingPage />} />
               <Route path="/bookings" element={<BookingsPage />} />
               <Route path="/bookings/:id" element={<BookingDetailPage />} />
+              <Route path="/profile" element={<CustomerProfilePage />} />
             </Route>
           </Route>
 

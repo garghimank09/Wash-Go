@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { ShieldCheck, Sparkles } from 'lucide-react';
 
+import { useAuth } from '../../context/AuthContext';
 import { usePartnerAuth } from '../../context/PartnerAuthContext';
 import { Button } from '../../ui/button';
 import { Input } from '../../ui/input';
@@ -10,6 +11,7 @@ import { getErrorMessage } from '../../services/api';
 import { isValidEmail } from '../../utils/validators';
 
 export function PartnerLoginPage() {
+  const { refreshUser, user: customerUser } = useAuth();
   const { loginPartner, user, initializing } = usePartnerAuth();
   const navigate = useNavigate();
   const location = useLocation();
@@ -26,6 +28,10 @@ export function PartnerLoginPage() {
         <p className="text-sm font-medium text-white/70">Checking partner session…</p>
       </div>
     );
+  }
+
+  if (customerUser?.role === 'admin') {
+    return <Navigate to="/admin" replace />;
   }
 
   if (user?.role === 'washer') {
@@ -50,6 +56,11 @@ export function PartnerLoginPage() {
         typeof from === 'string' && from.startsWith('/partner') && from !== '/partner/login' ? from : '/partner';
       navigate(safeFrom, { replace: true });
     } catch (err) {
+      if (err?.message === 'ADMIN_ROLE') {
+        await refreshUser();
+        navigate('/admin', { replace: true });
+        return;
+      }
       if (err?.message === 'PARTNER_ROLE') {
         setError('This portal is for approved WashGo partners only. Use the customer app to book washes.');
         return;

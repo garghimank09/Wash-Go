@@ -1,13 +1,11 @@
 import { Link } from 'react-router-dom';
-import { LogOut, Sparkles, ToggleLeft, ToggleRight } from 'lucide-react';
+import { Sparkles, ToggleLeft, ToggleRight } from 'lucide-react';
 
-import { usePartnerAuth } from '../../context/PartnerAuthContext';
+import { PartnerNavMenu } from '../../components/PartnerNavMenu';
 import { WasherTrustCompactBar } from '../../features/washer/WasherTrustCompactBar';
-import { Button } from '../../ui/button';
 import { cn } from '../../lib/cn';
 
 export function WasherTopBar({ av }) {
-  const { user, logoutPartner } = usePartnerAuth();
 
   return (
     <header className="relative sticky top-0 z-30 border-b border-white/15 bg-[color:var(--wg-glass-bg)]/95 px-4 py-3 shadow-sm backdrop-blur-2xl dark:border-white/10">
@@ -37,9 +35,7 @@ export function WasherTopBar({ av }) {
             {av.online ? <ToggleRight className="size-5" strokeWidth={1.75} aria-hidden /> : <ToggleLeft className="size-5" strokeWidth={1.75} aria-hidden />}
             {av.online ? 'Online' : 'Offline'}
           </button>
-          <Button type="button" variant="ghost" size="sm" className="px-2" onClick={() => logoutPartner()} aria-label="Log out">
-            <LogOut className="size-4" strokeWidth={1.75} />
-          </Button>
+          <PartnerNavMenu />
         </div>
       </div>
       <div className="mx-auto mt-2 flex w-full flex-wrap items-center gap-2">
@@ -67,9 +63,6 @@ export function WasherTopBar({ av }) {
           />
           {av.summary}
         </span>
-        {user?.full_name ? (
-          <span className="truncate text-xs font-semibold text-wg-muted">{user.full_name}</span>
-        ) : null}
       </div>
       <WasherTrustCompactBar />
     </header>
