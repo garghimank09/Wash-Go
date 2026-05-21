@@ -55,25 +55,28 @@ export function Navbar({ variant = 'marketing', onMenuClick }) {
   return (
     <header
       className={cn(
-        'sticky top-0 z-40 border-b border-white/25 wg-glass-surface shadow-sm dark:border-white/10',
+        'sticky top-0 z-40 border-b border-white/25 wg-glass-surface shadow-sm shadow-cyan-500/[0.04] dark:border-white/10 dark:shadow-cyan-500/[0.02]',
       )}
     >
       <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4 sm:px-6">
         <Link to="/" className="text-xl font-black tracking-tight text-wg-text">
           Wash<span className="text-cyan-500">Go</span>
         </Link>
-        <nav className="hidden items-center gap-8 text-sm font-medium text-wg-muted md:flex">
+        <nav className="hidden items-center gap-6 text-sm font-medium text-wg-muted lg:flex">
+          <a href="#why-washgo" className="transition hover:text-cyan-600 dark:hover:text-cyan-400">
+            Why WashGo
+          </a>
+          <a href="#how-it-works" className="transition hover:text-cyan-600 dark:hover:text-cyan-400">
+            How it works
+          </a>
           <a href="#features" className="transition hover:text-cyan-600 dark:hover:text-cyan-400">
             Features
           </a>
+          <a href="#experience" className="transition hover:text-cyan-600 dark:hover:text-cyan-400">
+            Preview
+          </a>
           <a href="#plans" className="transition hover:text-cyan-600 dark:hover:text-cyan-400">
             Plans
-          </a>
-          <a href="#ai" className="transition hover:text-cyan-600 dark:hover:text-cyan-400">
-            AI
-          </a>
-          <a href="#builders" className="transition hover:text-cyan-600 dark:hover:text-cyan-400">
-            For builders
           </a>
         </nav>
         <div className="flex items-center gap-2 sm:gap-3">
