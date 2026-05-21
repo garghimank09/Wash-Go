@@ -4,15 +4,16 @@ import Skeleton from 'react-loading-skeleton';
 
 import { Card } from '../../../ui/card';
 import { ChartMeasuredContainer } from '../../dashboard/ChartMeasuredContainer';
+import { formatRupees, formatRupeesAxis } from '../../../utils/format';
 
 export function AdminRevenueChart({ data, chartsReady }) {
   const gradId = useId().replace(/:/g, '');
 
   if (!chartsReady) {
     return (
-      <Card variant="glass" className="min-h-[220px] min-w-0">
+      <Card variant="glass" className="min-w-0">
         <h2 className="wg-heading-section">Revenue</h2>
-        <p className="mt-1 text-xs text-wg-muted">Gross booking volume by month (USD, mock).</p>
+        <p className="mt-1 text-xs text-wg-muted">Gross booking volume by month (INR) from completed jobs.</p>
         <div className="mt-6 space-y-2">
           <Skeleton height={180} borderRadius={12} />
         </div>
@@ -21,10 +22,10 @@ export function AdminRevenueChart({ data, chartsReady }) {
   }
 
   return (
-    <Card variant="glass" className="min-h-[220px] min-w-0 transition hover:ring-1 hover:ring-cyan-500/20 dark:hover:ring-cyan-400/15">
+    <Card variant="glass" className="min-w-0 transition hover:ring-1 hover:ring-cyan-500/20 dark:hover:ring-cyan-400/15">
       <div>
         <h2 className="wg-heading-section">Revenue</h2>
-        <p className="mt-1 text-xs text-wg-muted">Gross booking volume by month (USD, mock).</p>
+        <p className="mt-1 text-xs text-wg-muted">Gross booking volume by month (INR) from completed jobs.</p>
       </div>
       <ChartMeasuredContainer className="mt-4 h-52 w-full min-w-0">
         {({ width, height }) => (
@@ -39,7 +40,7 @@ export function AdminRevenueChart({ data, chartsReady }) {
               <CartesianGrid strokeDasharray="3 3" className="stroke-wg-border" vertical={false} />
               <XAxis dataKey="label" tick={{ fontSize: 11, fill: 'var(--wg-muted)' }} axisLine={false} tickLine={false} />
               <YAxis
-                tickFormatter={(v) => `$${v >= 1000 ? `${(v / 1000).toFixed(0)}k` : v}`}
+                tickFormatter={(v) => formatRupeesAxis(v)}
                 width={44}
                 tick={{ fontSize: 11, fill: 'var(--wg-muted)' }}
                 axisLine={false}
@@ -53,7 +54,7 @@ export function AdminRevenueChart({ data, chartsReady }) {
                   background: 'var(--wg-surface-elevated)',
                   color: 'var(--wg-text)',
                 }}
-                formatter={(v) => [`$${Number(v).toLocaleString()}`, 'Revenue']}
+                formatter={(v) => [formatRupees(Number(v), { maximumFractionDigits: 2 }), 'Revenue']}
               />
               <Area type="monotone" dataKey="revenue" stroke="var(--wg-brand-from)" fill={`url(#${gradId})`} strokeWidth={2} />
             </AreaChart>

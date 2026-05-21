@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 
 import { MembershipCard } from '../../components/MembershipCard';
+import { MEMBERSHIP_PLANS } from '../../constants/config';
 import { Button } from '../../ui/button';
 import { Card } from '../../ui/card';
 import { cn } from '../../lib/cn';
@@ -171,22 +172,15 @@ export function LandingHome() {
             </p>
           </div>
           <div className="mt-12 grid gap-6 md:grid-cols-3">
-            <MembershipCard
-              title="Spark"
-              price="$19"
-              perks={['2 washes / month', 'Standard scheduling', 'Email support']}
-            />
-            <MembershipCard
-              title="Gleam"
-              price="$39"
-              highlighted
-              perks={['5 washes / month', 'Priority washers', 'In-app AI summaries']}
-            />
-            <MembershipCard
-              title="Apex Fleet"
-              price="$99"
-              perks={['12 washes / month', 'Dedicated account manager', 'Fleet analytics']}
-            />
+            {MEMBERSHIP_PLANS.map((plan) => (
+              <MembershipCard
+                key={plan.id}
+                title={plan.title}
+                price={plan.price}
+                highlighted={plan.highlighted}
+                perks={plan.perks}
+              />
+            ))}
           </div>
         </div>
       </section>

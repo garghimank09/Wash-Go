@@ -58,7 +58,7 @@ class Booking(Base):
     latitude: Mapped[Decimal | None] = mapped_column(Numeric(10, 7), nullable=True)
     longitude: Mapped[Decimal | None] = mapped_column(Numeric(10, 7), nullable=True)
     price_cents: Mapped[int] = mapped_column(nullable=False, default=0)
-    currency: Mapped[str] = mapped_column(String(3), nullable=False, default="USD")
+    currency: Mapped[str] = mapped_column(String(3), nullable=False, default="INR")
     notes: Mapped[str | None] = mapped_column(Text, nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False

@@ -3,6 +3,7 @@ import { CalendarDays, CheckCircle2, Clock, Wallet } from 'lucide-react';
 
 import { useReducedMotion } from '../../lib/useReducedMotion';
 import { StatCard } from '../../ui/stat-card';
+import { formatCents } from '../../utils/format';
 
 const container = (reduced) => ({
   hidden: { opacity: reduced ? 1 : 0 },
@@ -66,10 +67,9 @@ export function DashboardStatsRow({ stats, loading }) {
           variant="glass"
           icon={Wallet}
           label="Completed wash value (est.)"
-          value={stats.revenue / 100}
+          value={formatCents(stats.revenue)}
           loading={loading}
-          prefix="$"
-          decimals={2}
+          animate={false}
         />
       </m.div>
     </m.div>

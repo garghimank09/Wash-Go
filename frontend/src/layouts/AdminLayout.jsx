@@ -4,6 +4,8 @@ import { AdminBookingSyncBridge } from '../components/BookingSyncBridge';
 import { AdminHeader } from '../components/AdminHeader';
 import { AdminSidebar } from '../components/AdminSidebar';
 import { AssistantDock } from '../components/AssistantDock';
+import { railMainOffset } from '../lib/collapsibleRailSidebar';
+import { cn } from '../lib/cn';
 import { PageShell } from './PageShell';
 import { PageTransition } from './PageTransition';
 
@@ -27,7 +29,12 @@ export function AdminLayout() {
         />
       ) : null}
       <AdminSidebar mobileOpen={mobileMenu} onNavigate={() => setMobileMenu(false)} />
-      <div className="relative flex min-w-0 flex-1 flex-col">
+      <div
+        className={cn(
+          'relative flex min-w-0 flex-1 flex-col transition-[padding] duration-200 ease-out',
+          railMainOffset('admin'),
+        )}
+      >
         <AdminHeader onMenuClick={() => setMobileMenu((v) => !v)} />
         <main className="flex-1 p-4 md:p-6 lg:p-8">
           <PageShell maxWidth="wide" className="space-y-5 md:space-y-6">

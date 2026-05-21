@@ -3,6 +3,7 @@ import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YA
 
 import { Card } from '../../ui/card';
 import { ChartMeasuredContainer } from './ChartMeasuredContainer';
+import { formatRupees, formatRupeesAxis } from '../../utils/format';
 
 function monthKey(d) {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
@@ -67,7 +68,7 @@ export function DashboardRevenueChart({ items }) {
       <div className="flex flex-wrap items-start justify-between gap-2">
         <div>
           <h2 className="wg-heading-section">Revenue by month</h2>
-          <p className="mt-1 text-xs text-wg-muted">Completed bookings only — by scheduled month (USD).</p>
+          <p className="mt-1 text-xs text-wg-muted">Completed bookings only — by scheduled month (INR).</p>
         </div>
       </div>
       <ChartMeasuredContainer className="mt-4 h-52 w-full min-w-0">
@@ -96,7 +97,7 @@ export function DashboardRevenueChart({ items }) {
                   background: 'var(--wg-surface-elevated)',
                   color: 'var(--wg-text)',
                 }}
-                formatter={(value) => [`$${Number(value).toFixed(2)}`, 'Revenue']}
+                formatter={(value) => [formatRupees(Number(value), { maximumFractionDigits: 2 }), 'Revenue']}
               />
               <Area type="monotone" dataKey="revenue" name="Revenue" stroke="var(--wg-brand-from)" fill={`url(#${gradId})`} strokeWidth={2} />
             </AreaChart>

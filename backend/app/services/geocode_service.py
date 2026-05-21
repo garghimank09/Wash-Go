@@ -14,6 +14,8 @@ _USER_AGENT = "WashGo/1.0 (dev; contact@washgo.local)"
 # Delhi NCR viewbox (left, top, right, bottom) — bias results
 _DELHI_VIEWBOX = "76.8,28.9,77.6,28.4"
 
+_MAX_VARIANTS = 8
+
 
 def _query_variants(address: str) -> list[str]:
     base = (address or "").strip()
@@ -23,17 +25,45 @@ def _query_variants(address: str) -> list[str]:
     variants: list[str] = []
 
     def add(q: str) -> None:
+        if len(variants) >= _MAX_VARIANTS:
+            return
         q = re.sub(r"\s+", " ", q).strip()
         if q and q.lower() not in seen:
             seen.add(q.lower())
             variants.append(q)
 
+    parts = [p.strip() for p in re.split(r"[,،]", base) if p.strip()]
+    india = looks_like_india(base)
+    low = base.lower()
+
+    # Long Google-style strings: try locality-first (house numbers rarely match OSM).
+    if len(base) > 60 and len(parts) >= 2:
+        for n in (2, 3, 4):
+            if len(parts) >= n:
+                add(", ".join(parts[-n:]))
+        for segment in reversed(parts):
+            if re.search(
+                r"okhla|phase\s*[-]?\s*\d|industrial|colony|pocket|delhi|noida",
+                segment,
+                re.IGNORECASE,
+            ):
+                add(f"{segment}, New Delhi, India")
+
     add(base)
-    if looks_like_india(base):
+
+    if india:
+        if "okhla" in low:
+            phase = re.search(r"okhla\s*phase\s*[-]?\s*([ivx\d]+)", low, re.IGNORECASE)
+            if phase:
+                add(f"Okhla Phase {phase.group(1)}, New Delhi, India")
+            add("Okhla Phase II, New Delhi, India")
+            add("Okhla Industrial Estate, New Delhi, India")
+            add("Okhla, New Delhi, India")
         if not re.search(r"\bindia\b", base, re.IGNORECASE):
-            add(f"{base}, Okhla, New Delhi, India")
-            add(f"{base}, New Delhi, Delhi, India")
-            add(f"{base}, India")
+            tail = ", ".join(parts[-2:]) if len(parts) >= 2 else base
+            add(f"{tail}, New Delhi, Delhi, India")
+            add(f"{tail}, India")
+
     return variants
 
 
@@ -103,19 +133,45 @@ async def _photon_search(query: str) -> tuple[float, float] | None:
 async def geocode_address(address: str) -> tuple[float, float] | None:
     """Resolve address to (lat, lng), biased for India / Delhi NCR."""
     india = looks_like_india(address)
-    for query in _query_variants(address):
+    variants = _query_variants(address)
+    if len((address or "").strip()) > 60:
+        variants = sorted(variants, key=len)
+
+    for query in variants:
         coords = await _nominatim_search(query, countrycodes="in" if india else None)
         if coords:
             return coords
-        if india:
+
+    if india:
+        for query in variants[:5]:
             coords = await _nominatim_search(query, countrycodes="in", viewbox=_DELHI_VIEWBOX)
             if coords:
                 return coords
+        for query in variants[:4]:
             coords = await _photon_search(query)
             if coords:
                 return coords
-    if india:
-        return await _photon_search(_query_variants(address)[0] if _query_variants(address) else address)
+
+    return None
+
+
+async def geocode_for_preview(address: str) -> tuple[float, float, bool] | None:
+    """
+    Resolve address for booking UI.
+    Returns (lat, lng, approximate). approximate=True when using area fallback.
+    """
+    trimmed = (address or "").strip()
+    if len(trimmed) < 3:
+        return None
+
+    coords = await geocode_address(trimmed)
+    if coords:
+        return coords[0], coords[1], False
+
+    if looks_like_india(trimmed):
+        lat, lng = fallback_coords_for_address(trimmed)
+        return lat, lng, True
+
     return None
 
 

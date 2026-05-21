@@ -12,10 +12,10 @@ export function AdminEarningsCard({ earnings }) {
   ];
 
   return (
-    <Card variant="glass" className="h-full min-w-0 border-white/35 dark:border-white/10">
+    <Card variant="enterprise" className="min-w-0 border-white/35 dark:border-white/10">
       <h2 className="wg-heading-section">Earnings overview</h2>
-      <p className="mt-1 text-xs text-wg-muted">Settlement pipeline snapshot (mock).</p>
-      <ul className="mt-5 space-y-3">
+      <p className="mt-1 text-xs text-wg-muted">Settlement pipeline snapshot (30d gross).</p>
+      <ul className="mt-3 space-y-2">
         {rows.map((r) => (
           <li
             key={r.label}

@@ -6,6 +6,7 @@ import { Car, CheckCircle, ChevronDown, MapPin, Sparkles } from 'lucide-react';
 
 import { bookingsService } from '../../services/bookingsService';
 import { carsService } from '../../services/carsService';
+import { geocodeService } from '../../services/geocodeService';
 import { getErrorMessage } from '../../services/api';
 import { pricingService } from '../../services/pricingService';
 import { useReducedMotion } from '../../lib/useReducedMotion';
@@ -17,6 +18,7 @@ import { ReviewStep } from './steps/ReviewStep';
 import { ScheduleStep } from './steps/ScheduleStep';
 import { VehicleStep } from './steps/VehicleStep';
 import { PACKAGES } from '../../constants/config';
+import { DEFAULT_CURRENCY } from '../../constants/config';
 import { formatCents } from '../../utils/format';
 import { BookingCarsSkeleton } from './BookingCarsSkeleton';
 import { BookingSummaryPanel } from './BookingSummaryPanel';
@@ -27,6 +29,32 @@ const STEP_META = [
   { key: 'when', title: 'Where & when', subtitle: 'Address & time', Icon: MapPin },
   { key: 'review', title: 'Review', subtitle: 'Confirm', Icon: CheckCircle },
 ];
+
+function pad2(n) {
+  return String(n).padStart(2, '0');
+}
+
+function toLocalDateValue(date) {
+  const d = new Date(date);
+  return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
+}
+
+function toLocalTimeValue(date) {
+  const d = new Date(date);
+  return `${pad2(d.getHours())}:${pad2(d.getMinutes())}`;
+}
+
+function defaultScheduleParts(hoursAhead = 24) {
+  const d = new Date();
+  d.setTime(d.getTime() + hoursAhead * 3600 * 1000);
+  return { date: toLocalDateValue(d), time: toLocalTimeValue(d) };
+}
+
+function combineDateAndTime(dateStr, timeStr) {
+  if (!dateStr || !timeStr) return null;
+  const d = new Date(`${dateStr}T${timeStr}`);
+  return Number.isNaN(d.getTime()) ? null : d;
+}
 
 function StepConnector({ filled, reduced }) {
   return (
@@ -54,12 +82,16 @@ export function BookingWizard() {
   const [cars, setCars] = useState([]);
   const [loadingCars, setLoadingCars] = useState(true);
   const [carId, setCarId] = useState('');
-  const [packageId, setPackageId] = useState('deluxe');
+  const [packageId, setPackageId] = useState('super_deluxe');
   const [vehicleSize, setVehicleSize] = useState('sedan');
   const [address, setAddress] = useState('');
   const [serviceLat, setServiceLat] = useState(null);
   const [serviceLng, setServiceLng] = useState(null);
-  const [hours, setHours] = useState(24);
+  const [scheduledDate, setScheduledDate] = useState(() => defaultScheduleParts(24).date);
+  const [scheduledTime, setScheduledTime] = useState(() => defaultScheduleParts(24).time);
+  const [geocoding, setGeocoding] = useState(false);
+  const [geocodeError, setGeocodeError] = useState(null);
+  const geocodeSeqRef = useRef(0);
   const [priceCents, setPriceCents] = useState(null);
   const [pricingLoading, setPricingLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -113,18 +145,88 @@ export function BookingWizard() {
     };
   }, [packageId, vehicleSize]);
 
-  const scheduledIso = useMemo(() => {
-    const d = new Date();
-    d.setTime(d.getTime() + Math.max(1, hours) * 3600 * 1000);
-    return d.toISOString();
-  }, [hours]);
+  const scheduledDateTime = useMemo(
+    () => combineDateAndTime(scheduledDate, scheduledTime),
+    [scheduledDate, scheduledTime],
+  );
 
-  const scheduledLabel = useMemo(() => new Date(scheduledIso).toLocaleString(), [scheduledIso]);
+  const scheduledIso = useMemo(() => {
+    if (scheduledDateTime) return scheduledDateTime.toISOString();
+    return new Date(Date.now() + 86400000).toISOString();
+  }, [scheduledDateTime]);
+
+  const scheduledLabel = useMemo(
+    () => (scheduledDateTime ? scheduledDateTime.toLocaleString() : '—'),
+    [scheduledDateTime],
+  );
+
+  const scheduledInFuture = useMemo(
+    () => scheduledDateTime != null && scheduledDateTime.getTime() > Date.now() + 60_000,
+    [scheduledDateTime],
+  );
+
+  const minDate = useMemo(() => toLocalDateValue(new Date()), []);
+
+  const minTime = useMemo(() => {
+    const today = toLocalDateValue(new Date());
+    if (scheduledDate !== today) return undefined;
+    const d = new Date();
+    d.setMinutes(d.getMinutes() + 5);
+    return toLocalTimeValue(d);
+  }, [scheduledDate]);
+
+  useEffect(() => {
+    const trimmed = address.trim();
+    if (trimmed.length < 5) {
+      setServiceLat(null);
+      setServiceLng(null);
+      setGeocodeError(null);
+      setGeocoding(false);
+      return undefined;
+    }
+
+    const seq = ++geocodeSeqRef.current;
+    const timer = window.setTimeout(async () => {
+      setGeocoding(true);
+      setGeocodeError(null);
+      try {
+        const { lat, lng, approximate } = await geocodeService.resolve(trimmed);
+        if (seq !== geocodeSeqRef.current) return;
+        setServiceLat(lat);
+        setServiceLng(lng);
+        setGeocodeError(
+          approximate
+            ? 'Approximate area — drag the pin to your exact spot (gate, parking, building).'
+            : null,
+        );
+      } catch (err) {
+        if (seq !== geocodeSeqRef.current) return;
+        setGeocodeError(getErrorMessage(err));
+        setServiceLat(null);
+        setServiceLng(null);
+      } finally {
+        if (seq === geocodeSeqRef.current) setGeocoding(false);
+      }
+    }, 800);
+
+    return () => {
+      window.clearTimeout(timer);
+    };
+  }, [address]);
 
   const canNextFrom = (s) => {
     if (s === 0) return cars.length > 0 && !!carId;
     if (s === 1) return true;
-    if (s === 2) return address.trim().length >= 5 && serviceLat != null && serviceLng != null;
+    if (s === 2) {
+      return (
+        address.trim().length >= 5 &&
+        serviceLat != null &&
+        serviceLng != null &&
+        !geocoding &&
+        Boolean(scheduledDate && scheduledTime) &&
+        scheduledInFuture
+      );
+    }
     return false;
   };
 
@@ -133,7 +235,11 @@ export function BookingWizard() {
     if (!canNextFrom(step)) {
       if (step === 2) {
         if (address.trim().length < 5) toast.error('Enter a complete service address (at least 5 characters).');
-        else toast.error('Set your exact location on the map (drag pin or use my location).');
+        else if (geocoding) toast.error('Still locating your address on the map…');
+        else if (serviceLat == null || serviceLng == null)
+          toast.error('We could not place that address — refine it or set the pin on the map.');
+        else if (!scheduledDate || !scheduledTime) toast.error('Choose a service date and time.');
+        else if (!scheduledInFuture) toast.error('Choose a date and time in the future.');
       }
       return;
     }
@@ -160,6 +266,10 @@ export function BookingWizard() {
       toast.error('Set your exact location on the map.');
       return;
     }
+    if (!scheduledInFuture) {
+      toast.error('Scheduled time must be in the future.');
+      return;
+    }
     if (priceCents == null) {
       toast.error('Pricing unavailable — check API connection.');
       return;
@@ -175,7 +285,7 @@ export function BookingWizard() {
         latitude: serviceLat,
         longitude: serviceLng,
         price_cents: priceCents,
-        currency: 'USD',
+        currency: DEFAULT_CURRENCY,
         notes,
       });
       toast.success('Booking confirmed — taking you to the detail.');
@@ -363,10 +473,17 @@ export function BookingWizard() {
                     onLocationChange={({ lat, lng }) => {
                       setServiceLat(lat);
                       setServiceLng(lng);
+                      setGeocodeError(null);
                     }}
-                    hours={hours}
-                    setHours={setHours}
+                    scheduledDate={scheduledDate}
+                    setScheduledDate={setScheduledDate}
+                    scheduledTime={scheduledTime}
+                    setScheduledTime={setScheduledTime}
                     scheduledLabel={scheduledLabel}
+                    geocoding={geocoding}
+                    geocodeError={geocodeError}
+                    minDate={minDate}
+                    minTime={minTime}
                   />
                 ) : null}
                 {step === 3 ? (

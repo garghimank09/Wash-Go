@@ -4,7 +4,7 @@ import { useLayoutEffect, useRef, useState } from 'react';
  * Gives Recharts a real pixel size after layout. Using width/height "100%" inside
  * ResponsiveContainer often logs width(-1)/height(-1) on first paint (grid, lazy, Strict Mode).
  */
-export function ChartMeasuredContainer({ className, children }) {
+export function ChartMeasuredContainer({ className, style, children }) {
   const ref = useRef(null);
   const [box, setBox] = useState({ width: 0, height: 0 });
 
@@ -29,7 +29,7 @@ export function ChartMeasuredContainer({ className, children }) {
   }, []);
 
   return (
-    <div ref={ref} className={className}>
+    <div ref={ref} className={className} style={style}>
       {box.width > 0 && box.height > 0 ? children({ width: box.width, height: box.height }) : null}
     </div>
   );

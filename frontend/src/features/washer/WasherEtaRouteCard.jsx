@@ -45,7 +45,7 @@ export function WasherEtaRouteCard({ etaMinutes, address, phase, tracking }) {
 
       <div className={cn('relative w-full', useLiveMap ? 'h-52 sm:h-56' : 'h-[10rem] sm:h-44')}>
         {useLiveMap ? (
-          <LiveTrackingMap tracking={tracking} className="absolute inset-0" perspective="washer" />
+          <LiveTrackingMap tracking={tracking} className="absolute inset-0" perspective="washer" embedded />
         ) : (
           <svg className="absolute inset-0 h-full w-full" viewBox="0 0 320 140" preserveAspectRatio="xMidYMid slice" aria-hidden>
             <defs>
@@ -96,7 +96,7 @@ export function WasherEtaRouteCard({ etaMinutes, address, phase, tracking }) {
           />
         ) : null}
 
-        <div className="absolute inset-x-0 top-3 z-[500] flex items-start justify-between px-4 pointer-events-none">
+        <div className="absolute inset-x-0 top-3 z-10 flex items-start justify-between px-4 pointer-events-none">
           <div className="flex items-center gap-2 rounded-full border border-white/20 bg-black/30 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-white/90 shadow-inner backdrop-blur-md">
             <Navigation className="size-3.5 text-cyan-200" strokeWidth={2} aria-hidden />
             {heading ? 'Live navigation' : serviceMode ? 'On-site ops' : 'Route preview'}
@@ -122,7 +122,7 @@ export function WasherEtaRouteCard({ etaMinutes, address, phase, tracking }) {
           )}
         </div>
 
-        <div className="absolute inset-x-0 bottom-3 z-[500] flex items-end justify-between gap-3 px-4 pointer-events-none">
+        <div className="absolute inset-x-0 bottom-3 z-10 flex items-end justify-between gap-3 px-4 pointer-events-none">
           <div>
             <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-white/55">ETA</p>
             <p className="mt-0.5 text-3xl font-black tabular-nums tracking-tight text-white drop-shadow-md sm:text-4xl">

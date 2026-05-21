@@ -2,7 +2,6 @@ import { useMemo, useState } from 'react';
 
 import { useAdminBookings } from '../../../hooks/useAdminBookings';
 import { toAdminTableRow } from '../../../lib/adminBookingsMap';
-import { adminComplaintsRows } from '../mock/adminMock';
 
 function norm(s) {
   return String(s || '')
@@ -36,7 +35,7 @@ export function useAdminOperations() {
   }, [items, query, statusFilter]);
 
   const complaints = useMemo(() => {
-    let rows = [...adminComplaintsRows];
+    let rows = [];
     const q = norm(query);
     if (q) {
       rows = rows.filter(

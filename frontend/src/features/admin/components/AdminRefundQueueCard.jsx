@@ -16,13 +16,13 @@ export function AdminRefundQueueCard({ rows }) {
   if (!refunds.length) return null;
 
   return (
-    <Card variant="glass" className="border-l-4 border-l-rose-500/50 border-white/20 p-4 dark:border-white/10">
+    <Card variant="enterprise" className="border-l-4 border-l-rose-500/50 border-white/20 p-4 dark:border-white/10">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="flex items-center gap-2">
           <Banknote className="size-5 text-rose-600 dark:text-rose-400" strokeWidth={1.75} aria-hidden />
           <div>
             <h2 className="wg-heading-section">Refund & credits queue</h2>
-            <p className="mt-0.5 text-xs text-wg-muted">Cases with refund motion (mock).</p>
+            <p className="mt-0.5 text-xs text-wg-muted">Escalations and overdue assignments from live queue.</p>
           </div>
         </div>
         <Link to="/admin/complaints" className="text-xs font-bold text-cyan-700 dark:text-cyan-300">

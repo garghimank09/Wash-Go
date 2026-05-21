@@ -10,9 +10,10 @@ router = APIRouter(prefix="/pricing", tags=["Pricing"])
 
 # Base package prices (cents) — MVP static table; replace with rules engine later.
 _PACKAGE_BASE: dict[str, int] = {
-    "basic": 2499,
-    "deluxe": 3999,
-    "premium": 5999,
+    "basic": 24900,
+    "deluxe": 39900,
+    "super_deluxe": 49900,
+    "premium": 64900,
 }
 _SIZE_MULT: dict[str, float] = {
     "compact": 1.0,
@@ -31,7 +32,7 @@ async def calculate_price(
     estimated = int(round(base * mult))
     return PricingCalculateResponse(
         estimated_price_cents=estimated,
-        currency="USD",
+        currency="INR",
         package_id=payload.package_id,
         vehicle_size=payload.vehicle_size,
         notes="MVP estimate; final price set at booking confirmation.",

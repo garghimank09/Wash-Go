@@ -20,7 +20,11 @@ export function AdminRoute() {
   }, [user, allowed]);
 
   if (!user) {
-    return null;
+    return (
+      <div className="flex min-h-[40vh] items-center justify-center p-8">
+        <p className="text-sm text-wg-muted">Loading admin console…</p>
+      </div>
+    );
   }
 
   if (!allowed) {

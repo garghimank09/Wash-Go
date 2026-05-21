@@ -410,6 +410,7 @@ async def list_open_offers(db: AsyncSession, user: User) -> list[BookingOfferRea
                 service_address=b.service_address,
                 price_cents=b.price_cents,
                 currency=b.currency,
+                notes=b.notes,
                 car_label=car_label,
                 customer_name=cust.full_name if cust else None,
             )

@@ -4,6 +4,8 @@ import { AssistantDock } from '../components/AssistantDock';
 import { CustomerBookingSyncBridge } from '../components/BookingSyncBridge';
 import { Navbar } from '../components/Navbar';
 import { Sidebar } from '../components/Sidebar';
+import { railMainOffset } from '../lib/collapsibleRailSidebar';
+import { cn } from '../lib/cn';
 import { PageShell } from './PageShell';
 import { PageTransition } from './PageTransition';
 
@@ -22,7 +24,7 @@ export function MainLayout() {
         />
       ) : null}
       <Sidebar mobileOpen={mobileMenu} onNavigate={() => setMobileMenu(false)} />
-      <div className="flex min-w-0 flex-1 flex-col">
+      <div className={cn('flex min-w-0 flex-1 flex-col transition-[padding] duration-200 ease-out', railMainOffset())}>
         <Navbar variant="dashboard" onMenuClick={() => setMobileMenu((v) => !v)} />
         <main className="flex-1 p-4 md:p-8">
           <PageShell>

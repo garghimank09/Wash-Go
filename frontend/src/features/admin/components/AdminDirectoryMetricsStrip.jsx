@@ -45,7 +45,7 @@ function MetricCard({ label, value, sub, accent, isText }) {
   }[accent] || 'border-l-cyan-500/60';
 
   return (
-    <Card variant="glass" className={cn('border-l-4 p-4', border, 'border-y border-r border-white/15 dark:border-white/10')}>
+    <Card variant="enterprise" className={cn('border-l-4 p-4', border, 'border-y border-r border-white/15 dark:border-white/10')}>
       <p className="text-[10px] font-black uppercase tracking-wide text-wg-muted">{label}</p>
       <p className={cn('mt-1 font-black text-wg-text', isText ? 'text-lg' : 'text-2xl tabular-nums')}>{value}</p>
       <p className="mt-0.5 text-[10px] text-wg-muted">{sub}</p>

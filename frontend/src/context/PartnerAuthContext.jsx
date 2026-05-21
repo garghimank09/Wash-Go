@@ -8,6 +8,7 @@ import {
 } from 'react';
 import { Outlet } from 'react-router-dom';
 
+import { redirectToMarketingHome } from '../lib/appPaths';
 import { partnerAuthService } from '../services/partnerAuthService';
 
 const PartnerAuthContext = createContext(null);
@@ -19,6 +20,7 @@ function usePartnerAuthState() {
   const logoutPartner = useCallback(() => {
     partnerAuthService.setToken(null);
     setUser(null);
+    redirectToMarketingHome();
   }, []);
 
   const loginPartner = useCallback(async (email, password) => {

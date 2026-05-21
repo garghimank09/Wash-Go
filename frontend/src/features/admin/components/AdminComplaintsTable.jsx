@@ -59,9 +59,9 @@ function formatSlaRemaining(iso) {
 export function AdminComplaintsTable({
   rows,
   title = 'Complaints',
-  description = 'SLA timers, escalation, refunds (mock).',
-  emptyTitle = 'No complaints match',
-  emptyDescription = 'Adjust filters or search.',
+  description = 'SLA timers, escalation, and refunds — populated when complaints API is connected.',
+  emptyTitle = 'No complaints yet',
+  emptyDescription = 'Cases will appear here when the complaints service is connected.',
 }) {
   const [pulse, setPulse] = useState(0);
   useEffect(() => {
@@ -70,19 +70,19 @@ export function AdminComplaintsTable({
   }, []);
 
   const onResolve = () => {
-    toast('Demo data — workflow hooks to admin API.', { icon: 'ℹ️' });
+    toast('Complaints workflow requires admin cases API.', { icon: 'ℹ️' });
   };
 
   if (!rows?.length) {
     return (
-      <Card variant="glass" className="min-w-0 p-8">
+      <Card variant="enterprise" className="min-w-0 p-8">
         <EmptyState icon={MessageSquareWarning} title={emptyTitle} description={emptyDescription} />
       </Card>
     );
   }
 
   return (
-    <Card variant="glass" className="min-w-0 overflow-hidden border-white/35 p-0 dark:border-white/10">
+    <Card variant="enterprise" className="min-w-0 overflow-hidden border-white/35 p-0 dark:border-white/10">
       <div className="border-b border-white/15 px-6 py-4 dark:border-white/10">
         <h2 className="wg-heading-section">{title}</h2>
         <p className="mt-1 text-xs text-wg-muted">{description}</p>

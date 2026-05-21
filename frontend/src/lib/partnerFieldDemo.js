@@ -1,3 +1,5 @@
+import { withBookingMeta } from './bookingMeta';
+
 /** Deterministic demo enrichment for partner UI — no API writes; stable per entity. */
 export function hashString(s) {
   const str = String(s || '');
@@ -44,9 +46,10 @@ export function enrichDispatchOffer(offer) {
  */
 export function enrichPartnerJob(job) {
   if (!job) return null;
-  const customerName = job.customer_name ?? job.customerName ?? 'Customer';
-  const customerPhone = job.customer_phone ?? job.customerPhone ?? null;
-  const h = hashString(`${job.id}|${job.service_address}|${customerName}|${job.vehicle || job.car_label}`);
+  const base = withBookingMeta(job);
+  const customerName = base.customer_name ?? base.customerName ?? 'Customer';
+  const customerPhone = base.customer_phone ?? base.customerPhone ?? null;
+  const h = hashString(`${base.id}|${base.service_address}|${customerName}|${base.vehicle || base.car_label}`);
   const tiers = ['Silver', 'Gold', 'Platinum'];
   const tagPools = [
     ['Ceramic-safe soap', 'Soft-close doors'],
@@ -58,8 +61,8 @@ export function enrichPartnerJob(job) {
     'Tree sap on hood — spot-treat before foam.',
     'Recent ceramic coat — skip aggressive clay.',
   ];
-  const warning = job.vehicleConditionWarning ?? (h % 6 === 0 ? null : warnings[h % warnings.length]);
-  const loyaltyTier = job.loyaltyTier ?? tiers[h % tiers.length];
+  const warning = base.vehicleConditionWarning ?? (h % 6 === 0 ? null : warnings[h % warnings.length]);
+  const loyaltyTier = base.loyaltyTier ?? tiers[h % tiers.length];
   const premiumByTier =
     loyaltyTier === 'Platinum'
       ? 'Elite tier · concierge routing'
@@ -67,16 +70,16 @@ export function enrichPartnerJob(job) {
         ? 'Gold member · priority rinse lane'
         : 'Silver · standard care perks';
   return {
-    ...job,
+    ...base,
     customerName,
     customerPhone,
     partnerFieldUx: {
       vehicleConditionWarning: warning,
-      specialHandlingTags: job.specialHandlingTags ?? tagPools[h % tagPools.length],
-      repeatCustomer: job.repeatCustomer ?? h % 5 !== 0,
+      specialHandlingTags: base.specialHandlingTags ?? tagPools[h % tagPools.length],
+      repeatCustomer: base.repeatCustomer ?? h % 5 !== 0,
       loyaltyTier,
-      premiumMemberLabel: job.premiumMemberLabel ?? premiumByTier,
-      serviceNote: job.serviceNote ?? 'Preferred microfiber on glass; no ammonia on tint.',
+      premiumMemberLabel: base.premiumMemberLabel ?? premiumByTier,
+      serviceNote: base.serviceNote ?? 'Preferred microfiber on glass; no ammonia on tint.',
     },
   };
 }

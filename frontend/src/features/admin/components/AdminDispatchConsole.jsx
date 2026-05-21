@@ -28,7 +28,7 @@ export function AdminDispatchConsole({ queue, selected, selectedId, onSelect, su
   return (
     <div className="grid min-w-0 gap-4 xl:grid-cols-12">
       <Card
-        variant="glass"
+        variant="enterprise"
         className="min-w-0 border-l-4 border-l-violet-500/55 border-white/20 p-0 xl:col-span-5 dark:border-white/10"
       >
         <div className="border-b border-white/10 px-4 py-3 dark:border-white/5">
@@ -76,7 +76,7 @@ export function AdminDispatchConsole({ queue, selected, selectedId, onSelect, su
         </ul>
       </Card>
 
-      <Card variant="glass" className="min-w-0 border-l-4 border-l-cyan-500/60 border-white/20 p-4 xl:col-span-7 dark:border-white/10">
+      <Card variant="enterprise" className="min-w-0 border-l-4 border-l-cyan-500/60 border-white/20 p-4 xl:col-span-7 dark:border-white/10">
         {selected ? (
           <>
             <div className="flex flex-wrap items-start justify-between gap-3">
@@ -84,7 +84,7 @@ export function AdminDispatchConsole({ queue, selected, selectedId, onSelect, su
                 <p className="text-[10px] font-bold uppercase tracking-wide text-wg-muted">Selected booking</p>
                 <p className="mt-1 text-lg font-black text-wg-text">{selected.customer}</p>
                 <p className="mt-1 text-sm text-wg-muted">
-                  {selected.zone} · {formatCents(selected.priceCents, 'USD')}
+                  {selected.zone} · {formatCents(selected.priceCents)}
                 </p>
               </div>
               <Button type="button" variant="outline" size="sm" className="gap-1" onClick={hold}>

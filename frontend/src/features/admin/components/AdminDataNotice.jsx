@@ -21,7 +21,7 @@ export function AdminDataNotice({ className }) {
         <div>
           <p className="font-bold">Demo admin access</p>
           <p className="mt-1 text-xs font-medium leading-relaxed opacity-90">
-            You are not signed in as an admin. This view is enabled because <code className="rounded bg-black/10 px-1 py-0.5 text-[11px] dark:bg-white/10">VITE_ADMIN_UI_DEMO=true</code> and the app is not in production mode. All figures are mock data.
+            You are not signed in as an admin. This view is enabled because <code className="rounded bg-black/10 px-1 py-0.5 text-[11px] dark:bg-white/10">VITE_ADMIN_UI_DEMO=true</code> and the app is not in production mode. Metrics still load from live booking and fleet APIs.
           </p>
         </div>
       </div>
@@ -37,7 +37,7 @@ export function AdminDataNotice({ className }) {
     >
       <Database className="mt-0.5 size-4 shrink-0 text-cyan-600 dark:text-cyan-400" strokeWidth={1.75} aria-hidden />
       <p className="leading-relaxed">
-        <span className="font-semibold text-wg-text">Live bookings & fleet sync.</span> Bookings, washer roster (e.g. partner names from signup), dispatch queue, and ops counters refresh from the API (SSE ~4s). Demo mode uses your login token with dev admin APIs enabled. Revenue charts and complaints remain sample data.
+        <span className="font-semibold text-wg-text">Live sync active.</span> Bookings, fleet roster, dispatch queue, charts, and directory refresh from the API (SSE ~4s). Complaints appear when a dedicated cases API is available.
       </p>
     </div>
   );

@@ -1,3 +1,10 @@
+/** Marketing landing — used after logout / sign out from any app shell. */
+export function redirectToMarketingHome() {
+  if (typeof window === 'undefined') return;
+  if (window.location.pathname === '/') return;
+  window.location.replace('/');
+}
+
 /** Default home route after auth, by role. */
 export function defaultAppPathForRole(user) {
   if (!user) return '/dashboard';

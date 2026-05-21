@@ -49,7 +49,10 @@ export function DashboardLoyaltyRewards({ completedCount }) {
 
 export function DashboardRecommendedWash({ completedCount }) {
   const reduced = useReducedMotion();
-  const rec = completedCount >= 3 ? PACKAGES.find((p) => p.id === 'premium') : PACKAGES.find((p) => p.id === 'deluxe');
+  const rec =
+    completedCount >= 3
+      ? PACKAGES.find((p) => p.id === 'premium')
+      : PACKAGES.find((p) => p.id === 'super_deluxe');
 
   return (
     <Card variant="glass" className="transition hover:ring-1 hover:ring-cyan-500/20 dark:hover:ring-cyan-400/10">

@@ -1,15 +1,14 @@
 import { Link, NavLink } from 'react-router-dom';
-import { Menu, Shield } from 'lucide-react';
+import { Menu } from 'lucide-react';
 
 import { CustomerNavMenu } from './CustomerNavMenu';
 import { useAuth } from '../context/AuthContext';
-import { canAccessAdmin } from '../lib/canAccessAdmin';
 import { Button } from '../ui/button';
 import { cn } from '../lib/cn';
 import { ThemeToggle } from './ThemeToggle';
 
 export function Navbar({ variant = 'marketing', onMenuClick }) {
-  const { user } = useAuth();
+  const { user } = useAuth(); // used in marketing variant
 
   if (variant === 'dashboard') {
     return (
@@ -36,16 +35,6 @@ export function Navbar({ variant = 'marketing', onMenuClick }) {
           </div>
         </div>
         <div className="flex items-center gap-2 sm:gap-3">
-          <ThemeToggle />
-          {user && canAccessAdmin(user) ? (
-            <Link
-              to="/admin"
-              className="hidden items-center gap-1.5 rounded-lg border border-indigo-500/20 bg-indigo-500/[0.07] px-2.5 py-1.5 text-[11px] font-bold uppercase tracking-wide text-indigo-800 transition hover:border-indigo-500/35 hover:bg-indigo-500/12 wg-focus-ring md:inline-flex dark:border-indigo-500/20 dark:text-indigo-100"
-            >
-              <Shield className="size-3.5" strokeWidth={2} aria-hidden />
-              Console
-            </Link>
-          ) : null}
           <CustomerNavMenu />
         </div>
       </header>

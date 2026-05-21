@@ -7,9 +7,9 @@ import { ChartMeasuredContainer } from '../../dashboard/ChartMeasuredContainer';
 export function AdminBookingVolumeChart({ data, chartsReady }) {
   if (!chartsReady) {
     return (
-      <Card variant="glass" className="min-h-[220px] min-w-0">
+      <Card variant="enterprise" className="min-w-0">
         <h2 className="wg-heading-section">Booking volume</h2>
-        <p className="mt-1 text-xs text-wg-muted">Completed + active jobs by weekday (mock).</p>
+        <p className="mt-1 text-xs text-wg-muted">Completed + active jobs by weekday from API.</p>
         <div className="mt-6">
           <Skeleton height={180} borderRadius={12} />
         </div>
@@ -18,10 +18,10 @@ export function AdminBookingVolumeChart({ data, chartsReady }) {
   }
 
   return (
-    <Card variant="glass" className="min-h-[220px] min-w-0 transition hover:ring-1 hover:ring-cyan-500/20 dark:hover:ring-cyan-400/15">
+    <Card variant="enterprise" className="min-w-0 transition hover:ring-1 hover:ring-cyan-500/20 dark:hover:ring-cyan-400/15">
       <div>
         <h2 className="wg-heading-section">Booking volume</h2>
-        <p className="mt-1 text-xs text-wg-muted">Jobs by weekday (mock).</p>
+        <p className="mt-1 text-xs text-wg-muted">Jobs by weekday from API.</p>
       </div>
       <ChartMeasuredContainer className="mt-4 h-52 w-full min-w-0">
         {({ width, height }) => (

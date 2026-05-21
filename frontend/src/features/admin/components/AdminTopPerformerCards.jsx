@@ -9,8 +9,15 @@ export function AdminTopPerformerCards({ performers }) {
   const reduced = useReducedMotion();
   if (!performers?.length) return null;
 
+  const cols =
+    performers.length === 1
+      ? 'grid-cols-1'
+      : performers.length === 2
+        ? 'grid-cols-1 sm:grid-cols-2'
+        : 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3';
+
   return (
-    <div className="grid min-w-0 gap-4 md:grid-cols-3">
+    <div className={cn('grid min-w-0 gap-3', cols)}>
       {performers.map((p, i) => (
         <m.div
           key={p.washerId}
@@ -19,9 +26,9 @@ export function AdminTopPerformerCards({ performers }) {
           transition={{ delay: reduced ? 0 : i * 0.06, type: 'spring', stiffness: 380, damping: 32 }}
         >
           <Card
-            variant="glass"
+            variant="enterprise"
             className={cn(
-              'h-full border-white/20 bg-gradient-to-br from-white/45 to-transparent p-4 shadow-lg ring-1 ring-black/[0.04] dark:from-white/[0.08] dark:to-transparent dark:ring-white/10',
+              'border-white/20 bg-gradient-to-br from-white/45 to-transparent p-4 shadow-lg ring-1 ring-black/[0.04] dark:from-white/[0.08] dark:to-transparent dark:ring-white/10',
               i === 0 && 'border-l-4 border-l-amber-400/80',
             )}
           >

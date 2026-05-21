@@ -32,7 +32,7 @@ export function AdminUsersView() {
         <div>
           <h1 className="wg-heading-display">Operations directory</h1>
           <p className="mt-1 max-w-2xl text-sm text-wg-muted">
-            Segmented enterprise user management — customers, partners, and admin staff in one hub (mock data).
+            Customers and partners from live bookings and fleet; staff from your signed-in admin session.
           </p>
         </div>
         <Link

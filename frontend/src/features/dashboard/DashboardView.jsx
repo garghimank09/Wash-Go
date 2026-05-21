@@ -104,8 +104,8 @@ export function DashboardView() {
         />
       </m.div>
 
-      <div className="grid min-w-0 gap-6 lg:grid-cols-3 lg:gap-8">
-        <m.div variants={sectionItem(reduced)} className="min-w-0 space-y-6 lg:col-span-2 lg:space-y-8">
+      <div className="grid min-w-0 items-start gap-4 lg:grid-cols-3 lg:gap-6">
+        <m.div variants={sectionItem(reduced)} className="min-w-0 space-y-4 lg:col-span-2 lg:space-y-5">
           <DashboardActiveSection
             active={activeBooking}
             detail={detail}
@@ -117,13 +117,13 @@ export function DashboardView() {
             onRefreshDetail={refresh}
           />
           <DashboardUpcomingSchedule items={items} />
-          <div className="grid min-w-0 gap-6 md:grid-cols-2">
+          <div className="grid min-w-0 items-start gap-4 md:grid-cols-2">
             <DashboardSavedVehicles cars={cars} loading={carsLoading} />
             <DashboardVehicleCareTips />
           </div>
           <MembershipCard
             title="WashGo Plus"
-            price="$39"
+            price="₹999"
             perks={['Priority scheduling', 'AI wash recap', 'Member pricing']}
             highlighted
           />

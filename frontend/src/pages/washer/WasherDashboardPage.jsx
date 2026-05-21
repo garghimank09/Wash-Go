@@ -11,8 +11,8 @@ import { formatCents } from '../../utils/format';
 import { Button } from '../../ui/button';
 import { Card } from '../../ui/card';
 import { CustomerBookingStatusPill } from '../../features/bookings/CustomerBookingStatusPill';
+import { WasherAvailabilityControls } from '../../features/washer/WasherAvailabilityControls';
 import { WasherDashboardOpsBanner } from '../../features/washer/WasherDashboardOpsBanner';
-import { dailyEarningsDemo } from '../../features/washer/mock/earningsDemo';
 
 const ACTIVE = ['pending', 'confirmed', 'in_progress'];
 
@@ -52,8 +52,6 @@ export function WasherDashboardPage() {
     };
   }, [items]);
 
-  const demoDay = dailyEarningsDemo();
-
   return (
     <div className="space-y-5">
       <WasherDashboardOpsBanner online={Boolean(av?.online)} />
@@ -64,29 +62,15 @@ export function WasherDashboardPage() {
       </m.div>
 
       <Card variant="glass" className="border-emerald-500/20 bg-gradient-to-br from-emerald-500/8 to-transparent dark:border-emerald-500/10">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <p className="text-[10px] font-bold uppercase tracking-wide text-wg-muted">Availability</p>
-            <p className="mt-1 text-lg font-black text-wg-text">{av.summary}</p>
-          </div>
-          <div className="flex flex-wrap gap-2">
-            <Button type="button" size="sm" variant={av.acceptingJobs ? 'primary' : 'outline'} onClick={() => av.setAcceptingJobs(!av.acceptingJobs)} disabled={!av.online}>
-              {av.acceptingJobs ? 'Accepting' : 'Paused'}
-            </Button>
-            <Button type="button" size="sm" variant="outline" onClick={() => av.setBusy(!av.busy)} disabled={!av.online || av.onBreak}>
-              {av.busy ? 'Busy' : 'Mark busy'}
-            </Button>
-            <Button type="button" size="sm" variant="outline" onClick={() => av.setOnBreak(!av.onBreak)} disabled={!av.online}>
-              Break
-            </Button>
-          </div>
-        </div>
+        <p className="text-[10px] font-bold uppercase tracking-wide text-wg-muted">Availability</p>
+        <p className="mt-1 text-lg font-black text-wg-text">{av.summary}</p>
+        <WasherAvailabilityControls av={av} className="mt-4" />
       </Card>
 
       <Card variant="glass" className="border-white/15 bg-gradient-to-br from-white/35 to-transparent p-4 ring-1 ring-white/10 dark:from-white/[0.05] dark:to-transparent dark:ring-white/5">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <p className="text-[10px] font-black uppercase tracking-wide text-wg-muted">Partner trust (demo profile)</p>
+            <p className="text-[10px] font-black uppercase tracking-wide text-wg-muted">Partner trust</p>
             <p className="mt-1 text-sm font-bold text-wg-text">
               {trust.rating} rating · {trust.onTimePct}% on-time · trust {trust.trustScore}
             </p>
@@ -137,8 +121,8 @@ export function WasherDashboardPage() {
         <div className="flex items-start justify-between gap-3">
           <div>
             <p className="text-[10px] font-bold uppercase tracking-wide text-wg-muted">Earnings snapshot</p>
-            <p className="mt-1 text-xl font-black text-wg-text">{formatCents(weekCents || demoDay.cents, 'USD')}</p>
-            <p className="text-xs text-wg-muted">7-day total (API) + demo fill when empty</p>
+            <p className="mt-1 text-xl font-black text-wg-text">{formatCents(weekCents)}</p>
+            <p className="text-xs text-wg-muted">7-day total from completed jobs</p>
           </div>
           <CircleDollarSign className="size-8 text-cyan-600 opacity-80 dark:text-cyan-400" strokeWidth={1.25} aria-hidden />
         </div>
@@ -167,11 +151,7 @@ export function WasherDashboardPage() {
         <Card variant="glass" className="border-dashed border-cyan-500/25 bg-gradient-to-br from-cyan-500/[0.07] to-transparent py-10 text-center">
           <p className="text-sm font-bold text-wg-text">No roster sync for today yet</p>
           <p className="mx-auto mt-2 max-w-xs text-sm text-wg-muted">
-            Open <strong className="text-wg-text">Offers</strong> for instant mock dispatch or launch the{' '}
-            <Link to="/partner/jobs/demo" className="font-bold text-cyan-600 underline-offset-2 hover:underline dark:text-cyan-400">
-              demo job
-            </Link>{' '}
-            for the full premium field flow.
+            Go <strong className="text-wg-text">online</strong> and open <strong className="text-wg-text">Offers</strong> — new customer bookings appear in real time.
           </p>
         </Card>
       ) : (
@@ -202,7 +182,7 @@ export function WasherDashboardPage() {
       </div>
       {active.length === 0 ? (
         <Card variant="glass" className="py-8 text-center text-sm text-wg-muted">
-          No active jobs from API. Run the <Link to="/partner/jobs/demo" className="font-bold text-cyan-600 dark:text-cyan-400">demo job</Link> for a full field-ops walkthrough.
+          No active jobs right now. Accept an offer from the incoming queue to start a run.
         </Card>
       ) : (
         <ul className="space-y-2">

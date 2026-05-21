@@ -1,5 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 
+import { redirectToMarketingHome } from '../lib/appPaths';
 import { authService } from '../services/authService';
 
 const AuthContext = createContext(null);
@@ -11,6 +12,7 @@ export function AuthProvider({ children }) {
   const logout = useCallback(() => {
     authService.setToken(null);
     setUser(null);
+    redirectToMarketingHome();
   }, []);
 
   const login = useCallback(async (email, password) => {

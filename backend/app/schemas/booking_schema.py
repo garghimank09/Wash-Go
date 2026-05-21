@@ -15,7 +15,7 @@ class BookingCreate(BaseModel):
     latitude: Decimal | None = Field(default=None, ge=-90, le=90)
     longitude: Decimal | None = Field(default=None, ge=-180, le=180)
     price_cents: int = Field(ge=0, le=10_000_000)
-    currency: str = Field(default="USD", min_length=3, max_length=3)
+    currency: str = Field(default="INR", min_length=3, max_length=3)
     notes: str | None = Field(default=None, max_length=2000)
 
     @field_validator("currency")
@@ -112,6 +112,7 @@ class BookingOfferRead(BaseModel):
     service_address: str
     price_cents: int
     currency: str
+    notes: str | None = None
     car_label: str | None = None
     customer_name: str | None = None
 

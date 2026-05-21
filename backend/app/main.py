@@ -13,6 +13,7 @@ from app.routes import (
     auth_routes,
     booking_routes,
     cars_routes,
+    geocode_routes,
     partner_routes,
     pricing_routes,
     user_routes,
@@ -61,6 +62,7 @@ app.include_router(cars_routes.router)
 app.include_router(booking_routes.router)
 app.include_router(partner_routes.router)
 app.include_router(pricing_routes.router)
+app.include_router(geocode_routes.router)
 app.include_router(assistant_routes.router)
 
 
