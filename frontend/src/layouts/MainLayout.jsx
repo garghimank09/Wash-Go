@@ -2,6 +2,7 @@ import { useState } from 'react';
 
 import { AssistantDock } from '../components/AssistantDock';
 import { CustomerBookingSyncBridge } from '../components/BookingSyncBridge';
+import { WashTiersProvider } from '../context/WashTiersContext';
 import { Navbar } from '../components/Navbar';
 import { Sidebar } from '../components/Sidebar';
 import { railMainOffset } from '../lib/collapsibleRailSidebar';
@@ -27,9 +28,11 @@ export function MainLayout() {
       <div className={cn('flex min-w-0 flex-1 flex-col transition-[padding] duration-200 ease-out', railMainOffset())}>
         <Navbar variant="dashboard" onMenuClick={() => setMobileMenu((v) => !v)} />
         <main className="flex-1 p-4 md:p-8">
-          <PageShell>
-            <PageTransition />
-          </PageShell>
+          <WashTiersProvider>
+            <PageShell>
+              <PageTransition />
+            </PageShell>
+          </WashTiersProvider>
         </main>
         <AssistantDock />
       </div>

@@ -11,6 +11,7 @@ import { parseBookingMeta } from '../../lib/bookingMeta';
 import { enrichDispatchOffer } from '../../lib/partnerFieldDemo';
 import { getErrorMessage } from '../../services/api';
 import { partnerBookingsService } from '../../services/partnerBookingsService';
+import { partnerEarningsCents } from '../../lib/partnerEarnings';
 import { formatCents, formatDateTime } from '../../utils/format';
 import { Button } from '../../ui/button';
 import { Card } from '../../ui/card';
@@ -45,7 +46,8 @@ function mapOffer(o) {
     id: o.id,
     customerName: o.customer_name || 'Customer',
     address: o.service_address,
-    earningsCents: o.price_cents,
+    earningsCents: partnerEarningsCents(o.price_cents),
+    grossCents: o.price_cents,
     vehicle: o.car_label || 'Vehicle',
     packageLabel: packageLabel ?? '—',
     windowLabel: formatDateTime(o.scheduled_at),

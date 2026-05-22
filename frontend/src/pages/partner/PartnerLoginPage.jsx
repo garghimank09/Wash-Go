@@ -2,12 +2,17 @@ import { useState } from 'react';
 import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { ShieldCheck, Sparkles } from 'lucide-react';
 
+import { DemoCredentialsPanel } from '../../components/DemoCredentialsPanel';
+import { ForgotPasswordForm } from '../../components/ForgotPasswordForm';
+import { OtpVerificationFields } from '../../components/OtpVerificationFields';
 import { usePartnerAuth } from '../../context/PartnerAuthContext';
 import { Button } from '../../ui/button';
 import { Input } from '../../ui/input';
 import { GlassPanel } from '../../ui/glass-panel';
+import { isDemoEmail } from '../../lib/demoAccounts';
+import { partnerAuthService } from '../../services/partnerAuthService';
 import { getErrorMessage } from '../../services/api';
-import { isValidEmail } from '../../utils/validators';
+import { isValidEmail, validateOtpCode } from '../../utils/validators';
 
 export function PartnerLoginPage() {
   const { loginPartner, user, initializing } = usePartnerAuth();
@@ -15,10 +20,16 @@ export function PartnerLoginPage() {
   const location = useLocation();
   const from = location.state?.from || '/partner';
 
+  const [view, setView] = useState('login');
+  const [step, setStep] = useState('credentials');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [otp, setOtp] = useState('');
+  const [otpError, setOtpError] = useState('');
+  const [otpInfo, setOtpInfo] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [resendLoading, setResendLoading] = useState(false);
 
   if (initializing) {
     return (
@@ -32,7 +43,10 @@ export function PartnerLoginPage() {
     return <Navigate to="/partner" replace />;
   }
 
-  const submit = async (e) => {
+  const normalizedEmail = email.trim().toLowerCase();
+  const demoAccount = isDemoEmail(normalizedEmail);
+
+  const submitCredentials = async (e) => {
     e.preventDefault();
     setError('');
     if (!isValidEmail(email)) {
@@ -45,9 +59,45 @@ export function PartnerLoginPage() {
     }
     setLoading(true);
     try {
-      await loginPartner(email.trim(), password);
+      if (demoAccount) {
+        await loginPartner(normalizedEmail, password);
+        const safeFrom =
+          typeof from === 'string' && from.startsWith('/partner') && from !== '/partner/login'
+            ? from
+            : '/partner';
+        navigate(safeFrom, { replace: true });
+        return;
+      }
+      const res = await partnerAuthService.sendOtp(normalizedEmail, 'login');
+      setOtpInfo(res.message || 'Check your email for the code.');
+      setStep('otp');
+    } catch (err) {
+      if (err?.message === 'PARTNER_ROLE') {
+        setError('This portal is for approved WashGo partners only.');
+        return;
+      }
+      setError(getErrorMessage(err));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const submitOtp = async (e) => {
+    e.preventDefault();
+    setError('');
+    const otpErr = validateOtpCode(otp);
+    setOtpError(otpErr ?? '');
+    if (otpErr) {
+      setError(otpErr);
+      return;
+    }
+    setLoading(true);
+    try {
+      await loginPartner(normalizedEmail, password, otp.trim());
       const safeFrom =
-        typeof from === 'string' && from.startsWith('/partner') && from !== '/partner/login' ? from : '/partner';
+        typeof from === 'string' && from.startsWith('/partner') && from !== '/partner/login'
+          ? from
+          : '/partner';
       navigate(safeFrom, { replace: true });
     } catch (err) {
       if (err?.message === 'PARTNER_ROLE') {
@@ -57,6 +107,21 @@ export function PartnerLoginPage() {
       setError(getErrorMessage(err));
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleResend = async () => {
+    setResendLoading(true);
+    setError('');
+    try {
+      const res = await partnerAuthService.sendOtp(normalizedEmail, 'login');
+      setOtpInfo(res.message || 'A new code was sent.');
+      setOtp('');
+      setOtpError('');
+    } catch (err) {
+      setError(getErrorMessage(err));
+    } finally {
+      setResendLoading(false);
     }
   };
 
@@ -75,9 +140,15 @@ export function PartnerLoginPage() {
             <ShieldCheck className="size-8 text-emerald-300" strokeWidth={1.5} aria-hidden />
           </div>
           <p className="mt-4 text-[11px] font-bold uppercase tracking-[0.22em] text-emerald-200/90">WashGo Partner</p>
-          <h1 className="mt-2 text-2xl font-black tracking-tight text-white sm:text-3xl">Field console</h1>
+          <h1 className="mt-2 text-2xl font-black tracking-tight text-white sm:text-3xl">
+            {view === 'forgot' ? 'Reset password' : 'Field console'}
+          </h1>
           <p className="mx-auto mt-2 max-w-sm text-sm leading-relaxed text-white/65">
-            Sign in to manage jobs, availability, and payouts. Built for pros on the move — fast, focused, mobile-first.
+            {view === 'forgot'
+              ? 'We will email you a verification code.'
+              : step === 'otp'
+                ? 'Enter the verification code we emailed you.'
+                : 'Sign in to manage jobs, availability, and payouts.'}
           </p>
         </div>
 
@@ -85,11 +156,26 @@ export function PartnerLoginPage() {
           <div className="mb-6 flex items-start gap-3 rounded-xl border border-emerald-500/20 bg-emerald-500/[0.07] p-3 text-xs text-emerald-50/90">
             <Sparkles className="mt-0.5 size-4 shrink-0 text-emerald-300" strokeWidth={2} aria-hidden />
             <p>
-              <span className="font-bold text-emerald-100">Partner accounts only.</span> Customer bookings and garage tools stay in the main WashGo app — this space is separate by design.
+              <span className="font-bold text-emerald-100">Partner accounts only.</span> Customer bookings stay in the main WashGo app.
             </p>
           </div>
 
-          <form className="space-y-4" onSubmit={submit}>
+          {view === 'forgot' ? (
+            <ForgotPasswordForm
+              sendOtp={partnerAuthService.sendOtp}
+              resetPassword={partnerAuthService.resetPassword}
+              roleHint="partner"
+              mutedClassName="text-white/70"
+              onBack={() => setView('login')}
+              onSuccess={() => {
+                setView('login');
+                setStep('credentials');
+                setError('');
+                setOtp('');
+              }}
+            />
+          ) : (
+          <form className="space-y-4" onSubmit={step === 'otp' ? submitOtp : submitCredentials} noValidate>
             <Input
               label="Work email"
               name="email"
@@ -97,6 +183,7 @@ export function PartnerLoginPage() {
               autoComplete="username"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
+              disabled={step === 'otp'}
             />
             <Input
               label="Password"
@@ -106,29 +193,88 @@ export function PartnerLoginPage() {
               passwordToggle
               value={password}
               onChange={(e) => setPassword(e.target.value)}
+              disabled={step === 'otp'}
             />
+            {step === 'credentials' ? (
+              <p className="text-right">
+                <button
+                  type="button"
+                  className="text-sm font-semibold text-emerald-300 hover:text-emerald-200"
+                  onClick={() => {
+                    setView('forgot');
+                    setError('');
+                  }}
+                >
+                  Forgot password?
+                </button>
+              </p>
+            ) : null}
+            {step === 'otp' ? (
+              <OtpVerificationFields
+                email={normalizedEmail}
+                otp={otp}
+                onOtpChange={(e) => {
+                  const v = e.target.value.replace(/\D/g, '').slice(0, 6);
+                  setOtp(v);
+                  if (otpError) setOtpError(validateOtpCode(v) ?? '');
+                }}
+                otpError={otpError}
+                onOtpBlur={() => setOtpError(validateOtpCode(otp) ?? '')}
+                onResend={() => void handleResend()}
+                resendLoading={resendLoading}
+                infoMessage={otpInfo}
+                mutedClassName="text-white/70"
+              />
+            ) : null}
             {error ? <p className="text-sm text-rose-400">{error}</p> : null}
-            <Button type="submit" className="w-full bg-gradient-to-r from-emerald-600 to-cyan-600 text-white shadow-lg shadow-emerald-900/30" loading={loading}>
-              Enter partner console
+            <Button
+              type="submit"
+              className="w-full bg-gradient-to-r from-emerald-600 to-cyan-600 text-white shadow-lg shadow-emerald-900/30"
+              loading={loading}
+            >
+              {step === 'otp' ? 'Verify & enter console' : 'Continue'}
             </Button>
+            {step === 'otp' ? (
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="w-full text-white/70"
+                onClick={() => {
+                  setStep('credentials');
+                  setOtp('');
+                  setOtpError('');
+                  setError('');
+                }}
+              >
+                Back
+              </Button>
+            ) : null}
           </form>
+          )}
 
-          <p className="mt-6 text-center text-sm text-white/60">
-            New partner?{' '}
-            <Link to="/partner/signup" className="font-semibold text-emerald-300 hover:text-emerald-200">
-              Create account
-            </Link>
-          </p>
-          <p className="mt-3 text-center text-sm text-white/60">
-            Booking a wash?{' '}
-            <Link to="/login" className="font-semibold text-cyan-300 hover:text-cyan-200">
-              Customer sign in
-            </Link>
-          </p>
+          {view === 'login' ? (
+            <>
+              <p className="mt-6 text-center text-sm text-white/60">
+                New partner?{' '}
+                <Link to="/partner/signup" className="font-semibold text-emerald-300 hover:text-emerald-200">
+                  Create account
+                </Link>
+              </p>
+              <p className="mt-3 text-center text-sm text-white/60">
+                Booking a wash?{' '}
+                <Link to="/login" className="font-semibold text-cyan-300 hover:text-cyan-200">
+                  Customer sign in
+                </Link>
+              </p>
+            </>
+          ) : null}
         </GlassPanel>
 
+        <DemoCredentialsPanel highlight="Partner" />
+
         <p className="mt-8 text-center text-[11px] text-white/40">
-          Same secure WashGo authentication — isolated session for partners.
+          Demo partner account skips email verification.
         </p>
       </div>
     </div>

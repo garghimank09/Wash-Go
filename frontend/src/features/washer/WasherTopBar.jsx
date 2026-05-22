@@ -2,7 +2,9 @@ import { Link } from 'react-router-dom';
 import { LogOut, Sparkles, ToggleLeft, ToggleRight } from 'lucide-react';
 
 import { usePartnerAuth } from '../../context/PartnerAuthContext';
+import { NotificationBell } from '../../components/NotificationBell';
 import { WasherTrustCompactBar } from '../../features/washer/WasherTrustCompactBar';
+import { partnerNotificationsService } from '../../services/notificationsService';
 import { Button } from '../../ui/button';
 import { cn } from '../../lib/cn';
 
@@ -23,6 +25,7 @@ export function WasherTopBar({ av }) {
           </p>
         </Link>
         <div className="flex shrink-0 items-center gap-2">
+          <NotificationBell service={partnerNotificationsService} defaultPath="/partner/requests" />
           <button
             type="button"
             onClick={() => av.setOnline(!av.online)}

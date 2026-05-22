@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom';
 import { m } from 'framer-motion';
 import { Gift, Sparkles } from 'lucide-react';
 
-import { PACKAGES } from '../../constants/config';
+import { useWashTiersOptional } from '../../context/WashTiersContext';
 import { Card } from '../../ui/card';
 import { useReducedMotion } from '../../lib/useReducedMotion';
 
@@ -49,10 +49,11 @@ export function DashboardLoyaltyRewards({ completedCount }) {
 
 export function DashboardRecommendedWash({ completedCount }) {
   const reduced = useReducedMotion();
+  const { tiers } = useWashTiersOptional();
   const rec =
     completedCount >= 3
-      ? PACKAGES.find((p) => p.id === 'premium')
-      : PACKAGES.find((p) => p.id === 'super_deluxe');
+      ? tiers.find((p) => p.id === 'premium')
+      : tiers.find((p) => p.id === 'super_deluxe');
 
   return (
     <Card variant="glass" className="transition hover:ring-1 hover:ring-cyan-500/20 dark:hover:ring-cyan-400/10">

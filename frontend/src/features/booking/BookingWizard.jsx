@@ -2,8 +2,9 @@ import { Fragment, useEffect, useMemo, useRef, useState } from 'react';
 import toast from 'react-hot-toast';
 import { AnimatePresence, m } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { Car, CheckCircle, ChevronDown, MapPin, Sparkles } from 'lucide-react';
+import { Car, CheckCircle, ChevronDown, CreditCard, MapPin, Sparkles } from 'lucide-react';
 
+import { dispatchNotificationsSync } from '../../lib/notificationSyncEvents';
 import { bookingsService } from '../../services/bookingsService';
 import { carsService } from '../../services/carsService';
 import { geocodeService } from '../../services/geocodeService';
@@ -14,11 +15,12 @@ import { Button } from '../../ui/button';
 import { cn } from '../../lib/cn';
 import { bookingReducedVariants, bookingStepVariants } from './motion';
 import { PackageStep } from './steps/PackageStep';
+import { PaymentStep } from './steps/PaymentStep';
 import { ReviewStep } from './steps/ReviewStep';
 import { ScheduleStep } from './steps/ScheduleStep';
 import { VehicleStep } from './steps/VehicleStep';
-import { PACKAGES } from '../../constants/config';
 import { DEFAULT_CURRENCY } from '../../constants/config';
+import { useWashTiersContext } from '../../context/WashTiersContext';
 import { formatCents } from '../../utils/format';
 import { BookingCarsSkeleton } from './BookingCarsSkeleton';
 import { BookingSummaryPanel } from './BookingSummaryPanel';
@@ -28,6 +30,7 @@ const STEP_META = [
   { key: 'package', title: 'Package & price', subtitle: 'Tier & size', Icon: Sparkles },
   { key: 'when', title: 'Where & when', subtitle: 'Address & time', Icon: MapPin },
   { key: 'review', title: 'Review', subtitle: 'Confirm', Icon: CheckCircle },
+  { key: 'payment', title: 'Payment', subtitle: 'Demo pay', Icon: CreditCard },
 ];
 
 function pad2(n) {
@@ -78,6 +81,7 @@ export function BookingWizard() {
   const navigate = useNavigate();
   const reduced = useReducedMotion();
   const variants = reduced ? bookingReducedVariants : bookingStepVariants;
+  const { tiers, loading: tiersLoading } = useWashTiersContext();
 
   const [cars, setCars] = useState([]);
   const [loadingCars, setLoadingCars] = useState(true);
@@ -128,6 +132,16 @@ export function BookingWizard() {
   }, []);
 
   useEffect(() => {
+    if (!tiers.length) return;
+    setPackageId((prev) => {
+      if (tiers.some((t) => t.id === prev)) return prev;
+      const preferred = tiers.find((t) => t.id === 'super_deluxe') ?? tiers[0];
+      return preferred?.id ?? prev;
+    });
+  }, [tiers]);
+
+  useEffect(() => {
+    if (!packageId || tiersLoading) return;
     let cancelled = false;
     (async () => {
       setPricingLoading(true);
@@ -143,7 +157,7 @@ export function BookingWizard() {
     return () => {
       cancelled = true;
     };
-  }, [packageId, vehicleSize]);
+  }, [packageId, vehicleSize, tiersLoading]);
 
   const scheduledDateTime = useMemo(
     () => combineDateAndTime(scheduledDate, scheduledTime),
@@ -227,6 +241,7 @@ export function BookingWizard() {
         scheduledInFuture
       );
     }
+    if (s === 3) return true;
     return false;
   };
 
@@ -288,9 +303,10 @@ export function BookingWizard() {
         currency: DEFAULT_CURRENCY,
         notes,
       });
-      toast.success('Booking confirmed — taking you to the detail.');
+      toast.success('Payment complete — partners can now accept your booking.');
       if (typeof window !== 'undefined') {
         window.dispatchEvent(new CustomEvent('washgo:bookings-sync', { detail: { source: 'create' } }));
+        dispatchNotificationsSync({ source: 'booking_paid' });
       }
       navigate(`/bookings/${booking.id}`, { replace: true });
     } catch (err) {
@@ -301,7 +317,7 @@ export function BookingWizard() {
   };
 
   const car = cars.find((c) => c.id === carId);
-  const pkg = PACKAGES.find((p) => p.id === packageId);
+  const pkg = tiers.find((p) => p.id === packageId);
   const progress = ((step + 1) / STEP_META.length) * 100;
 
   const carSummaryLabel = car ? `${car.make} ${car.model}` : '—';
@@ -456,6 +472,8 @@ export function BookingWizard() {
                 {step === 0 ? <VehicleStep cars={cars} carId={carId} setCarId={setCarId} /> : null}
                 {step === 1 ? (
                   <PackageStep
+                    tiers={tiers}
+                    tiersLoading={tiersLoading}
                     packageId={packageId}
                     setPackageId={setPackageId}
                     vehicleSize={vehicleSize}
@@ -488,6 +506,7 @@ export function BookingWizard() {
                 ) : null}
                 {step === 3 ? (
                   <ReviewStep
+                    tiers={tiers}
                     cars={cars}
                     carId={carId}
                     packageId={packageId}
@@ -495,6 +514,15 @@ export function BookingWizard() {
                     address={address}
                     serviceLat={serviceLat}
                     serviceLng={serviceLng}
+                    scheduledLabel={scheduledLabel}
+                    priceCents={priceCents}
+                    pricingLoading={pricingLoading}
+                  />
+                ) : null}
+                {step === 4 ? (
+                  <PaymentStep
+                    carLabel={carSummaryLabel}
+                    packageLabel={packageSummaryLabel}
                     scheduledLabel={scheduledLabel}
                     priceCents={priceCents}
                     pricingLoading={pricingLoading}
@@ -518,7 +546,7 @@ export function BookingWizard() {
               </m.div>
             ) : (
               <Button type="button" loading={submitting} onClick={() => void submit()} disabled={cars.length === 0 || loadingCars}>
-                Confirm booking
+                Pay & book (demo)
               </Button>
             )}
           </div>
@@ -559,7 +587,7 @@ export function BookingWizard() {
               onClick={() => void submit()}
               disabled={cars.length === 0 || loadingCars}
             >
-              Confirm booking
+              Pay & book (demo)
             </Button>
           )}
         </div>

@@ -1,12 +1,15 @@
 import { useMemo } from 'react';
 import { Link, useOutletContext } from 'react-router-dom';
 import { m } from 'framer-motion';
-import { ArrowRight, Briefcase, CheckCircle2, CircleDollarSign, Clock, ShieldCheck, Zap } from 'lucide-react';
+import { ArrowRight, Briefcase, CheckCircle2, CircleDollarSign, Clock, ShieldCheck, Trophy, Zap } from 'lucide-react';
 
 import { usePartnerAuth } from '../../context/PartnerAuthContext';
 import { usePartnerBookings } from '../../hooks/usePartnerBookings';
 import { useReducedMotion } from '../../lib/useReducedMotion';
 import { getPartnerTrustDemo } from '../../lib/partnerFieldDemo';
+import { usePartnerEarnings } from '../../hooks/usePartnerEarnings';
+import { PARTNER_EARNINGS_PERCENT } from '../../lib/partnerEarnings';
+import { countCompletedWashes, getPartnerRewardsState } from '../../lib/partnerRewards';
 import { formatCents } from '../../utils/format';
 import { Button } from '../../ui/button';
 import { Card } from '../../ui/card';
@@ -29,9 +32,12 @@ function isSameDay(a, b) {
 export function WasherDashboardPage() {
   const av = useOutletContext();
   const { user } = usePartnerAuth();
-  const { items, loading, error } = usePartnerBookings();
+  const bookingsHook = usePartnerBookings();
+  const { items, loading, error } = bookingsHook;
+  const { summary: earnings } = usePartnerEarnings(bookingsHook);
   const reduced = useReducedMotion();
   const trust = useMemo(() => getPartnerTrustDemo(user), [user]);
+  const rewardsPreview = useMemo(() => getPartnerRewardsState(countCompletedWashes(items)), [items]);
 
   const { today, active, completed, weekCents } = useMemo(() => {
     const list = items || [];
@@ -39,18 +45,13 @@ export function WasherDashboardPage() {
     const todayList = list.filter((b) => isSameDay(new Date(b.scheduled_at), now));
     const activeList = list.filter((b) => ACTIVE.includes(b.status));
     const completedList = list.filter((b) => b.status === 'completed');
-    // eslint-disable-next-line react-hooks/purity -- rolling 7-day window from "now"
-    const weekAgo = Date.now() - 7 * 86400000;
-    const weekSum = list
-      .filter((b) => b.status === 'completed' && new Date(b.scheduled_at).getTime() >= weekAgo)
-      .reduce((s, b) => s + (Number(b.price_cents) || 0), 0);
     return {
       today: todayList.sort((a, b) => new Date(a.scheduled_at) - new Date(b.scheduled_at)),
       active: activeList.sort((a, b) => new Date(a.scheduled_at) - new Date(b.scheduled_at)),
       completed: completedList.length,
-      weekCents: weekSum,
+      weekCents: earnings?.week_partner_cents ?? 0,
     };
-  }, [items]);
+  }, [items, earnings?.week_partner_cents]);
 
   return (
     <div className="space-y-5">
@@ -117,12 +118,33 @@ export function WasherDashboardPage() {
             )}
       </div>
 
+      <Card variant="glass" className="border-amber-500/20 bg-gradient-to-r from-amber-500/8 to-orange-500/6">
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <p className="text-[10px] font-bold uppercase tracking-wide text-wg-muted">Rewards</p>
+            <p className="mt-1 text-xl font-black text-wg-text">
+              {loading ? '—' : `${rewardsPreview.completedCount} washes`}
+            </p>
+            <p className="text-xs text-wg-muted">
+              {rewardsPreview.nextTier
+                ? `Next: ${rewardsPreview.nextTier.title} at ${rewardsPreview.nextTier.washesRequired} washes`
+                : 'All milestones unlocked'}
+            </p>
+          </div>
+          <Trophy className="size-8 text-amber-600 opacity-80 dark:text-amber-400" strokeWidth={1.25} aria-hidden />
+        </div>
+        <Link to="/partner/rewards" className="mt-3 inline-flex items-center gap-1 text-xs font-bold text-amber-800 dark:text-amber-200">
+          View rewards
+          <ArrowRight className="size-3.5" strokeWidth={2} aria-hidden />
+        </Link>
+      </Card>
+
       <Card variant="glass" className="border-cyan-500/20 bg-gradient-to-r from-cyan-500/8 to-indigo-500/8">
         <div className="flex items-start justify-between gap-3">
           <div>
             <p className="text-[10px] font-bold uppercase tracking-wide text-wg-muted">Earnings snapshot</p>
             <p className="mt-1 text-xl font-black text-wg-text">{formatCents(weekCents)}</p>
-            <p className="text-xs text-wg-muted">7-day total from completed jobs</p>
+            <p className="text-xs text-wg-muted">{PARTNER_EARNINGS_PERCENT}% share · accepted jobs this week</p>
           </div>
           <CircleDollarSign className="size-8 text-cyan-600 opacity-80 dark:text-cyan-400" strokeWidth={1.25} aria-hidden />
         </div>

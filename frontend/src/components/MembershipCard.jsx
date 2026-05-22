@@ -1,9 +1,27 @@
-import toast from 'react-hot-toast';
+import { useNavigate } from 'react-router-dom';
 import { Check } from 'lucide-react';
 
+import { useAuth } from '../context/AuthContext';
 import { cn } from '../lib/cn';
 
-export function MembershipCard({ title, price, perks, highlighted }) {
+export function MembershipCard({ title, price, perks, highlighted, planSlug }) {
+  const navigate = useNavigate();
+  const { user } = useAuth();
+  const slug = planSlug || 'gleam';
+  const subscribePath = `/membership/subscribe/${slug}`;
+
+  const handleJoin = () => {
+    if (!user) {
+      navigate('/login', { state: { from: subscribePath } });
+      return;
+    }
+    if (user.role !== 'customer') {
+      navigate('/dashboard');
+      return;
+    }
+    navigate(subscribePath);
+  };
+
   return (
     <div
       className={cn(
@@ -34,11 +52,7 @@ export function MembershipCard({ title, price, perks, highlighted }) {
       <button
         type="button"
         className="mt-6 w-full rounded-xl border border-wg-border bg-wg-surface/80 py-2.5 text-sm font-semibold text-wg-text transition hover:bg-wg-surface dark:bg-white/[0.04] dark:hover:bg-white/[0.07] wg-focus-ring"
-        onClick={() =>
-          toast.success("You're on the list — we'll notify you when WashGo Plus opens.", {
-            icon: '✨',
-          })
-        }
+        onClick={handleJoin}
       >
         Join waitlist
       </button>

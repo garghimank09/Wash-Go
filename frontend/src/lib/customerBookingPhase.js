@@ -27,7 +27,7 @@ const PHASE_LABELS = {
  */
 export function deriveCustomerPhase(bookingLike) {
   if (!bookingLike) return 'searching';
-  const { status, washer_id: wid, scheduled_at } = bookingLike;
+  const { status, scheduled_at } = bookingLike;
   const s = String(status || 'pending');
 
   if (s === 'cancelled') return 'cancelled';
@@ -42,7 +42,7 @@ export function deriveCustomerPhase(bookingLike) {
     return 'accepted';
   }
   if (s === 'pending') {
-    return wid ? 'awaiting_acceptance' : 'searching';
+    return 'awaiting_acceptance';
   }
   return 'searching';
 }

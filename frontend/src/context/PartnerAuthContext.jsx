@@ -23,8 +23,8 @@ function usePartnerAuthState() {
     redirectToMarketingHome();
   }, []);
 
-  const loginPartner = useCallback(async (email, password) => {
-    const data = await partnerAuthService.login(email, password);
+  const loginPartner = useCallback(async (email, password, otpCode) => {
+    const data = await partnerAuthService.login(email, password, otpCode);
     partnerAuthService.setToken(data.access_token);
     const me = await partnerAuthService.me();
     if (me.role !== 'washer') {
@@ -77,13 +77,18 @@ function usePartnerAuthState() {
     };
   }, []);
 
-  const signupPartner = useCallback(
-    async (payload) => {
-      await partnerAuthService.signup(payload);
-      await loginPartner(payload.email, payload.password);
-    },
-    [loginPartner],
-  );
+  const signupPartner = useCallback(async (payload) => {
+    const data = await partnerAuthService.signup(payload);
+    partnerAuthService.setToken(data.access_token);
+    const me = await partnerAuthService.me();
+    if (me.role !== 'washer') {
+      partnerAuthService.setToken(null);
+      setUser(null);
+      throw new Error('PARTNER_ROLE');
+    }
+    setUser(me);
+    return me;
+  }, []);
 
   return useMemo(
     () => ({

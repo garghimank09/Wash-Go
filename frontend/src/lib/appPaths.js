@@ -9,6 +9,7 @@ export function redirectToMarketingHome() {
 export function defaultAppPathForRole(user) {
   if (!user) return '/dashboard';
   if (user.role === 'washer') return '/partner';
+  if (user.role === 'admin') return '/admin';
   return '/dashboard';
 }
 

@@ -15,6 +15,13 @@ FastAPI + PostgreSQL (`washgo`) foundation with JWT auth, SQLAlchemy 2 async ORM
    - Async SQLAlchemy uses the **`asyncpg`** driver. Example:
      `postgresql+asyncpg://postgres:yourpassword@localhost:5432/washgo`
 3. Set **`SECRET_KEY`** to a random string of at least 32 characters.
+4. For partner signup place suggestions, set **`GOOGLE_MAPS_API_KEY`** and enable **Places API (New)** (not the legacy Places API) in Google Cloud Console.
+5. For **email OTP** on signup and login (all roles except demo accounts), configure SMTP in `.env`:
+   - `SMTP_HOST` (e.g. `smtp.gmail.com`)
+   - `SMTP_PORT` (default `587`)
+   - `SMTP_USER` / `SMTP_PASSWORD` (app password for Gmail)
+   - `SMTP_FROM` (e.g. `noreply@yourdomain.com`)
+   - If `SMTP_HOST` is unset, OTP codes are **printed in the API server log** (development only).
 
 ## Virtual environment and install (Windows PowerShell)
 
@@ -25,19 +32,62 @@ python -m venv .venv
 pip install -r app\requirements.txt
 ```
 
+## Demo accounts (development)
+
+On startup in **`ENVIRONMENT=development`**, these users are created or refreshed in the database:
+
+| Role | Email | Password | Sign in at |
+|------|-------|----------|------------|
+| Admin | `admin@washgo.demo` | `Demo1234` | [http://127.0.0.1:5173/login](http://127.0.0.1:5173/login) → **Admin console** (`/admin`) |
+| Customer | `customer@washgo.demo` | `Demo1234` | [http://127.0.0.1:5173/login](http://127.0.0.1:5173/login) → **Dashboard** (`/dashboard`) |
+| Partner (washer) | `partner@washgo.demo` | `Demo1234` | [http://127.0.0.1:5173/partner/login](http://127.0.0.1:5173/partner/login) → **Partner console** (`/partner`) |
+
+Restart the API after pulling changes so `seed_demo_users` runs.
+
+Demo accounts (`*@washgo.demo`) **skip OTP** — use them for quick testing without email.
+
+## Email OTP (signup & login)
+
+| Step | Endpoint | Notes |
+|------|----------|--------|
+| Send code | `POST /auth/otp/send` | Body: `{ "email", "purpose": "signup" \| "login" \| "password_reset", "role_hint": "customer" \| "partner" \| "admin" }` |
+| Reset password | `POST /auth/password/reset` | Body: `{ "email", "otp_code", "new_password" }` |
+
+## Membership plans (landing preview)
+
+Admin: **Membership plans** at `/admin/membership-plans` — edit monthly price (₹), checklist features, and **Popular** highlight.
+
+Public: `GET /membership-plans` — active plans for the landing **Membership preview** section.
+
+Default seeds (if table empty): Spark ₹499/mo, Gleam ₹999/mo (Popular), Apex Fleet ₹2,499/mo.
+| Customer signup | `POST /auth/signup` | Include `otp_code` (6 digits) — returns JWT |
+| Partner signup | `POST /auth/partner/signup` | Include `otp_code` — returns JWT |
+| Login | `POST /auth/login` | Include `otp_code` after password step (skipped for demo emails) |
+
+Codes expire in **10 minutes** (see `OTP_EXPIRE_MINUTES` in settings). Resend cooldown: **60 seconds**.
+
 ## Run the API
 
 From the `backend` directory (so `app` is importable as a package):
 
 ```powershell
+.\.venv\Scripts\Activate.ps1
 python run.py
 ```
 
-Or:
+Or (always uses `.venv`, even if the shell is not activated):
 
 ```powershell
-uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+.\start.ps1
 ```
+
+Or explicitly:
+
+```powershell
+.\.venv\Scripts\python.exe -m uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+```
+
+Do **not** run bare `uvicorn` from a global Python install — it will miss packages such as `asyncpg`.
 
 - Interactive docs: [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs)
 - ReDoc: [http://127.0.0.1:8000/redoc](http://127.0.0.1:8000/redoc)

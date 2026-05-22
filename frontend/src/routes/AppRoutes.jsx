@@ -18,11 +18,15 @@ import { AdminOperationsPage } from '../pages/AdminOperationsPage';
 import { AdminOverviewPage } from '../pages/AdminOverviewPage';
 import { AdminRevenuePage } from '../pages/AdminRevenuePage';
 import { AdminUsersPage } from '../pages/AdminUsersPage';
+import { AdminMembershipPlansPage } from '../pages/AdminMembershipPlansPage';
+import { AdminWashTiersPage } from '../pages/AdminWashTiersPage';
 import { BookingDetailPage } from '../pages/BookingDetailPage';
 import { BookingPage } from '../pages/BookingPage';
 import { BookingsPage } from '../pages/BookingsPage';
 import { CarsPage } from '../pages/CarsPage';
 import { DashboardPage } from '../pages/DashboardPage';
+import { MembershipSubscribePage } from '../pages/MembershipSubscribePage';
+import { ProfilePage } from '../pages/ProfilePage';
 import { LandingPage } from '../pages/LandingPage';
 import { LoginPage } from '../pages/LoginPage';
 import { PartnerLoginPage } from '../pages/partner/PartnerLoginPage';
@@ -30,6 +34,7 @@ import { PartnerSignupPage } from '../pages/partner/PartnerSignupPage';
 import { SignupPage } from '../pages/SignupPage';
 import { WasherDashboardPage } from '../pages/washer/WasherDashboardPage';
 import { WasherEarningsPage } from '../pages/washer/WasherEarningsPage';
+import { WasherRewardsPage } from '../pages/washer/WasherRewardsPage';
 import { WasherJobPage } from '../pages/washer/WasherJobPage';
 import { WasherRequestsPage } from '../pages/washer/WasherRequestsPage';
 import { WasherSchedulePage } from '../pages/washer/WasherSchedulePage';
@@ -60,6 +65,7 @@ export function AppRoutes() {
                 <Route path="schedule" element={<WasherSchedulePage />} />
                 <Route path="jobs/:id" element={<WasherJobPage />} />
                 <Route path="earnings" element={<WasherEarningsPage />} />
+                <Route path="rewards" element={<WasherRewardsPage />} />
               </Route>
             </Route>
           </Route>
@@ -69,6 +75,8 @@ export function AppRoutes() {
           <Route element={<CustomerShellRoute />}>
             <Route element={<MainLayout />}>
               <Route path="/dashboard" element={<DashboardPage />} />
+              <Route path="/profile" element={<ProfilePage />} />
+              <Route path="/membership/subscribe/:slug" element={<MembershipSubscribePage />} />
               <Route path="/cars" element={<CarsPage />} />
               <Route path="/booking" element={<BookingPage />} />
               <Route path="/bookings" element={<BookingsPage />} />
@@ -81,6 +89,8 @@ export function AppRoutes() {
               <Route path="/admin" element={<AdminOverviewPage />} />
               <Route path="/admin/operations" element={<AdminOperationsPage />} />
               <Route path="/admin/bookings" element={<AdminBookingsPage />} />
+              <Route path="/admin/wash-tiers" element={<AdminWashTiersPage />} />
+              <Route path="/admin/membership-plans" element={<AdminMembershipPlansPage />} />
               <Route path="/admin/complaints" element={<AdminComplaintsPage />} />
               <Route path="/admin/users" element={<AdminUsersPage />} />
               <Route path="/admin/revenue" element={<AdminRevenuePage />} />

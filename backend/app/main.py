@@ -1,23 +1,36 @@
+import logging
 from contextlib import asynccontextmanager
 from pathlib import Path
 
 import app.models  # noqa: F401 — register ORM mappers before metadata operations
+
+logger = logging.getLogger(__name__)
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
 from app.config.settings import settings
-from app.database.database import Base, engine
+from sqlalchemy import text
+
+from app.database.database import Base, async_session_maker, engine
 from app.routes import (
     assistant_routes,
     auth_routes,
     booking_routes,
     cars_routes,
     geocode_routes,
+    places_routes,
     partner_routes,
     pricing_routes,
     user_routes,
+    membership_plan_routes,
+    user_membership_routes,
+    notification_routes,
+    wash_tier_routes,
 )
+from app.utils.seed_demo_users import seed_demo_users
+from app.utils.seed_membership_plans import ensure_membership_plan_columns, seed_membership_plans_if_empty
+from app.utils.seed_wash_tiers import seed_wash_tiers_if_empty
 from app.utils.exceptions import register_exception_handlers
 
 
@@ -26,6 +39,18 @@ async def lifespan(_: FastAPI):
     if settings.ENVIRONMENT == "development":
         async with engine.begin() as conn:
             await conn.run_sync(Base.metadata.create_all)
+            await ensure_membership_plan_columns(conn)
+        try:
+            async with engine.begin() as conn:
+                await conn.execute(
+                    text("ALTER TYPE otp_purpose ADD VALUE IF NOT EXISTS 'password_reset'")
+                )
+        except Exception:
+            logger.debug("otp_purpose enum already includes password_reset or DB is fresh", exc_info=True)
+        async with async_session_maker() as db:
+            await seed_wash_tiers_if_empty(db)
+            await seed_membership_plans_if_empty(db)
+            await seed_demo_users(db)
     yield
     await engine.dispose()
 
@@ -62,7 +87,12 @@ app.include_router(cars_routes.router)
 app.include_router(booking_routes.router)
 app.include_router(partner_routes.router)
 app.include_router(pricing_routes.router)
+app.include_router(wash_tier_routes.router)
+app.include_router(membership_plan_routes.router)
+app.include_router(user_membership_routes.router)
+app.include_router(notification_routes.router)
 app.include_router(geocode_routes.router)
+app.include_router(places_routes.router)
 app.include_router(assistant_routes.router)
 
 

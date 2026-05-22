@@ -29,6 +29,7 @@ async def create_user(db: AsyncSession, data: UserCreate) -> User:
         full_name=data.full_name.strip(),
         phone=data.phone.strip() if data.phone else None,
         role=UserRole.customer,
+        is_verified=True,
     )
     db.add(user)
     try:
@@ -36,6 +37,20 @@ async def create_user(db: AsyncSession, data: UserCreate) -> User:
     except IntegrityError:
         await db.rollback()
         raise ConflictError("Email already registered") from None
+    await db.refresh(user)
+    return user
+
+
+async def reset_password(db: AsyncSession, email: str, new_password: str) -> User:
+    user = await get_user_by_email(db, email)
+    if user is None:
+        raise NotFoundError("No account found for this email")
+    if not user.is_active:
+        from app.utils.exceptions import ForbiddenError
+
+        raise ForbiddenError("Inactive user")
+    user.hashed_password = hash_password(new_password)
+    await db.commit()
     await db.refresh(user)
     return user
 
@@ -50,6 +65,7 @@ async def create_partner_user(db: AsyncSession, data: PartnerSignup) -> User:
         full_name=data.full_name.strip(),
         phone=data.phone.strip() if data.phone else None,
         role=UserRole.washer,
+        is_verified=True,
     )
     db.add(user)
     await db.flush()

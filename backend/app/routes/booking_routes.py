@@ -4,7 +4,7 @@ from collections.abc import AsyncIterator
 from typing import Annotated
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, File, Form, UploadFile, status
+from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, UploadFile, status
 from sqlalchemy import select
 from fastapi.responses import StreamingResponse
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -52,8 +52,15 @@ async def create_booking(
 async def list_bookings(
     db: Annotated[AsyncSession, Depends(get_db)],
     current: Annotated[User, Depends(get_current_active_user)],
+    scope: Annotated[str | None, Query(description="Use scope=admin for the full admin console list")] = None,
 ) -> BookingReadList | BookingAdminReadList:
-    if user_has_admin_console_access(current):
+    # Customer "My bookings" uses this path without scope — never widen via admin demo mode.
+    if scope == "admin":
+        if not user_has_admin_console_access(current):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Admin console access required",
+            )
         items = await booking_service.list_bookings_admin(db)
         return BookingAdminReadList(items=items)
     items = await booking_service.list_bookings_for_user(db, current)
