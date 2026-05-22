@@ -3,7 +3,6 @@ import {
   View,
   Text,
   ScrollView,
-  TouchableOpacity,
   StyleSheet,
   Animated,
   Easing,
@@ -14,14 +13,16 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useTheme } from '../../context/ThemeContext';
 import { useNewBooking } from '../../context/NewBookingContext';
 import { pricingService, PACKAGES, VEHICLE_SIZES } from '../../services/pricingService';
-import { formatPriceCents } from '../../services/bookingService';
-import AppIcon from '../../components/customer/AppIcon';
+import { formatCents } from '../../lib/formatCurrency';
+import { getPackage } from '../../services/pricingService';
+import { garageService } from '../../services/garageService';
 import StepHeader from '../../components/customer/StepHeader';
 import CustomerStepProgress from '../../components/customer/CustomerStepProgress';
 import CustomerFooterBar from '../../components/customer/ui/CustomerFooterBar';
 import CustomerPrimaryButton from '../../components/customer/ui/CustomerPrimaryButton';
 import PackageCard from '../../components/customer/PackageCard';
 import SizeChip from '../../components/customer/SizeChip';
+import BookingLiveSummary from '../../components/customer/BookingLiveSummary';
 
 export default function NewWashPackage() {
   const { theme } = useTheme();
@@ -31,6 +32,8 @@ export default function NewWashPackage() {
   const [estimating, setEstimating] = useState(false);
   const [estimateError, setEstimateError] = useState('');
   const [estimatePerPackage, setEstimatePerPackage] = useState({});
+  const [expandedId, setExpandedId] = useState('super_deluxe');
+  const [vehicleLabel, setVehicleLabel] = useState('—');
   const priceAnim = useRef(new Animated.Value(0)).current;
   const s = styles(theme);
 
@@ -38,7 +41,20 @@ export default function NewWashPackage() {
     setLastStep('package');
   }, [setLastStep]);
 
-  // Calculate all three package prices for the chosen vehicle size
+  useEffect(() => {
+    if (!form.carId) {
+      setVehicleLabel('—');
+      return;
+    }
+    garageService
+      .getVehicles()
+      .then((list) => {
+        const v = list.find((c) => c.id === form.carId);
+        setVehicleLabel(v ? `${v.make} ${v.model}` : '—');
+      })
+      .catch(() => setVehicleLabel('—'));
+  }, [form.carId]);
+
   useEffect(() => {
     let cancelled = false;
     setEstimating(true);
@@ -47,7 +63,7 @@ export default function NewWashPackage() {
     const run = async () => {
       try {
         const results = await Promise.all(
-          PACKAGES.map((p) => pricingService.calculate(p.id, form.vehicleSize))
+          PACKAGES.map((p) => pricingService.calculate(p.id, form.vehicleSize)),
         );
         if (cancelled) return;
         const map = {};
@@ -56,7 +72,12 @@ export default function NewWashPackage() {
         });
         setEstimatePerPackage(map);
         const selectedCents = map[form.packageId];
-        if (selectedCents != null) setField('priceCents', selectedCents);
+        if (selectedCents != null) {
+          setFields({
+            priceCents: selectedCents,
+            currency: results[0]?.currency || 'INR',
+          });
+        }
 
         Animated.timing(priceAnim, {
           toValue: 1,
@@ -76,11 +97,9 @@ export default function NewWashPackage() {
       cancelled = true;
       clearTimeout(timeout);
     };
-    // priceAnim and setField are stable
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [form.vehicleSize]);
 
-  // When user picks a different package, set price from cache immediately
   useEffect(() => {
     const cents = estimatePerPackage[form.packageId];
     if (cents != null) {
@@ -99,23 +118,38 @@ export default function NewWashPackage() {
     else router.replace('/new-wash/vehicle');
   };
 
-  const handleContinue = () => router.push('/new-wash/schedule');
+  const handleSelectPackage = (id) => {
+    setField('packageId', id);
+    setExpandedId(id);
+  };
 
-  const totalLabel = form.priceCents != null
-    ? formatPriceCents(form.priceCents)
-    : estimating
-    ? '...'
-    : '—';
+  const totalLabel =
+    form.priceCents != null
+      ? formatCents(form.priceCents, form.currency || 'INR')
+      : estimating
+        ? '…'
+        : '—';
+
+  const pkg = getPackage(form.packageId);
 
   return (
     <SafeAreaView style={s.safe} edges={['top']}>
-      <StepHeader title="Pick a package" step="Step 2 of 4" onBack={handleBack} />
+      <StepHeader title="Package & price" step="Step 2 of 4" onBack={handleBack} />
       <CustomerStepProgress currentStep="package" />
       <ScrollView
-        contentContainerStyle={[s.scroll, { paddingBottom: insets.bottom + 160 }]}
+        contentContainerStyle={[s.scroll, { paddingBottom: insets.bottom + 200 }]}
         showsVerticalScrollIndicator={false}
       >
-        <Text style={s.sectionLabel}>Vehicle size</Text>
+        <BookingLiveSummary
+          stepIndex={1}
+          vehicleLabel={vehicleLabel}
+          packageLabel={pkg.label}
+          priceCents={form.priceCents}
+          currency={form.currency || 'INR'}
+          pricingLoading={estimating}
+        />
+
+        <Text style={[s.sectionLabel, { marginTop: 18 }]}>Vehicle size</Text>
         <View style={s.sizeRow}>
           {VEHICLE_SIZES.map((sz) => (
             <SizeChip
@@ -134,13 +168,16 @@ export default function NewWashPackage() {
               key={p.id}
               pkg={p}
               selected={form.packageId === p.id}
-              recommended={p.id === 'deluxe'}
+              expanded={expandedId === p.id}
               priceLabel={
                 estimatePerPackage[p.id] != null
-                  ? formatPriceCents(estimatePerPackage[p.id])
+                  ? formatCents(estimatePerPackage[p.id])
                   : '—'
               }
-              onPress={() => setField('packageId', p.id)}
+              onPress={() => handleSelectPackage(p.id)}
+              onToggleExpand={() =>
+                setExpandedId((prev) => (prev === p.id ? null : p.id))
+              }
             />
           ))}
         </View>
@@ -155,7 +192,7 @@ export default function NewWashPackage() {
       <CustomerFooterBar>
         <View style={s.totalRow}>
           <View>
-            <Text style={s.totalLabel}>Estimated total</Text>
+            <Text style={s.totalLabel}>Estimated price</Text>
             <Animated.Text
               style={[
                 s.totalValue,
@@ -178,13 +215,11 @@ export default function NewWashPackage() {
               {totalLabel}
             </Animated.Text>
           </View>
-          {estimating ? (
-            <ActivityIndicator color={theme.accent.primary} />
-          ) : null}
+          {estimating ? <ActivityIndicator color={theme.accent.primary} /> : null}
         </View>
         <CustomerPrimaryButton
           label="Continue"
-          onPress={handleContinue}
+          onPress={() => router.push('/new-wash/schedule')}
           disabled={form.priceCents == null}
         />
       </CustomerFooterBar>
@@ -213,17 +248,6 @@ const styles = (theme) => {
       backgroundColor: 'rgba(220,38,38,0.08)',
     },
     errorText: { fontSize: 13, color: c.error, fontWeight: '600' },
-    footer: {
-      position: 'absolute',
-      bottom: 0,
-      left: 0,
-      right: 0,
-      paddingHorizontal: 20,
-      paddingTop: 12,
-      backgroundColor: c.surface,
-      borderTopWidth: StyleSheet.hairlineWidth,
-      borderTopColor: c.outlineVariant,
-    },
     totalRow: {
       flexDirection: 'row',
       alignItems: 'center',
@@ -243,21 +267,6 @@ const styles = (theme) => {
       color: theme.text.primary,
       letterSpacing: -0.4,
       marginTop: 2,
-    },
-    primaryBtn: {
-      flexDirection: 'row',
-      gap: 8,
-      backgroundColor: theme.accent.primary,
-      paddingVertical: 16,
-      borderRadius: theme.radius.full,
-      alignItems: 'center',
-      justifyContent: 'center',
-    },
-    primaryBtnDisabled: { opacity: 0.4 },
-    primaryBtnText: {
-      fontSize: 15,
-      fontWeight: '700',
-      color: theme.button.primary.text,
     },
   });
 };

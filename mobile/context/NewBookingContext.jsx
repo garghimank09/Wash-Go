@@ -6,13 +6,14 @@ const STEP_ORDER = ['vehicle', 'package', 'schedule', 'review'];
 
 const initialForm = {
   carId: null,
-  packageId: 'deluxe',
+  packageId: 'super_deluxe',
   vehicleSize: 'sedan',
   address: '',
   latitude: null,
   longitude: null,
   scheduledAt: null,
   priceCents: null,
+  currency: 'INR',
 };
 
 const NewBookingContext = createContext(null);
@@ -99,7 +100,7 @@ export function NewBookingProvider({ children }) {
       form.carId ||
         form.address ||
         form.scheduledAt ||
-        (form.packageId && form.packageId !== 'deluxe') ||
+        (form.packageId && form.packageId !== 'super_deluxe') ||
         (form.vehicleSize && form.vehicleSize !== 'sedan') ||
         form.latitude != null ||
         form.longitude != null

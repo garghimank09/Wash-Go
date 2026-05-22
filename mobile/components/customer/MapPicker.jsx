@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 import { View, Text, StyleSheet, Pressable, ActivityIndicator } from 'react-native';
 import MapView, { Marker, PROVIDER_DEFAULT } from 'react-native-maps';
 import * as Location from 'expo-location';
@@ -12,16 +12,32 @@ const DEFAULT_REGION = {
   longitudeDelta: 0.04,
 };
 
+async function reverseGeocode(lat, lng) {
+  try {
+    const places = await Location.reverseGeocodeAsync({ latitude: lat, longitude: lng });
+    if (!places?.length) return null;
+    const p = places[0];
+    return [p.name, p.street, p.district, p.city, p.region]
+      .filter(Boolean)
+      .filter((v, i, arr) => arr.indexOf(v) === i)
+      .join(', ');
+  } catch {
+    return null;
+  }
+}
+
 export default function MapPicker({
   latitude,
   longitude,
   onChange,
   onResolveAddress,
-  height = 200,
+  height = 240,
+  autoLocateOnMount = false,
 }) {
   const { theme } = useTheme();
   const mapRef = useRef(null);
   const [locating, setLocating] = useState(false);
+  const autoLocatedRef = useRef(false);
   const c = theme.customer;
 
   const hasPin = latitude != null && longitude != null;
@@ -43,57 +59,63 @@ export default function MapPicker({
           latitudeDelta: 0.01,
           longitudeDelta: 0.01,
         },
-        420
+        420,
       );
     }
   }, [latitude, longitude, hasPin]);
 
-  const handleUseMyLocation = async () => {
+  const applyCoords = useCallback(
+    async (lat, lng, resolveAddress = true) => {
+      onChange?.({ latitude: lat, longitude: lng });
+      if (resolveAddress && onResolveAddress) {
+        const text = await reverseGeocode(lat, lng);
+        if (text) onResolveAddress(text);
+      }
+    },
+    [onChange, onResolveAddress],
+  );
+
+  const handleUseMyLocation = useCallback(async () => {
     setLocating(true);
     try {
       const { status } = await Location.requestForegroundPermissionsAsync();
-      if (status !== 'granted') {
-        setLocating(false);
-        return;
-      }
+      if (status !== 'granted') return;
       const pos = await Location.getCurrentPositionAsync({
         accuracy: Location.Accuracy.Balanced,
       });
       const { latitude: lat, longitude: lng } = pos.coords;
-      onChange?.({ latitude: lat, longitude: lng });
-
-      try {
-        const places = await Location.reverseGeocodeAsync({ latitude: lat, longitude: lng });
-        if (places && places.length > 0) {
-          const p = places[0];
-          const text = [p.name, p.street, p.city, p.region]
-            .filter(Boolean)
-            .filter((value, idx, arr) => arr.indexOf(value) === idx)
-            .join(', ');
-          if (text) onResolveAddress?.(text);
-        }
-      } catch {
-        // silent: address optional
-      }
+      await applyCoords(lat, lng, true);
+      mapRef.current?.animateToRegion(
+        { latitude: lat, longitude: lng, latitudeDelta: 0.01, longitudeDelta: 0.01 },
+        480,
+      );
     } catch {
-      // silent: user denied or no GPS
+      // denied or unavailable
     } finally {
       setLocating(false);
     }
+  }, [applyCoords]);
+
+  useEffect(() => {
+    if (!autoLocateOnMount || autoLocatedRef.current) return;
+    autoLocatedRef.current = true;
+    if (!hasPin) {
+      handleUseMyLocation();
+    }
+  }, [autoLocateOnMount, hasPin, handleUseMyLocation]);
+
+  const handleMapPress = async (e) => {
+    const { latitude: lat, longitude: lng } = e.nativeEvent.coordinate;
+    await applyCoords(lat, lng, true);
   };
 
-  const handleMapPress = (e) => {
+  const handleDragEnd = async (e) => {
     const { latitude: lat, longitude: lng } = e.nativeEvent.coordinate;
-    onChange?.({ latitude: lat, longitude: lng });
-  };
-
-  const handleDrag = (e) => {
-    const { latitude: lat, longitude: lng } = e.nativeEvent.coordinate;
-    onChange?.({ latitude: lat, longitude: lng });
+    await applyCoords(lat, lng, true);
   };
 
   return (
-    <View style={[styles.wrap, { height, borderColor: c.outlineVariant }]}>
+    <View style={[styles.wrap, { height, borderColor: c.outlineVariant }, theme.shadow.md]}>
       <MapView
         ref={mapRef}
         provider={PROVIDER_DEFAULT}
@@ -110,8 +132,7 @@ export default function MapPicker({
           <Marker
             coordinate={{ latitude, longitude }}
             draggable
-            onDragEnd={handleDrag}
-            pinColor={theme.accent.primary}
+            onDragEnd={handleDragEnd}
             anchor={{ x: 0.5, y: 1 }}
           >
             <View style={styles.markerWrap}>
@@ -136,16 +157,25 @@ export default function MapPicker({
         {locating ? (
           <ActivityIndicator size="small" color={theme.accent.primary} />
         ) : (
-          <AppIcon name="my-location" size={18} color={theme.accent.primary} />
+          <>
+            <AppIcon name="my-location" size={16} color={theme.accent.primary} />
+            <Text style={[styles.locateText, { color: theme.accent.dark }]}>Use my location</Text>
+          </>
         )}
       </Pressable>
 
-      {!hasPin ? (
+      {hasPin ? (
+        <View style={[styles.coordChip, { backgroundColor: 'rgba(15,23,42,0.78)' }]}>
+          <Text style={styles.coordText}>
+            {latitude.toFixed(5)}, {longitude.toFixed(5)}
+          </Text>
+        </View>
+      ) : (
         <View style={[styles.hint, { backgroundColor: 'rgba(15,23,42,0.72)' }]}>
           <AppIcon name="touch-app" size={14} color="#fff" />
-          <Text style={styles.hintText}>Tap the map to drop your pin</Text>
+          <Text style={styles.hintText}>Tap the map or search above</Text>
         </View>
-      ) : null}
+      )}
     </View>
   );
 }
@@ -153,7 +183,7 @@ export default function MapPicker({
 const styles = StyleSheet.create({
   wrap: {
     width: '100%',
-    borderRadius: 16,
+    borderRadius: 18,
     borderWidth: 1,
     overflow: 'hidden',
     position: 'relative',
@@ -162,26 +192,40 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 12,
     right: 12,
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
+    gap: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 999,
     borderWidth: 1,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.12,
     shadowRadius: 6,
-    elevation: 2,
+    elevation: 3,
   },
+  locateText: { fontSize: 11, fontWeight: '700', letterSpacing: 0.2 },
+  coordChip: {
+    position: 'absolute',
+    bottom: 12,
+    left: 12,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 8,
+  },
+  coordText: { fontSize: 10, fontWeight: '700', color: '#fff', letterSpacing: 0.3 },
   hint: {
     position: 'absolute',
     bottom: 12,
     alignSelf: 'center',
+    left: '15%',
+    right: '15%',
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
     gap: 6,
-    paddingHorizontal: 10,
+    paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 999,
   },

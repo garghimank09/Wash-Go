@@ -12,8 +12,9 @@ import { useRouter } from 'expo-router';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../../context/ThemeContext';
 import { useNewBooking } from '../../context/NewBookingContext';
-import { bookingService, formatPriceCents } from '../../services/bookingService';
-import { getPackage, getVehicleSize } from '../../services/pricingService';
+import { bookingService } from '../../services/bookingService';
+import { formatCents } from '../../lib/formatCurrency';
+import { pricingService, getPackage, getVehicleSize } from '../../services/pricingService';
 import { garageService } from '../../services/garageService';
 import AppIcon from '../../components/customer/AppIcon';
 import StepHeader from '../../components/customer/StepHeader';
@@ -25,14 +26,16 @@ import CustomerSkeleton from '../../components/customer/ui/CustomerSkeleton';
 import { CUSTOMER_LAYOUT } from '../../constants/customerTheme';
 import VehicleArt, { resolveBodyColor } from '../../components/customer/VehicleArt';
 import { formatScheduledLabel } from '../../components/customer/DateTimeField';
+import BookingLiveSummary from '../../components/customer/BookingLiveSummary';
 
 export default function NewWashReview() {
   const { theme } = useTheme();
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { form, setLastStep } = useNewBooking();
+  const { form, setField, setLastStep } = useNewBooking();
   const [vehicle, setVehicle] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [pricingLoading, setPricingLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
   const s = styles(theme);
@@ -59,12 +62,53 @@ export default function NewWashReview() {
     };
   }, [form.carId]);
 
+  useEffect(() => {
+    let cancelled = false;
+    setPricingLoading(true);
+    pricingService
+      .calculate(form.packageId, form.vehicleSize)
+      .then((r) => {
+        if (!cancelled) {
+          setField('priceCents', r.estimated_price_cents);
+          if (r.currency) setField('currency', r.currency);
+        }
+      })
+      .catch(() => {})
+      .finally(() => {
+        if (!cancelled) setPricingLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [form.packageId, form.vehicleSize, setField]);
+
   const handleBack = () => {
     if (router.canGoBack()) router.back();
     else router.replace('/new-wash/schedule');
   };
 
   const handleConfirm = async () => {
+    if (!form.carId) {
+      setError('Select a vehicle first');
+      return;
+    }
+    if (!form.address?.trim() || form.address.trim().length < 5) {
+      setError('Enter a valid service address');
+      return;
+    }
+    if (form.latitude == null || form.longitude == null) {
+      setError('Set your location on the map');
+      return;
+    }
+    if (!form.scheduledAt || new Date(form.scheduledAt).getTime() <= Date.now() + 60_000) {
+      setError('Choose a future date and time');
+      return;
+    }
+    if (form.priceCents == null) {
+      setError('Price estimate unavailable — go back to package step');
+      return;
+    }
+
     setError('');
     setSubmitting(true);
     try {
@@ -77,6 +121,7 @@ export default function NewWashReview() {
         priceCents: form.priceCents,
         packageId: form.packageId,
         vehicleSize: form.vehicleSize,
+        currency: form.currency || 'INR',
       });
       router.replace({
         pathname: '/new-wash/success',
@@ -101,6 +146,17 @@ export default function NewWashReview() {
         contentContainerStyle={[s.scroll, { paddingBottom: insets.bottom + 180 }]}
         showsVerticalScrollIndicator={false}
       >
+        <BookingLiveSummary
+          stepIndex={3}
+          vehicleLabel={
+            vehicle ? `${vehicle.make} ${vehicle.model}` : loading ? '…' : '—'
+          }
+          packageLabel={pkg.label}
+          priceCents={form.priceCents}
+          currency={form.currency || 'INR'}
+          pricingLoading={pricingLoading}
+        />
+
         {error ? (
           <View style={s.errorBox}>
             <Text style={s.errorText}>{error}</Text>
@@ -171,7 +227,9 @@ export default function NewWashReview() {
               Final price may vary based on conditions on arrival.
             </Text>
           </View>
-          <Text style={s.totalValue}>{formatPriceCents(form.priceCents)}</Text>
+          <Text style={s.totalValue}>
+            {formatCents(form.priceCents, form.currency || 'INR')}
+          </Text>
         </View>
       </ScrollView>
 
@@ -180,7 +238,7 @@ export default function NewWashReview() {
           label="Confirm Booking"
           onPress={handleConfirm}
           loading={submitting}
-          disabled={loading}
+          disabled={loading || pricingLoading || form.priceCents == null}
         />
         <CustomerGhostButton
           label="Edit details"

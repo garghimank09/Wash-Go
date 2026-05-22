@@ -1,8 +1,9 @@
 import { apiFetch } from './apiClient';
 import { deriveCustomerPhase, isPhaseActive } from '../lib/customerBookingPhase';
+import { formatCents, DEFAULT_CURRENCY } from '../lib/formatCurrency';
 
 function encodeNotes({ packageId, vehicleSize, extra }) {
-  const base = `WashGo|package:${packageId || 'deluxe'}|vehicle:${vehicleSize || 'sedan'}`;
+  const base = `WashGo|package:${packageId || 'super_deluxe'}|vehicle:${vehicleSize || 'sedan'}`;
   return extra ? `${base}|${extra}` : base;
 }
 
@@ -40,7 +41,7 @@ export const bookingService = {
     priceCents,
     packageId,
     vehicleSize,
-    currency = 'USD',
+    currency = DEFAULT_CURRENCY,
   }) {
     return apiFetch('/bookings', {
       method: 'POST',
@@ -98,9 +99,7 @@ export const CANCEL_REASONS = [
   { key: 'other', label: 'Other' },
 ];
 
-export function formatPriceCents(cents, currency = 'USD') {
-  if (cents == null) return '—';
-  const amount = (cents / 100).toFixed(2);
-  const symbol = currency === 'USD' ? '$' : `${currency} `;
-  return `${symbol}${amount}`;
+/** @deprecated Prefer formatCents from lib/formatCurrency */
+export function formatPriceCents(cents, currency = DEFAULT_CURRENCY) {
+  return formatCents(cents, currency);
 }

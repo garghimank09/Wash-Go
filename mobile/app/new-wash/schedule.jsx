@@ -2,9 +2,7 @@ import { useState, useEffect } from 'react';
 import {
   View,
   Text,
-  TextInput,
   ScrollView,
-  TouchableOpacity,
   StyleSheet,
   Pressable,
   KeyboardAvoidingView,
@@ -20,7 +18,17 @@ import CustomerStepProgress from '../../components/customer/CustomerStepProgress
 import CustomerFooterBar from '../../components/customer/ui/CustomerFooterBar';
 import CustomerPrimaryButton from '../../components/customer/ui/CustomerPrimaryButton';
 import MapPicker from '../../components/customer/MapPicker';
+import AddressSearchField from '../../components/customer/AddressSearchField';
 import DateTimeField, { formatScheduledLabel } from '../../components/customer/DateTimeField';
+import BookingLiveSummary from '../../components/customer/BookingLiveSummary';
+import { getPackage } from '../../services/pricingService';
+import { garageService } from '../../services/garageService';
+
+function defaultScheduleIso(hoursAhead = 24) {
+  const d = new Date();
+  d.setTime(d.getTime() + hoursAhead * 3600 * 1000);
+  return d.toISOString();
+}
 
 function quickPickDate(offsetHours, hour = 9, minute = 0) {
   const d = new Date();
@@ -40,7 +48,6 @@ const QUICK_PICKS = [
 function buildWeekend() {
   const d = new Date();
   const day = d.getDay();
-  // Saturday = 6
   const daysUntilSaturday = (6 - day + 7) % 7 || 7;
   d.setDate(d.getDate() + daysUntilSaturday);
   d.setHours(10, 0, 0, 0);
@@ -53,11 +60,28 @@ export default function NewWashSchedule() {
   const insets = useSafeAreaInsets();
   const { form, setField, setFields, setLastStep } = useNewBooking();
   const [errors, setErrors] = useState({});
+  const [vehicleLabel, setVehicleLabel] = useState('—');
+  const [geocoding, setGeocoding] = useState(false);
   const s = styles(theme);
+  const pkg = getPackage(form.packageId);
 
   useEffect(() => {
     setLastStep('schedule');
-  }, [setLastStep]);
+    if (!form.scheduledAt) {
+      setField('scheduledAt', defaultScheduleIso(24));
+    }
+  }, [setLastStep, setField, form.scheduledAt]);
+
+  useEffect(() => {
+    if (!form.carId) return;
+    garageService
+      .getVehicles()
+      .then((list) => {
+        const v = list.find((c) => c.id === form.carId);
+        setVehicleLabel(v ? `${v.make} ${v.model}` : '—');
+      })
+      .catch(() => setVehicleLabel('—'));
+  }, [form.carId]);
 
   const handleBack = () => {
     if (router.canGoBack()) router.back();
@@ -67,17 +91,17 @@ export default function NewWashSchedule() {
   const validate = () => {
     const next = {};
     if (!form.address || form.address.trim().length < 5) {
-      next.address = 'Enter an address (at least 5 characters)';
+      next.address = 'Enter a complete service address (at least 5 characters)';
     }
     if (form.latitude == null || form.longitude == null) {
-      next.pin = 'Drop a pin on the map for your exact location';
+      next.pin = 'Set your location on the map';
     }
     if (!form.scheduledAt) {
       next.scheduledAt = 'Pick a date and time';
     } else {
       const t = new Date(form.scheduledAt).getTime();
-      if (Number.isNaN(t) || t <= Date.now()) {
-        next.scheduledAt = 'Scheduled time must be in the future';
+      if (Number.isNaN(t) || t <= Date.now() + 60_000) {
+        next.scheduledAt = 'Choose a date and time in the future';
       }
     }
     setErrors(next);
@@ -97,67 +121,73 @@ export default function NewWashSchedule() {
         style={{ flex: 1 }}
       >
         <ScrollView
-          contentContainerStyle={[s.scroll, { paddingBottom: insets.bottom + 140 }]}
+          contentContainerStyle={[s.scroll, { paddingBottom: insets.bottom + 160 }]}
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
-          <View style={s.card}>
-            <Text style={s.cardTitle}>Service location</Text>
-            <Text style={s.cardSub}>Where should the washer come?</Text>
+          <BookingLiveSummary
+            stepIndex={2}
+            vehicleLabel={vehicleLabel}
+            packageLabel={pkg.label}
+            priceCents={form.priceCents}
+            currency={form.currency || 'INR'}
+          />
 
+          <View style={s.introRow}>
+            <View style={s.introIcon}>
+              <AppIcon name="place" size={20} color={theme.accent.primary} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={s.introTitle}>Where & when</Text>
+              <Text style={s.introSub}>
+                Search your address, refine the pin, then pick a future slot.
+              </Text>
+            </View>
+          </View>
+
+          <View style={s.card}>
+            <Text style={s.cardTitle}>Service address</Text>
             <View style={{ height: 12 }} />
-            <Text style={s.label}>Address</Text>
-            <TextInput
-              style={[s.input, errors.address && s.inputError]}
-              placeholder="e.g. 12, Park View Apartments, Sector 22"
-              placeholderTextColor={theme.text.muted}
+            <AddressSearchField
               value={form.address}
               onChangeText={(v) => setField('address', v)}
-              multiline
-              numberOfLines={2}
+              error={errors.address}
+              onGeocodeStatusChange={({ geocoding: g }) => setGeocoding(!!g)}
+              onLocationResolved={({ latitude, longitude }) =>
+                setFields({ latitude, longitude })
+              }
             />
-            {errors.address ? (
-              <Text style={s.errorText}>{errors.address}</Text>
-            ) : null}
+            {errors.pin ? <Text style={s.errorText}>{errors.pin}</Text> : null}
 
             <View style={{ height: 14 }} />
-            <Text style={s.label}>Pin your exact location</Text>
-            <View style={{ height: 8 }} />
             <MapPicker
-              height={220}
+              height={248}
+              autoLocateOnMount
               latitude={form.latitude}
               longitude={form.longitude}
               onChange={({ latitude, longitude }) =>
                 setFields({ latitude, longitude })
               }
-              onResolveAddress={(addr) => {
-                if (!form.address || form.address.length < 5) {
-                  setField('address', addr);
-                }
-              }}
+              onResolveAddress={(addr) => setField('address', addr)}
             />
-            {errors.pin ? (
-              <Text style={s.errorText}>{errors.pin}</Text>
-            ) : null}
-            {form.latitude != null ? (
-              <View style={s.pinChip}>
-                <AppIcon name="place" size={12} color={theme.accent.primary} />
-                <Text style={s.pinChipText}>
-                  {form.latitude.toFixed(4)}, {form.longitude.toFixed(4)}
-                </Text>
-              </View>
-            ) : null}
           </View>
 
           <View style={s.card}>
-            <Text style={s.cardTitle}>Schedule</Text>
-            <Text style={s.cardSub}>When should we wash it?</Text>
+            <View style={s.scheduleHeader}>
+              <AppIcon name="schedule" size={18} color={theme.accent.primary} />
+              <View style={{ flex: 1 }}>
+                <Text style={s.cardTitle}>Schedule</Text>
+                <Text style={s.cardSub}>Must be in the future (validated on the server).</Text>
+              </View>
+            </View>
 
             <View style={{ height: 12 }} />
             <DateTimeField
               value={form.scheduledAt}
               onChange={(iso) => setField('scheduledAt', iso)}
               minimumDate={new Date()}
+              label="Date & time"
+              hint={formatScheduledLabel(form.scheduledAt)}
             />
             {errors.scheduledAt ? (
               <Text style={s.errorText}>{errors.scheduledAt}</Text>
@@ -170,7 +200,8 @@ export default function NewWashSchedule() {
                 const iso = q.build();
                 const selected =
                   form.scheduledAt &&
-                  Math.abs(new Date(iso).getTime() - new Date(form.scheduledAt).getTime()) < 60_000;
+                  Math.abs(new Date(iso).getTime() - new Date(form.scheduledAt).getTime()) <
+                    60_000;
                 return (
                   <Pressable
                     key={q.id}
@@ -197,7 +228,11 @@ export default function NewWashSchedule() {
         </ScrollView>
 
         <CustomerFooterBar>
-          <CustomerPrimaryButton label="Continue" onPress={handleContinue} />
+          <CustomerPrimaryButton
+            label="Continue"
+            onPress={handleContinue}
+            disabled={geocoding}
+          />
         </CustomerFooterBar>
       </KeyboardAvoidingView>
     </SafeAreaView>
@@ -209,6 +244,21 @@ const styles = (theme) => {
   return StyleSheet.create({
     safe: { flex: 1, backgroundColor: c.surface },
     scroll: { paddingHorizontal: 20, paddingTop: 4, gap: 14 },
+    introRow: { flexDirection: 'row', gap: 12, alignItems: 'flex-start', marginTop: 4 },
+    introIcon: {
+      width: 40,
+      height: 40,
+      borderRadius: 12,
+      backgroundColor: c.primaryBg,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    introTitle: {
+      fontSize: 16,
+      fontWeight: '700',
+      color: theme.text.primary,
+    },
+    introSub: { fontSize: 12, color: theme.text.secondary, marginTop: 4, lineHeight: 18 },
     card: {
       backgroundColor: c.surfaceContainerLowest,
       borderRadius: theme.radius.lg,
@@ -217,51 +267,24 @@ const styles = (theme) => {
       padding: 16,
     },
     cardTitle: {
-      fontSize: 16,
+      fontSize: 15,
       fontWeight: '700',
       color: theme.text.primary,
-      letterSpacing: -0.2,
     },
-    cardSub: { fontSize: 12, color: theme.text.secondary, marginTop: 4 },
-    label: { fontSize: 13, fontWeight: '600', color: theme.text.secondary, marginBottom: 8 },
-    input: {
-      backgroundColor: c.surface,
-      borderWidth: 1,
-      borderColor: c.outlineVariant,
-      borderRadius: theme.radius.md,
-      paddingHorizontal: 14,
-      paddingVertical: 12,
-      fontSize: 15,
-      color: theme.text.primary,
-      minHeight: 64,
-      textAlignVertical: 'top',
-    },
-    inputError: { borderColor: c.error },
+    cardSub: { fontSize: 11, color: theme.text.secondary, marginTop: 2 },
+    scheduleHeader: { flexDirection: 'row', alignItems: 'flex-start', gap: 10 },
     errorText: {
-      marginTop: 6,
+      marginTop: 8,
       fontSize: 12,
       color: c.error,
       fontWeight: '600',
     },
-    pinChip: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: 6,
-      marginTop: 10,
-      alignSelf: 'flex-start',
-      paddingHorizontal: 10,
-      paddingVertical: 5,
-      borderRadius: 999,
-      backgroundColor: c.primaryBg,
-    },
-    pinChipText: { fontSize: 11, fontWeight: '700', color: theme.accent.dark, letterSpacing: 0.4 },
     quickLabel: {
       fontSize: 11,
       fontWeight: '700',
       color: theme.text.muted,
       textTransform: 'uppercase',
       letterSpacing: 0.6,
-      marginTop: 4,
       marginBottom: 8,
     },
     quickRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
@@ -278,26 +301,5 @@ const styles = (theme) => {
       borderColor: theme.accent.primary,
     },
     quickChipText: { fontSize: 12, fontWeight: '700', color: theme.text.primary },
-    footer: {
-      paddingHorizontal: 20,
-      paddingTop: 12,
-      backgroundColor: c.surface,
-      borderTopWidth: StyleSheet.hairlineWidth,
-      borderTopColor: c.outlineVariant,
-    },
-    primaryBtn: {
-      flexDirection: 'row',
-      gap: 8,
-      backgroundColor: theme.accent.primary,
-      paddingVertical: 16,
-      borderRadius: theme.radius.full,
-      alignItems: 'center',
-      justifyContent: 'center',
-    },
-    primaryBtnText: {
-      fontSize: 15,
-      fontWeight: '700',
-      color: theme.button.primary.text,
-    },
   });
 };

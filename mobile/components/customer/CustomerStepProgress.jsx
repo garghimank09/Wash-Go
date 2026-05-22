@@ -1,7 +1,8 @@
-import { View, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet } from 'react-native';
 import { useTheme } from '../../context/ThemeContext';
 
 const STEPS = ['vehicle', 'package', 'schedule', 'review'];
+const STEP_LABELS = ['Vehicle', 'Package', 'Where & when', 'Review'];
 
 /**
  * Visual step indicator for the new-wash flow (presentation only).
@@ -17,15 +18,29 @@ export default function CustomerStepProgress({ currentStep }) {
         const active = index === currentIndex;
         return (
           <View key={step} style={styles.item}>
-            <View
-              style={[
-                styles.dot,
-                {
-                  backgroundColor: done || active ? theme.accent.primary : theme.customer.outlineVariant,
-                  opacity: active ? 1 : done ? 0.85 : 0.45,
-                },
-              ]}
-            />
+            <View style={styles.dotCol}>
+              <View
+                style={[
+                  styles.dot,
+                  {
+                    backgroundColor: done || active ? theme.accent.primary : theme.customer.outlineVariant,
+                    opacity: active ? 1 : done ? 0.85 : 0.45,
+                  },
+                ]}
+              />
+              <Text
+                style={[
+                  styles.label,
+                  {
+                    color: active ? theme.accent.primary : theme.text.muted,
+                    fontWeight: active ? '700' : '500',
+                  },
+                ]}
+                numberOfLines={1}
+              >
+                {STEP_LABELS[index]}
+              </Text>
+            </View>
             {index < STEPS.length - 1 ? (
               <View
                 style={[
@@ -54,7 +69,16 @@ const styles = StyleSheet.create({
   item: {
     flex: 1,
     flexDirection: 'row',
+    alignItems: 'flex-start',
+  },
+  dotCol: {
     alignItems: 'center',
+    minWidth: 52,
+  },
+  label: {
+    fontSize: 9,
+    marginTop: 4,
+    textAlign: 'center',
   },
   dot: {
     width: 8,

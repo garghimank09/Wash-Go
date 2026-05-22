@@ -31,6 +31,7 @@ import AppIcon from '../../components/customer/AppIcon';
 import PhasePill from '../../components/customer/PhasePill';
 import { useNotifications } from '../../context/NotificationContext';
 import NotificationPanel from '../../components/notifications/NotificationPanel';
+import { WASH_POINTS } from '../../lib/rewardsMockData';
 
 const STEP_LABEL = {
   vehicle: 'Pick vehicle',
@@ -142,7 +143,9 @@ export default function Dashboard() {
       color: theme.customer.tertiary,
       bg: theme.customer.tertiaryBg,
       label: 'Rewards',
-      value: '240',
+      value: new Intl.NumberFormat('en-IN', { notation: 'compact', maximumFractionDigits: 1 }).format(
+        WASH_POINTS,
+      ),
       unit: 'Pts',
       filled: true,
     },

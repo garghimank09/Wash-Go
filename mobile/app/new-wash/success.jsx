@@ -4,7 +4,7 @@ import { useRouter, useLocalSearchParams } from 'expo-router';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../../context/ThemeContext';
 import { useNewBooking } from '../../context/NewBookingContext';
-import { formatPriceCents } from '../../services/bookingService';
+import { formatCents } from '../../lib/formatCurrency';
 import { getPackage } from '../../services/pricingService';
 import AppIcon from '../../components/customer/AppIcon';
 import CustomerFooterBar from '../../components/customer/ui/CustomerFooterBar';
@@ -85,7 +85,7 @@ export default function NewWashSuccess() {
             />
             <Row
               label="Total"
-              value={formatPriceCents(data.priceCents)}
+              value={formatCents(data.priceCents, data.currency || 'INR')}
               theme={theme}
               accent
               last
