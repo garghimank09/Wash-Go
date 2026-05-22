@@ -106,13 +106,38 @@ export const ROLE_GRADIENTS = {
 };
 
 export const ROLE_LAYOUT = {
+  composition: {
+    regionWidthRatio: 0.5,
+    horizontalPad: 10,
+    /** Space reserved above global footer for CTA block (px, before safe area). */
+    ctaBlockHeight: 118,
+    footerReserve: 20,
+    /** Light top inset inside composition column (bottom-weighted layout). */
+    contentTopPadding: 8,
+    /** Grounds hero + CTA above global footer. */
+    contentBottomPadding: 48,
+    heroBottomPadding: 20,
+    ctaTopPadding: 12,
+    /** Caps hero slot height without shrinking image scale ratios. */
+    heroMaxHeightRatio: 0.6,
+  },
   hero: {
-    widthRatio: 1.48,
-    widthRatioPartner: 1.22,
-    heightRatio: 0.8,
-    bottomOffset: 0.1,
-    reflectionHeightRatio: 0.24,
-    reflectionOpacity: 0.32,
+    /** Customer car wider than region — front half peeks from the left edge. */
+    widthRatioCustomer: 1.85,
+    widthRatioPartner: 1.35,
+    /** Hero height as fraction of composition content area (between header and CTA). */
+    heightRatioOfContent: 0.83,
+    reflectionHeightRatio: 0.2,
+    reflectionOpacity: 0.28,
+    /** Fraction of regionWidth — negative shifts car left (half-car peek at neutral). */
+    customerPeekShiftX: -0.12,
+    /** Fraction of regionWidth — target at full slide (centered in region). */
+    customerRevealShiftX: 0,
+    partnerPeekShiftX: 0,
+    partnerRevealShiftX: 0,
+    /** Framing-only scale at neutral (slightly larger → settles to 1 during drag). */
+    customerFramingScaleNeutral: 1.04,
+    customerFramingScaleActive: 1,
   },
   arrow: {
     size: 52,

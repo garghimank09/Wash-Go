@@ -19,6 +19,8 @@ class Settings(BaseSettings):
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24
     ENVIRONMENT: str = "development"
+    # WashGo API port (8001 avoids common conflicts with other local apps on 8000).
+    API_PORT: int = 8001
     # Allow any authenticated user to call admin console APIs in non-production (matches VITE_ADMIN_UI_DEMO).
     ADMIN_UI_DEMO_ALLOW: bool = True
     OLLAMA_BASE_URL: str = "http://localhost:11434"

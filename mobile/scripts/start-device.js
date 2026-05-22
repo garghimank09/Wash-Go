@@ -7,6 +7,9 @@
  */
 const { execSync, spawn } = require('child_process');
 const os = require('os');
+const path = require('path');
+
+require(path.join(__dirname, 'prewarm-dev.js'));
 
 function getLanIp() {
   const ifaces = os.networkInterfaces();

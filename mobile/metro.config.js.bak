@@ -1,0 +1,32 @@
+const path = require('path');
+const { getDefaultConfig } = require('expo/metro-config');
+
+const projectRoot = __dirname;
+
+/** @type {import('expo/metro-config').MetroConfig} */
+const config = getDefaultConfig(projectRoot);
+
+config.watchFolders = [projectRoot];
+
+config.resolver.nodeModulesPaths = [path.resolve(projectRoot, 'node_modules')];
+
+// Do not crawl build output, iCloud trash, tooling, or native folders.
+config.resolver.blockList = [
+  /\.node_modules\.trash\./,
+  /[/\\]dist[/\\].*/,
+  /[/\\]\.expo[/\\].*/,
+  /[/\\]\.git[/\\].*/,
+  /[/\\]\.claude[/\\].*/,
+  /[/\\]ios[/\\].*/,
+  /[/\\]android[/\\].*/,
+  /[/\\]coverage[/\\].*/,
+];
+
+config.watcher = {
+  ...config.watcher,
+  healthCheck: {
+    enabled: false,
+  },
+};
+
+module.exports = config;

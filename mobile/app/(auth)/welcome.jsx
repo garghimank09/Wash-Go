@@ -18,7 +18,7 @@ export default function Welcome() {
   }, [router]);
 
   const handlePartner = useCallback(() => {
-    router.push('/(partner)/home');
+    router.push('/(auth)/partner-login');
   }, [router]);
 
   return (

@@ -36,11 +36,13 @@ python run.py
 Or:
 
 ```powershell
-uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+uvicorn app.main:app --reload --host 0.0.0.0 --port 8001
 ```
 
-- Interactive docs: [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs)
-- ReDoc: [http://127.0.0.1:8000/redoc](http://127.0.0.1:8000/redoc)
+Default port is **8001** (set `API_PORT` in `backend/.env` to override). Port 8000 is often taken by other local services.
+
+- Interactive docs: [http://127.0.0.1:8001/docs](http://127.0.0.1:8001/docs)
+- ReDoc: [http://127.0.0.1:8001/redoc](http://127.0.0.1:8001/redoc)
 
 In **`ENVIRONMENT=development`**, tables are auto-created on startup (`create_all`). For production, switch to migrations (e.g. Alembic) and set `ENVIRONMENT=production`.
 

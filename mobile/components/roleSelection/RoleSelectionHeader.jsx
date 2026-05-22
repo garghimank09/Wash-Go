@@ -1,7 +1,13 @@
 import { memo } from 'react';
 import { Platform, StyleSheet, Text, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { MotiView } from 'moti';
+import Animated, {
+  useAnimatedStyle,
+  useSharedValue,
+  withDelay,
+  withTiming,
+} from 'react-native-reanimated';
+import { useEffect } from 'react';
 import Svg, {
   Defs,
   LinearGradient as SvgLinearGradient,
@@ -9,7 +15,7 @@ import Svg, {
   Text as SvgText,
 } from 'react-native-svg';
 import { ROLE_COLORS, ROLE_PALETTE, ROLE_LAYOUT } from '../../constants/roleSelectionTheme';
-import { ROLE_MOTION } from '../../constants/roleSelectionMotion';
+import { ROLE_EASE, ROLE_MOTION } from '../../constants/roleSelectionMotion';
 
 const LOGO = ROLE_LAYOUT.header.logoSize;
 const GO_W = 88;
@@ -17,11 +23,11 @@ const GO_H = 54;
 
 const textHalo = Platform.select({
   ios: {
-    textShadowColor: 'rgba(255, 255, 255, 0.75)',
+    textShadowColor: 'rgba(255, 255, 255, 0.65)',
     textShadowOffset: { width: 0, height: 0 },
-    textShadowRadius: 10,
+    textShadowRadius: 8,
   },
-  android: { elevation: 0 },
+  android: {},
   default: {},
 });
 
@@ -49,49 +55,47 @@ function GradientGo() {
   );
 }
 
-/**
- * Centered header — WASH navy + GO accent; subtitle readable on both halves.
- */
 function RoleSelectionHeaderImpl({ topInset, reduceMotion = false }) {
-  const delay = (ms = 0) => (reduceMotion ? 0 : ROLE_MOTION.delay.header + ms);
+  const opacity = useSharedValue(reduceMotion ? 1 : 0);
+  const translateY = useSharedValue(reduceMotion ? 0 : -16);
+
+  useEffect(() => {
+    if (reduceMotion) {
+      opacity.value = 1;
+      translateY.value = 0;
+      return;
+    }
+    const d = ROLE_MOTION.delay.header;
+    opacity.value = withDelay(d, withTiming(1, { duration: 520, easing: ROLE_EASE }));
+    translateY.value = withDelay(d, withTiming(0, { duration: 540, easing: ROLE_EASE }));
+  }, [opacity, translateY, reduceMotion]);
+
+  const animStyle = useAnimatedStyle(() => ({
+    opacity: opacity.value,
+    transform: [{ translateY: translateY.value }],
+  }));
 
   return (
-    <View pointerEvents="none" style={[styles.wrap, { paddingTop: topInset + 16 }]}>
+    <View pointerEvents="none" style={[styles.wrap, { paddingTop: topInset + 14 }]}>
       <LinearGradient
-        colors={['rgba(255, 255, 255, 0.42)', 'rgba(255, 255, 255, 0.08)', 'transparent']}
-        locations={[0, 0.55, 1]}
+        colors={['rgba(255, 255, 255, 0.38)', 'rgba(255, 255, 255, 0.06)', 'transparent']}
+        locations={[0, 0.5, 1]}
         style={styles.headerScrim}
         pointerEvents="none"
       />
-      <MotiView
-        from={{ opacity: 0, translateY: -20 }}
-        animate={{ opacity: 1, translateY: 0 }}
-        transition={{ type: 'timing', duration: 500, delay: delay(0) }}
-      >
+      <Animated.View style={[styles.content, animStyle]}>
         <Text style={[styles.welcome, textHalo]}>Welcome to</Text>
-      </MotiView>
-
-      <MotiView
-        from={{ opacity: 0, translateY: -14 }}
-        animate={{ opacity: 1, translateY: 0 }}
-        transition={{ type: 'timing', duration: 540, delay: delay(90) }}
-        style={styles.logoRow}
-      >
-        <Text style={[styles.wash, textHalo]}>WASH</Text>
-        <View style={styles.goWrap}>
-          <GradientGo />
+        <View style={styles.logoRow}>
+          <Text style={[styles.wash, textHalo]}>WASH</Text>
+          <View style={styles.goWrap}>
+            <GradientGo />
+          </View>
         </View>
-      </MotiView>
-
-      <MotiView
-        from={{ opacity: 0, translateY: -10 }}
-        animate={{ opacity: 1, translateY: 0 }}
-        transition={{ type: 'timing', duration: 520, delay: delay(200) }}
-        style={styles.subtitleBlock}
-      >
-        <Text style={[styles.subtitle, textHalo]}>Choose your experience</Text>
-        <Text style={[styles.subtitle, textHalo]}>to get started</Text>
-      </MotiView>
+        <View style={styles.subtitleBlock}>
+          <Text style={[styles.subtitle, textHalo]}>Choose your experience</Text>
+          <Text style={[styles.subtitle, textHalo]}>to get started</Text>
+        </View>
+      </Animated.View>
     </View>
   );
 }
@@ -104,53 +108,59 @@ const styles = StyleSheet.create({
     right: 0,
     alignItems: 'center',
     paddingHorizontal: 24,
-    zIndex: 20,
+    zIndex: 30,
   },
   headerScrim: {
     position: 'absolute',
     top: 0,
     left: 0,
     right: 0,
-    height: 200,
+    height: ROLE_MOTION.layout.headerZoneHeight + 40,
+  },
+  content: {
+    alignItems: 'center',
+    width: '100%',
   },
   welcome: {
     fontSize: ROLE_LAYOUT.header.welcomeSize,
     fontWeight: '500',
     color: ROLE_PALETTE.brand.welcome,
-    letterSpacing: 0.3,
-    marginBottom: 6,
+    letterSpacing: 0.35,
+    marginBottom: 8,
     textAlign: 'center',
   },
   logoRow: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-end',
     justifyContent: 'center',
-    marginBottom: 10,
+    marginBottom: 12,
   },
   wash: {
     fontSize: LOGO,
     fontWeight: '900',
-    letterSpacing: 1,
+    letterSpacing: 1.2,
     color: ROLE_COLORS.deepBlue,
-    lineHeight: LOGO + 4,
+    lineHeight: LOGO + 2,
+    paddingBottom: 2,
   },
   goWrap: {
     width: GO_W,
     height: GO_H,
     alignItems: 'center',
-    justifyContent: 'center',
+    justifyContent: 'flex-end',
+    marginLeft: 2,
   },
   subtitleBlock: {
     alignItems: 'center',
-    gap: 2,
+    gap: 3,
   },
   subtitle: {
     fontSize: ROLE_LAYOUT.header.subtitleSize,
     fontWeight: '400',
     color: ROLE_COLORS.textGray,
     textAlign: 'center',
-    letterSpacing: 0.2,
-    lineHeight: 22,
+    letterSpacing: 0.25,
+    lineHeight: 21,
   },
 });
 

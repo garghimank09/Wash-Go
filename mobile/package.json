@@ -1,9 +1,12 @@
 {
   "name": "mobile",
   "version": "1.0.0",
-  "main": "index.js",
+  "main": "expo-router/entry",
   "scripts": {
+    "prestart": "node scripts/prewarm-dev.js",
     "start": "expo start",
+    "start:clear": "expo start -c",
+    "start:fast": "node scripts/prewarm-dev.js && expo start",
     "start:sim": "expo start --ios",
     "start:device": "node scripts/start-device.js",
     "start:device:clear": "node scripts/start-device.js --clear",
@@ -15,7 +18,9 @@
     "kill-metro": "lsof -ti:8081 | xargs kill -9 2>/dev/null || true",
     "clean:modules": "node scripts/clean-node-modules.js",
     "reinstall": "npm run clean:modules && rm -rf .expo && npm install",
-    "postinstall": "node scripts/verify-deps.js"
+    "postinstall": "node scripts/verify-deps.js",
+    "verify-deps:full": "node scripts/verify-deps-full.js",
+    "fix:watchman": "watchman watch-del-all 2>/dev/null; watchman watch-project ."
   },
   "dependencies": {
     "@react-native-async-storage/async-storage": "2.2.0",
@@ -34,7 +39,7 @@
     "expo-linear-gradient": "~55.0.14",
     "expo-linking": "~55.0.15",
     "expo-location": "~55.1.10",
-    "expo-router": "~55.0.15",
+    "expo-router": "~55.0.16",
     "expo-secure-store": "~55.0.14",
     "expo-splash-screen": "~55.0.21",
     "expo-status-bar": "~55.0.6",

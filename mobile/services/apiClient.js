@@ -72,7 +72,19 @@ export async function apiFetch(path, options = {}) {
   }
 
   if (!response.ok) {
-    throw new Error(parseErrorDetail(data, `Request failed (${response.status})`));
+    const fallback = `Request failed (${response.status})`;
+    let message = parseErrorDetail(data, fallback);
+    if (
+      response.status === 404 &&
+      typeof message === 'string' &&
+      message.toLowerCase() === 'not found' &&
+      (path.startsWith('/auth') || path.startsWith('/bookings') || path.startsWith('/partner'))
+    ) {
+      message =
+        'WashGo API not found on this URL. Start the backend (python run.py) — default port 8001. ' +
+        'If another app uses port 8000, set EXPO_PUBLIC_API_URL in mobile/.env to your WashGo URL.';
+    }
+    throw new Error(message);
   }
 
   return data;

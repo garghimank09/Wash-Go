@@ -5,8 +5,8 @@ Modern SPA for the WashGo FastAPI backend: JWT auth, dashboard, cars, bookings, 
 ## Connect backend + database + frontend
 
 1. **PostgreSQL** — service running; database **`washgo`** exists; `backend/.env` has a valid **`DATABASE_URL`** (see [Verify PostgreSQL](#verify-postgresql)).
-2. **Backend** — from `backend/`: `python run.py` (API on **port 8000**).
-3. **Frontend** — ensure **`frontend/.env`** exists with **`VITE_API_URL=http://127.0.0.1:8000`** (copy from `frontend/.env.example` if needed). Restart **`npm run dev`** after changing `.env`.
+2. **Backend** — from `backend/`: `python run.py` (API on **port 8001** by default).
+3. **Frontend** — ensure **`frontend/.env`** exists with **`VITE_API_URL=http://127.0.0.1:8001`**. Restart **`npm run dev`** after changing `.env`.
 4. Open **http://localhost:5173** (or the URL Vite prints), sign up / log in, and use the dashboard — requests go to FastAPI, which uses PostgreSQL.
 
 ## Setup
@@ -19,7 +19,7 @@ npm install
 **Environment:** `frontend/.env` should define:
 
 ```env
-VITE_API_URL=http://127.0.0.1:8000
+VITE_API_URL=http://127.0.0.1:8001
 ```
 
 Restart the dev server whenever you change `.env` (Vite reads it at startup).

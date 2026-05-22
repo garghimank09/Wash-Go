@@ -7,6 +7,8 @@ node_modules/
 .expo/
 dist/
 web-build/
+.node_modules.trash*/
+.metro-health-check*
 expo-env.d.ts
 
 # Native

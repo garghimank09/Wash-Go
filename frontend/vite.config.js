@@ -10,7 +10,7 @@ export default defineConfig({
     proxy: {
       // Optional: proxy API in dev to avoid CORS — backend still needs CORS for production
       '/api': {
-        target: 'http://127.0.0.1:8000',
+        target: 'http://127.0.0.1:8001',
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/api/, ''),
       },

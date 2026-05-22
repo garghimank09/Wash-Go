@@ -28,23 +28,24 @@ export const ROLE_MOTION = {
   },
   slide: {
     threshold: 0.68,
-    trackWidthRatio: 0.4,
-    /** >1 = more resistance near the end of the track. */
+    /** Velocity (px/s) above which release commits even below threshold */
+    velocityCommit: 720,
+    /** Fraction of composition region width (half screen). */
+    trackWidthRatio: 0.58,
     dragResistance: 1.12,
     arrowSize: 52,
+    portalHideProgress: 0.92,
+    contentFadeStart: 0.08,
+    contentFadeEnd: 0.35,
   },
   layout: {
-    neutralWidthRatio: 0.5,
-    activeWidthRatio: 0.76,
-    inactiveWidthRatio: 0.24,
     heroScaleNeutral: 1,
-    heroScaleActive: 1.08,
-    heroScaleInactive: 0.96,
+    heroScaleActive: 1.06,
+    heroScaleInactive: 0.985,
+    customerHeroScaleNeutral: 1.05,
+    customerHeroScaleActive: 1.18,
+    headerZoneHeight: 140,
     tabletBreakpoint: 768,
-    tabletActiveWidthRatio: 0.72,
-    tabletInactiveWidthRatio: 0.28,
-    partnerHeroCenterFix: -0.06,
-    customerHeroCenterFix: 0,
   },
 };
 
