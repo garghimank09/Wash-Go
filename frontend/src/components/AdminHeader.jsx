@@ -5,7 +5,9 @@ import { useAuth } from '../context/AuthContext';
 import { isAdminDemoMode } from '../lib/canAccessAdmin';
 import { cn } from '../lib/cn';
 import { Button } from '../ui/button';
+import { NotificationBell } from './NotificationBell';
 import { ThemeToggle } from './ThemeToggle';
+import { notificationsService } from '../services/notificationsService';
 
 export function AdminHeader({ onMenuClick }) {
   const { user, logout } = useAuth();
@@ -69,6 +71,7 @@ export function AdminHeader({ onMenuClick }) {
           <ArrowLeft className="size-3.5" strokeWidth={2} aria-hidden />
           Customer app
         </Link>
+        <NotificationBell service={notificationsService} defaultPath="/admin/bookings" />
         <ThemeToggle className="border-indigo-200/50 dark:border-indigo-500/20" />
         <Button variant="outline" size="sm" className="gap-2 border-indigo-200/60 dark:border-indigo-500/25" onClick={logout}>
           <LogOut className="size-4" strokeWidth={1.75} aria-hidden />

@@ -1,14 +1,12 @@
-import { PACKAGES, VEHICLE_SIZES } from '../constants/config';
+import { VEHICLE_SIZES } from '../constants/config';
 
 const WASHGO_PREFIX = /^WashGo\|/i;
 
 /**
- * Parse package / vehicle size embedded in booking notes at create time.
- * Format: `WashGo|package:deluxe|vehicle:sedan` (optional extra text after).
- *
  * @param {string | null | undefined} notes
+ * @param {{ id: string, label?: string }[] | undefined} tiers
  */
-export function parseBookingMeta(notes) {
+export function parseBookingMeta(notes, tiers) {
   const raw = (notes || '').trim();
   if (!raw) {
     return {
@@ -20,11 +18,11 @@ export function parseBookingMeta(notes) {
     };
   }
 
-  const packageId = raw.match(/(?:^|\|)package:([a-z]+)/i)?.[1]?.toLowerCase() ?? null;
+  const packageId = raw.match(/(?:^|\|)package:([a-z0-9_]+)/i)?.[1]?.toLowerCase() ?? null;
   const vehicleSize = raw.match(/(?:^|\|)vehicle:([a-z]+)/i)?.[1]?.toLowerCase() ?? null;
 
   const packageLabel = packageId
-    ? (PACKAGES.find((p) => p.id === packageId)?.label ?? packageId)
+    ? (tiers?.find((p) => p.id === packageId)?.label ?? packageId)
     : null;
   const vehicleSizeLabel = vehicleSize
     ? (VEHICLE_SIZES.find((v) => v.id === vehicleSize)?.label ?? vehicleSize)
@@ -52,10 +50,11 @@ export function parseBookingMeta(notes) {
 
 /**
  * @param {object} booking API row with optional notes + packageLabel
+ * @param {{ id: string, label?: string }[] | undefined} tiers
  */
-export function withBookingMeta(booking) {
+export function withBookingMeta(booking, tiers) {
   if (!booking) return booking;
-  const meta = parseBookingMeta(booking.notes);
+  const meta = parseBookingMeta(booking.notes, tiers);
   return {
     ...booking,
     packageId: meta.packageId ?? booking.packageId ?? null,

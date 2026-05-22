@@ -6,6 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.auth.dependencies import require_roles
 from app.database.database import get_db
 from app.models.user import User, UserRole
+from app.schemas.partner_earning_schema import PartnerEarningsSummary
 from app.schemas.partner_schema import (
     PartnerProfileRead,
     PartnerProfileUpdate,
@@ -13,9 +14,22 @@ from app.schemas.partner_schema import (
     WasherAvailabilityUpdate,
 )
 from app.schemas.tracking_schema import WasherLocationUpdate
-from app.services import partner_profile_service, partner_service, tracking_service
+from app.services import (
+    partner_earning_service,
+    partner_profile_service,
+    partner_service,
+    tracking_service,
+)
 
 router = APIRouter(prefix="/partner", tags=["Partner"])
+
+
+@router.get("/earnings", response_model=PartnerEarningsSummary)
+async def get_partner_earnings(
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current: Annotated[User, Depends(require_roles(UserRole.washer))],
+) -> PartnerEarningsSummary:
+    return await partner_earning_service.get_partner_earnings_summary(db, current)
 
 
 @router.get("/availability", response_model=WasherAvailabilityRead)

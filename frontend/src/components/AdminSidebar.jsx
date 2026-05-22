@@ -4,9 +4,11 @@ import {
   BarChart3,
   ClipboardList,
   Coins,
+  CreditCard,
   LayoutGrid,
   MessageSquareWarning,
   PieChart,
+  Sparkles,
   Users,
 } from 'lucide-react';
 
@@ -34,6 +36,8 @@ const GROUPS = [
     items: [
       { to: '/admin/operations', label: 'Operations hub', Icon: LayoutGrid },
       { to: '/admin/bookings', label: 'Booking management', Icon: ClipboardList },
+      { to: '/admin/wash-tiers', label: 'Wash tiers', Icon: Sparkles },
+      { to: '/admin/membership-plans', label: 'Membership plans', Icon: CreditCard },
       { to: '/admin/complaints', label: 'Complaints', Icon: MessageSquareWarning },
     ],
   },

@@ -117,9 +117,9 @@ export function computeZonePerformance(bookings) {
 
 export function computeEarningsBreakdown(kpis) {
   const gross = kpis.revenue30dCents || 0;
-  const platformFeesCents = Math.round(gross * 0.15);
-  const washerPayoutsCents = Math.round(gross * 0.75);
-  const pendingSettlementCents = Math.max(0, gross - platformFeesCents - washerPayoutsCents);
+  const washerPayoutsCents = Math.round(gross * 0.9);
+  const platformFeesCents = Math.max(0, gross - washerPayoutsCents);
+  const pendingSettlementCents = washerPayoutsCents;
   return { grossCents: gross, platformFeesCents, washerPayoutsCents, pendingSettlementCents };
 }
 

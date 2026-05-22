@@ -1,8 +1,8 @@
-from sqlalchemy import func, select
+from sqlalchemy import exists, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.auth.dependencies import user_has_admin_console_access
 from app.models.booking import Booking, BookingStatus
+from app.models.payment import Payment, PaymentStatus
 from app.models.user import User, UserRole
 from app.models.washer import Washer
 from app.schemas.booking_sync_schema import BookingSyncState
@@ -23,10 +23,17 @@ async def get_bookings_sync_state(db: AsyncSession, user: User) -> BookingSyncSt
         )
         a_count, a_updated = assigned.one()
 
+        paid = exists(
+            select(Payment.id).where(
+                Payment.booking_id == Booking.id,
+                Payment.status == PaymentStatus.captured,
+            )
+        )
         offers = await db.execute(
             select(func.count(Booking.id), func.max(Booking.updated_at)).where(
                 Booking.status == BookingStatus.pending,
                 Booking.washer_id.is_(None),
+                paid,
             )
         )
         o_count, o_updated = offers.one()
@@ -41,7 +48,7 @@ async def get_bookings_sync_state(db: AsyncSession, user: User) -> BookingSyncSt
         return BookingSyncState(version=version, count=n + o_n, updated_at=latest)
 
     stmt = select(func.count(Booking.id), func.max(Booking.updated_at))
-    if not user_has_admin_console_access(user):
+    if user.role != UserRole.admin:
         stmt = stmt.where(Booking.customer_id == user.id)
 
     result = await db.execute(stmt)
@@ -49,7 +56,7 @@ async def get_bookings_sync_state(db: AsyncSession, user: User) -> BookingSyncSt
     n = int(count or 0)
     ts = max_updated.isoformat() if max_updated else "none"
 
-    if user_has_admin_console_access(user):
+    if user.role == UserRole.admin:
         w_result = await db.execute(
             select(func.count(Washer.id), func.max(Washer.updated_at))
         )

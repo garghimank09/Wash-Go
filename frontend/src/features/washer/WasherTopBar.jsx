@@ -1,8 +1,10 @@
 import { Link } from 'react-router-dom';
 import { Sparkles, ToggleLeft, ToggleRight } from 'lucide-react';
 
+import { NotificationBell } from '../../components/NotificationBell';
 import { PartnerNavMenu } from '../../components/PartnerNavMenu';
 import { WasherTrustCompactBar } from '../../features/washer/WasherTrustCompactBar';
+import { partnerNotificationsService } from '../../services/notificationsService';
 import { cn } from '../../lib/cn';
 
 export function WasherTopBar({ av }) {
@@ -21,6 +23,7 @@ export function WasherTopBar({ av }) {
           </p>
         </Link>
         <div className="flex shrink-0 items-center gap-2">
+          <NotificationBell service={partnerNotificationsService} defaultPath="/partner/requests" />
           <button
             type="button"
             onClick={() => av.setOnline(!av.online)}

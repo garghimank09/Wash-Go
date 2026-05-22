@@ -9,40 +9,7 @@ export const TOKEN_KEY = 'washgo_access_token';
 /** Separate JWT for partner (washer) app — keeps customer and field sessions independent. */
 export const PARTNER_TOKEN_KEY = 'washgo_partner_token';
 
-/**
- * Per-wash tiers shown in customer booking (/booking) and parsed from booking notes.
- * Keep ids in sync with backend pricing_schema + pricing_routes.
- */
-export const PACKAGES = [
-  {
-    id: 'basic',
-    label: 'Basic',
-    desc: 'Quick exterior refresh',
-    badge: null,
-    features: ['Exterior rinse & dry', 'Tyre splash clean', 'Standard scheduling'],
-  },
-  {
-    id: 'deluxe',
-    label: 'Deluxe',
-    desc: 'Everyday deep clean',
-    badge: null,
-    features: ['Everything in Basic', 'Wheel & trim detail', 'Door jamb wipe'],
-  },
-  {
-    id: 'super_deluxe',
-    label: 'Super Deluxe',
-    desc: 'Inside + out shine',
-    badge: 'Popular',
-    features: ['Everything in Deluxe', 'Interior vacuum', 'Dashboard & console wipe', 'Window interiors'],
-  },
-  {
-    id: 'premium',
-    label: 'Premium',
-    desc: 'Showroom-ready finish',
-    badge: 'Best value',
-    features: ['Everything in Super Deluxe', 'Wax / sealant coat', 'Tyre dressing', 'Priority washer match'],
-  },
-];
+/** Wash tiers are loaded from GET /wash-tiers (see useWashTiers / WashTiersProvider). */
 
 export const VEHICLE_SIZES = [
   { id: 'compact', label: 'Compact' },
@@ -50,7 +17,7 @@ export const VEHICLE_SIZES = [
   { id: 'suv', label: 'SUV / large' },
 ];
 
-/** Monthly membership preview (landing / dashboard) — maps to default wash tier. */
+/** @deprecated Use GET /membership-plans — kept for legacy references only. */
 export const MEMBERSHIP_PLANS = [
   {
     id: 'spark',

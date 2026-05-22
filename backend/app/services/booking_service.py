@@ -2,12 +2,16 @@ from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 from uuid import UUID
 
-from sqlalchemy import select
+from sqlalchemy import exists, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.models.booking import Booking, BookingStatus
+from app.models.payment import Payment, PaymentStatus
+from app.services.notification_service import notify_new_paid_booking
+from app.services.partner_earning_service import record_earning_on_accept
+from app.services.user_membership_service import consume_wash_credit
 from app.models.car import Car
 from app.models.user import User, UserRole
 from app.models.washer import Washer
@@ -94,6 +98,19 @@ async def create_booking(db: AsyncSession, customer: User, data: BookingCreate) 
         notes=data.notes.strip() if data.notes else None,
     )
     db.add(booking)
+    await db.flush()
+    db.add(
+        Payment(
+            booking_id=booking.id,
+            amount_cents=data.price_cents,
+            currency=data.currency,
+            status=PaymentStatus.captured,
+            provider="demo",
+            external_id=f"demo-{booking.id}",
+        )
+    )
+    await consume_wash_credit(db, customer)
+    await notify_new_paid_booking(db, booking, customer)
     try:
         await db.commit()
     except IntegrityError:
@@ -246,7 +263,8 @@ async def list_bookings_for_user(db: AsyncSession, user: User) -> list[Booking]:
     stmt = select(Booking).options(selectinload(Booking.car), selectinload(Booking.washer))
 
     if user.role == UserRole.admin:
-        stmt = stmt.order_by(Booking.scheduled_at.desc())
+        # Full list is only via GET /bookings?scope=admin (admin console).
+        return []
     elif user.role == UserRole.washer:
         wr = await db.execute(select(Washer).where(Washer.user_id == user.id))
         washer = wr.scalar_one_or_none()
@@ -386,11 +404,18 @@ async def list_open_offers(db: AsyncSession, user: User) -> list[BookingOfferRea
         raise ForbiddenError("Only washers can view dispatch offers")
     await _get_washer_profile_for_user(db, user)
 
+    paid = exists(
+        select(Payment.id).where(
+            Payment.booking_id == Booking.id,
+            Payment.status == PaymentStatus.captured,
+        )
+    )
     stmt = (
         select(Booking)
         .where(
             Booking.status == BookingStatus.pending,
             Booking.washer_id.is_(None),
+            paid,
         )
         .options(selectinload(Booking.car), selectinload(Booking.customer))
         .order_by(Booking.scheduled_at.asc())
@@ -428,6 +453,7 @@ async def accept_booking(db: AsyncSession, user: User, booking_id: UUID) -> Book
         raise ConflictError("Booking is no longer available")
     booking.washer_id = washer.id
     booking.status = BookingStatus.confirmed
+    await record_earning_on_accept(db, booking, washer)
     await db.commit()
     await db.refresh(booking)
     return booking
@@ -476,9 +502,7 @@ async def get_booking_detail(db: AsyncSession, user: User, booking_id: UUID) -> 
     if booking is None:
         raise NotFoundError("Booking not found")
 
-    from app.auth.dependencies import user_has_admin_console_access
-
-    if user_has_admin_console_access(user):
+    if user.role == UserRole.admin:
         pass
     elif user.role == UserRole.washer:
         wr = await db.execute(select(Washer).where(Washer.user_id == user.id))

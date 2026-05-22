@@ -24,15 +24,28 @@ function usePartnerAuthState() {
     redirectToMarketingHome();
   }, []);
 
-  const loginPartner = useCallback(async (email, password) => {
-    const result = await loginViaPartnerPortal(email, password);
-    if (result.kind === 'admin') {
-      const err = new Error('ADMIN_ROLE');
-      err.user = result.user;
+  const loginPartner = useCallback(async (email, password, otpCode) => {
+    if (!otpCode) {
+      const result = await loginViaPartnerPortal(email, password);
+      if (result.kind === 'admin') {
+        const err = new Error('ADMIN_ROLE');
+        err.user = result.user;
+        throw err;
+      }
+      setUser(result.user);
+      return result.user;
+    }
+    const data = await partnerAuthService.login(email, password, otpCode);
+    partnerAuthService.setToken(data.access_token);
+    const me = await partnerAuthService.me();
+    if (me.role !== 'washer') {
+      partnerAuthService.setToken(null);
+      setUser(null);
+      const err = new Error('PARTNER_ROLE');
       throw err;
     }
-    setUser(result.user);
-    return result.user;
+    setUser(me);
+    return me;
   }, []);
 
   useEffect(() => {
@@ -75,13 +88,18 @@ function usePartnerAuthState() {
     };
   }, []);
 
-  const signupPartner = useCallback(
-    async (payload) => {
-      await partnerAuthService.signup(payload);
-      await loginPartner(payload.email, payload.password);
-    },
-    [loginPartner],
-  );
+  const signupPartner = useCallback(async (payload) => {
+    const data = await partnerAuthService.signup(payload);
+    partnerAuthService.setToken(data.access_token);
+    const me = await partnerAuthService.me();
+    if (me.role !== 'washer') {
+      partnerAuthService.setToken(null);
+      setUser(null);
+      throw new Error('PARTNER_ROLE');
+    }
+    setUser(me);
+    return me;
+  }, []);
 
   const refreshPartner = useCallback(async () => {
     const token = partnerAuthService.getToken();

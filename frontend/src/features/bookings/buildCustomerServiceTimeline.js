@@ -9,6 +9,15 @@ const LABELS = {
 
 const ORDER = ['searching', 'awaiting_acceptance', 'accepted', 'on_the_way', 'in_progress', 'completed'];
 
+/** Phases where the customer is still *at* that step (not yet achieved). */
+const IN_PROGRESS_PHASES = new Set(['searching', 'awaiting_acceptance', 'on_the_way', 'in_progress']);
+
+function stepDone(stepIndex, phaseIndex, phase) {
+  if (stepIndex < phaseIndex) return true;
+  if (stepIndex === phaseIndex && !IN_PROGRESS_PHASES.has(phase)) return true;
+  return false;
+}
+
 /**
  * Steps compatible with {@link BookingTimeline} (key, label, done, at).
  */
@@ -37,7 +46,7 @@ export function buildCustomerServiceTimeline(phase) {
   return ORDER.map((key, i) => ({
     key,
     label: LABELS[key],
-    done: i < idx,
+    done: stepDone(i, idx, phase),
     at: null,
   }));
 }

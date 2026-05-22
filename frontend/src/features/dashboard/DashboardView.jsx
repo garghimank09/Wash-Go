@@ -1,7 +1,8 @@
 import { useMemo } from 'react';
 import { m } from 'framer-motion';
 
-import { MembershipCard } from '../../components/MembershipCard';
+import { DashboardMembershipProfile } from '../membership/DashboardMembershipProfile';
+import { useMyMembership } from '../../hooks/useMyMembership';
 import { useAuth } from '../../context/AuthContext';
 import { useActiveBookingDetail } from '../../hooks/useActiveBookingDetail';
 import { useBookings } from '../../hooks/useBookings';
@@ -43,6 +44,7 @@ export function DashboardView() {
   const { user } = useAuth();
   const { items, loading, error, reload } = useBookings();
   const { cars, count: carCount, loading: carsLoading, reload: reloadCars } = useCars();
+  const { membership, loading: membershipLoading } = useMyMembership();
   const reduced = useReducedMotion();
 
   const activeBooking = useMemo(() => {
@@ -80,6 +82,10 @@ export function DashboardView() {
     >
       <m.div variants={sectionItem(reduced)}>
         <DashboardHero firstName={firstName} />
+      </m.div>
+
+      <m.div variants={sectionItem(reduced)}>
+        <DashboardMembershipProfile membership={membership} loading={membershipLoading} />
       </m.div>
 
       <m.div variants={sectionItem(reduced)}>
@@ -121,12 +127,6 @@ export function DashboardView() {
             <DashboardSavedVehicles cars={cars} loading={carsLoading} />
             <DashboardVehicleCareTips />
           </div>
-          <MembershipCard
-            title="WashGo Plus"
-            price="₹999"
-            perks={['Priority scheduling', 'AI wash recap', 'Member pricing']}
-            highlighted
-          />
         </m.div>
 
         <m.div variants={sectionItem(reduced)} className="min-w-0 lg:pt-0">

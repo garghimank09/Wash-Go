@@ -2,6 +2,8 @@ import { Link, NavLink } from 'react-router-dom';
 import { Menu } from 'lucide-react';
 
 import { CustomerNavMenu } from './CustomerNavMenu';
+import { NotificationBell } from './NotificationBell';
+import { notificationsService } from '../services/notificationsService';
 import { useAuth } from '../context/AuthContext';
 import { Button } from '../ui/button';
 import { cn } from '../lib/cn';
@@ -35,6 +37,7 @@ export function Navbar({ variant = 'marketing', onMenuClick }) {
           </div>
         </div>
         <div className="flex items-center gap-2 sm:gap-3">
+          <NotificationBell service={notificationsService} defaultPath="/bookings" />
           <CustomerNavMenu />
         </div>
       </header>

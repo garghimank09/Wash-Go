@@ -15,21 +15,21 @@ export function AuthProvider({ children }) {
     redirectToMarketingHome();
   }, []);
 
-  const login = useCallback(async (email, password) => {
-    const data = await authService.login(email, password);
+  const login = useCallback(async (email, password, otpCode) => {
+    const data = await authService.login(email, password, otpCode);
     authService.setToken(data.access_token);
     const me = await authService.me();
     setUser(me);
     return me;
   }, []);
 
-  const signup = useCallback(
-    async (payload) => {
-      await authService.signup(payload);
-      return await login(payload.email, payload.password);
-    },
-    [login],
-  );
+  const signup = useCallback(async (payload) => {
+    const data = await authService.signup(payload);
+    authService.setToken(data.access_token);
+    const me = await authService.me();
+    setUser(me);
+    return me;
+  }, []);
 
   useEffect(() => {
     const on401 = () => {

@@ -1,4 +1,6 @@
 import Skeleton from 'react-loading-skeleton';
+import { Link } from 'react-router-dom';
+import { RefreshCw, Sparkles } from 'lucide-react';
 
 import { BookingCardLink } from '../components/BookingCard';
 import { Button } from '../ui/button';
@@ -20,7 +22,7 @@ function BookingsGridSkeleton() {
 }
 
 export function BookingsPage() {
-  const { items, loading, error, reload } = useBookings();
+  const { items, loading, refreshing, error, reload } = useBookings();
 
   return (
     <div className="space-y-6">
@@ -29,9 +31,30 @@ export function BookingsPage() {
           <h1 className="wg-heading-display">Bookings</h1>
           <p className="text-wg-muted">Every card opens live detail and a richer timeline.</p>
         </div>
-        <Button variant="outline" size="sm" onClick={() => reload()}>
-          Refresh
-        </Button>
+        <div className="flex flex-wrap items-center gap-2">
+          <Link to="/booking">
+            <Button size="sm" className="gap-2">
+              <Sparkles className="size-4" strokeWidth={1.75} aria-hidden />
+              New wash
+            </Button>
+          </Link>
+          <Button
+            variant="outline"
+            size="sm"
+            className="gap-1.5"
+            disabled={refreshing}
+            onClick={() => void reload()}
+            type="button"
+            aria-busy={refreshing}
+          >
+            <RefreshCw
+              className={`size-4 shrink-0 ${refreshing ? 'animate-spin' : ''}`}
+              strokeWidth={1.75}
+              aria-hidden
+            />
+            Refresh
+          </Button>
+        </div>
       </div>
       {loading ? (
         <BookingsGridSkeleton />
@@ -40,7 +63,15 @@ export function BookingsPage() {
       ) : (
         <div className="grid gap-4 md:grid-cols-2">
           {items.length === 0 ? (
-            <p className="text-wg-muted">No bookings yet — create one from Book a wash.</p>
+            <Card className="col-span-full flex flex-col items-center justify-center border-dashed py-12 text-center">
+              <p className="text-wg-muted">No bookings yet.</p>
+              <Link to="/booking" className="mt-4">
+                <Button size="sm" className="gap-2">
+                  <Sparkles className="size-4" strokeWidth={1.75} aria-hidden />
+                  Book your first wash
+                </Button>
+              </Link>
+            </Card>
           ) : (
             items.map((b) => <BookingCardLink key={b.id} booking={b} />)
           )}

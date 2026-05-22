@@ -1,12 +1,13 @@
 import { AnimatePresence, m } from 'framer-motion';
 import { Car, Clock, MapPin, Package, Ruler, Sparkles } from 'lucide-react';
 
-import { PACKAGES, VEHICLE_SIZES } from '../../../constants/config';
+import { VEHICLE_SIZES } from '../../../constants/config';
 import { formatCents } from '../../../utils/format';
 import { Card } from '../../../ui/card';
 import { useReducedMotion } from '../../../lib/useReducedMotion';
 
 export function ReviewStep({
+  tiers = [],
   cars,
   carId,
   packageId,
@@ -20,7 +21,7 @@ export function ReviewStep({
 }) {
   const reduced = useReducedMotion();
   const car = cars.find((c) => c.id === carId);
-  const pkg = PACKAGES.find((p) => p.id === packageId);
+  const pkg = tiers.find((p) => p.id === packageId);
   const size = VEHICLE_SIZES.find((v) => v.id === vehicleSize);
 
   const rows = [
@@ -72,7 +73,9 @@ export function ReviewStep({
         </div>
         <div className="min-w-0">
           <h2 className="text-base font-bold text-wg-text">Review & confirm</h2>
-          <p className="mt-1 text-sm leading-relaxed text-wg-muted">Everything below is sent with your booking. Use Back to adjust.</p>
+          <p className="mt-1 text-sm leading-relaxed text-wg-muted">
+            Check the details below, then continue to demo payment. Your booking is sent to partners after you pay.
+          </p>
         </div>
       </div>
 

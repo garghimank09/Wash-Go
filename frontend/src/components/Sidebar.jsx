@@ -1,5 +1,5 @@
 import { NavLink } from 'react-router-dom';
-import { Calendar, Car, LayoutDashboard, Sparkles } from 'lucide-react';
+import { Calendar, Car, LayoutDashboard, Sparkles, UserCircle } from 'lucide-react';
 import { m } from 'framer-motion';
 
 import {
@@ -16,6 +16,7 @@ import { cn } from '../lib/cn';
 const links = [
   { to: '/dashboard', label: 'Dashboard', end: true, Icon: LayoutDashboard },
   { to: '/bookings', label: 'Bookings', Icon: Calendar },
+  { to: '/profile', label: 'Profile', Icon: UserCircle },
   { to: '/cars', label: 'My garage', Icon: Car },
   { to: '/booking', label: 'New wash', Icon: Sparkles },
 ];

@@ -4,8 +4,10 @@ from pydantic import BaseModel, Field
 
 
 class PricingCalculateRequest(BaseModel):
-    package_id: Literal["basic", "deluxe", "super_deluxe", "premium"] = Field(
-        description="Wash package tier",
+    package_id: str = Field(
+        min_length=2,
+        max_length=64,
+        description="Wash tier slug (e.g. basic, super_deluxe)",
     )
     vehicle_size: Literal["compact", "sedan", "suv"] = Field(description="Vehicle size category")
 

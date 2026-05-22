@@ -1,4 +1,3 @@
-import { PACKAGES } from '../../../constants/config';
 
 export const DEMO_JOB = {
   id: 'demo',
@@ -6,7 +5,7 @@ export const DEMO_JOB = {
   customerName: 'Alex Rivera',
   customerPhone: '(415) 555-0192',
   vehicle: 'Tesla Model Y · Midnight silver',
-  packageLabel: PACKAGES.find((p) => p.id === 'premium')?.label ?? 'Premium',
+  packageLabel: 'Premium',
   service_address: '555 California St, San Francisco, CA',
   scheduled_at: new Date(Date.now() + 45 * 60000).toISOString(),
   price_cents: 8900,

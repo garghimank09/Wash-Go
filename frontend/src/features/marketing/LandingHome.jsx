@@ -4,7 +4,8 @@ import { m } from 'framer-motion';
 import { ChevronDown, Sparkles } from 'lucide-react';
 
 import { MembershipCard } from '../../components/MembershipCard';
-import { MEMBERSHIP_PLANS } from '../../constants/config';
+import { useMembershipPlans } from '../../hooks/useMembershipPlans';
+import { formatInrPerMonth } from '../../lib/formatInr';
 import { Button } from '../../ui/button';
 import { Card } from '../../ui/card';
 import { cn } from '../../lib/cn';
@@ -20,6 +21,7 @@ import { WhyWashGoSection } from './WhyWashGoSection';
 export function LandingHome() {
   const reduced = useReducedMotion();
   const [buildersOpen, setBuildersOpen] = useState(false);
+  const { items: membershipPlans, loading: plansLoading } = useMembershipPlans();
 
   return (
     <main className="min-w-0 overflow-x-hidden">
@@ -40,22 +42,24 @@ export function LandingHome() {
             </p>
           </div>
           <div className="mt-12 grid gap-6 md:grid-cols-3">
-            <MembershipCard
-              title="Spark"
-              price="$19"
-              perks={['2 washes / month', 'Standard scheduling', 'Email support']}
-            />
-            <MembershipCard
-              title="Gleam"
-              price="$39"
-              highlighted
-              perks={['5 washes / month', 'Priority washers', 'In-app AI summaries']}
-            />
-            <MembershipCard
-              title="Apex Fleet"
-              price="$99"
-              perks={['12 washes / month', 'Dedicated account manager', 'Fleet analytics']}
-            />
+            {plansLoading ? (
+              <p className="col-span-full text-center text-sm text-wg-muted">Loading membership plans…</p>
+            ) : membershipPlans.length === 0 ? (
+              <p className="col-span-full text-center text-sm text-wg-muted">
+                Membership plans will appear here once configured in admin.
+              </p>
+            ) : (
+              membershipPlans.map((plan) => (
+                <MembershipCard
+                  key={plan.slug}
+                  planSlug={plan.slug}
+                  title={plan.name}
+                  price={formatInrPerMonth(plan.price_cents, plan.currency)}
+                  highlighted={plan.is_popular}
+                  perks={plan.features}
+                />
+              ))
+            )}
           </div>
         </div>
       </section>

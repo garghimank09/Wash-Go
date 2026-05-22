@@ -4,7 +4,7 @@ from datetime import datetime
 from decimal import Decimal
 from typing import TYPE_CHECKING
 
-from sqlalchemy import Boolean, DateTime, Enum, ForeignKey, Index, Numeric, String, Text, func
+from sqlalchemy import Boolean, DateTime, Enum, ForeignKey, Index, Integer, Numeric, String, Text, func
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -22,16 +22,21 @@ class UserMembershipStatus(str, enum.Enum):
 
 class MembershipPlan(Base):
     __tablename__ = "membership_plans"
-    __table_args__ = (Index("ix_membership_plans_active", "is_active"),)
+    __table_args__ = (Index("ix_membership_plans_active_sort", "is_active", "sort_order"),)
 
     id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
     )
-    name: Mapped[str] = mapped_column(String(120), unique=True, nullable=False)
+    slug: Mapped[str] = mapped_column(String(64), unique=True, nullable=False, index=True)
+    name: Mapped[str] = mapped_column(String(120), nullable=False)
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
-    price_cents: Mapped[int] = mapped_column(nullable=False)
-    duration_days: Mapped[int] = mapped_column(nullable=False)
-    features: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
+    price_cents: Mapped[int] = mapped_column(Integer, nullable=False)
+    currency: Mapped[str] = mapped_column(String(3), nullable=False, default="INR")
+    duration_days: Mapped[int] = mapped_column(Integer, nullable=False, default=30)
+    features: Mapped[list] = mapped_column(JSONB, nullable=False, default=list)
+    washes_included: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    sort_order: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    is_popular: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
@@ -73,7 +78,10 @@ class UserMembership(Base):
         index=True,
     )
     auto_renew: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
-    discount_percent: Mapped[Decimal] = mapped_column(Numeric(5, 2), default=Decimal("0"), nullable=False)
+    washes_remaining: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    discount_percent: Mapped[Decimal] = mapped_column(
+        Numeric(5, 2), default=Decimal("0"), nullable=False
+    )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )
