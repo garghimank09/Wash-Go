@@ -1,10 +1,12 @@
 import { useEffect, useMemo, useState } from 'react';
 
+import { useAuth } from '../../../context/AuthContext';
+import { useAdminBookings } from '../../../hooks/useAdminBookings';
 import {
-  adminDirectoryCustomers,
-  adminDirectoryPartners,
-  adminDirectoryStaff,
-} from '../mock/adminMock';
+  buildDirectoryCustomers,
+  buildDirectoryPartners,
+  buildDirectoryStaff,
+} from '../../../lib/adminAnalytics';
 
 /** @typedef {'customers' | 'partners' | 'staff'} DirectorySegment */
 
@@ -44,33 +46,33 @@ function filterStaff(rows, chip) {
   return rows;
 }
 
-function baseRows(segment) {
-  if (segment === 'customers') return [...adminDirectoryCustomers];
-  if (segment === 'partners') return [...adminDirectoryPartners];
-  return [...adminDirectoryStaff];
-}
-
 /**
  * @param {DirectorySegment} segment
  */
 export function useAdminDirectory(segment) {
+  const { user } = useAuth();
+  const { items, fleetWashers } = useAdminBookings();
   const [search, setSearch] = useState('');
   const [chip, setChip] = useState('all');
   const [tickVersion, setTickVersion] = useState(0);
 
   useEffect(() => {
     if (segment !== 'partners') return undefined;
-    const ms = 26000 + Math.floor(Math.random() * 12000);
-    const id = window.setInterval(() => setTickVersion((v) => v + 1), ms);
+    const id = window.setInterval(() => setTickVersion((v) => v + 1), 30000);
     return () => window.clearInterval(id);
   }, [segment]);
 
+  const baseRows = useMemo(() => {
+    if (segment === 'customers') return buildDirectoryCustomers(items);
+    if (segment === 'partners') return buildDirectoryPartners(fleetWashers);
+    return buildDirectoryStaff(user);
+  }, [segment, items, fleetWashers, user, tickVersion]);
+
   const chipFiltered = useMemo(() => {
-    const raw = baseRows(segment);
-    if (segment === 'customers') return filterCustomers(raw, chip);
-    if (segment === 'partners') return filterPartners(raw, chip);
-    return filterStaff(raw, chip);
-  }, [segment, chip]);
+    if (segment === 'customers') return filterCustomers(baseRows, chip);
+    if (segment === 'partners') return filterPartners(baseRows, chip);
+    return filterStaff(baseRows, chip);
+  }, [segment, chip, baseRows]);
 
   const metrics = useMemo(() => {
     const rows = chipFiltered;
@@ -95,7 +97,12 @@ export function useAdminDirectory(segment) {
     }
     const prod = rows.filter((r) => r.operationalAccess === 'production').length;
     const superAdmin = rows.filter((r) => r.staffRole === 'super_admin').length;
-    return { count: rows.length, productionAccess: prod, superAdmin, activeNow: rows.filter((r) => r.activityState === 'active').length };
+    return {
+      count: rows.length,
+      productionAccess: prod,
+      superAdmin,
+      activeNow: rows.filter((r) => r.activityState === 'active').length,
+    };
   }, [segment, chipFiltered]);
 
   const rows = useMemo(() => {

@@ -1,16 +1,16 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ChevronDown, LogOut, Shield, User } from 'lucide-react';
+import { ChevronDown, LogOut, User } from 'lucide-react';
 
 import { useAuth } from '../context/AuthContext';
-import { canAccessAdmin } from '../lib/canAccessAdmin';
+import { mediaUrl } from '../lib/mediaUrl';
 import { cn } from '../lib/cn';
 
 export function CustomerNavMenu() {
   const { user, logout } = useAuth();
   const [open, setOpen] = useState(false);
   const ref = useRef(null);
-  const showAdmin = canAccessAdmin(user);
+  const avatarSrc = mediaUrl(user?.avatar_url);
 
   useEffect(() => {
     if (!open) return undefined;
@@ -42,8 +42,12 @@ export function CustomerNavMenu() {
         aria-expanded={open}
         aria-haspopup="menu"
       >
-        <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-brand-from/20 to-brand-to/15 text-cyan-700 dark:text-cyan-300">
-          <User className="size-4" strokeWidth={1.75} aria-hidden />
+        <span className="flex size-8 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-gradient-to-br from-brand-from/20 to-brand-to/15 text-cyan-700 dark:text-cyan-300">
+          {avatarSrc ? (
+            <img src={avatarSrc} alt="" className="size-full object-cover" />
+          ) : (
+            <User className="size-4" strokeWidth={1.75} aria-hidden />
+          )}
         </span>
         <span className="hidden min-w-0 flex-1 sm:block">
           <span className="block truncate font-semibold text-wg-text">{user.full_name}</span>
@@ -61,17 +65,15 @@ export function CustomerNavMenu() {
             <p className="truncate font-semibold text-wg-text">{user.full_name}</p>
             <p className="truncate text-xs text-wg-muted">{user.email}</p>
           </div>
-          {showAdmin ? (
-            <Link
-              to="/admin"
-              role="menuitem"
-              className="flex items-center gap-2 px-4 py-2.5 text-sm font-semibold text-indigo-700 transition hover:bg-indigo-500/10 dark:text-indigo-200 dark:hover:bg-indigo-500/15"
-              onClick={() => setOpen(false)}
-            >
-              <Shield className="size-4 shrink-0" strokeWidth={1.75} aria-hidden />
-              Admin console
-            </Link>
-          ) : null}
+          <Link
+            to="/profile"
+            role="menuitem"
+            className="flex items-center gap-2 px-4 py-2.5 text-sm font-semibold text-wg-text transition hover:bg-wg-surface/80 dark:hover:bg-white/[0.06]"
+            onClick={() => setOpen(false)}
+          >
+            <User className="size-4 shrink-0 text-wg-muted" strokeWidth={1.75} aria-hidden />
+            Profile
+          </Link>
           <button
             type="button"
             role="menuitem"

@@ -1,10 +1,12 @@
 import { Link } from 'react-router-dom';
 import { m } from 'framer-motion';
-import { Activity, AlertTriangle, ArrowRight, Clock, Gauge, Radio, Truck } from 'lucide-react';
+import { Activity, AlertTriangle, ArrowRight, Clock, Gauge, MapPin, Radio, Truck } from 'lucide-react';
 
 import { useReducedMotion } from '../../../lib/useReducedMotion';
 import { cn } from '../../../lib/cn';
 import { Card } from '../../../ui/card';
+import { StatusPill } from '../../../ui/status-pill';
+import { formatDateTime } from '../../../utils/format';
 
 function scoreTone(value) {
   if (value >= 85) return 'text-emerald-600 dark:text-emerald-400';
@@ -43,7 +45,7 @@ export function AdminLiveOpsCommandBar({ snapshot }) {
 
   return (
     <Card
-      variant="glass"
+      variant="enterprise"
       className="min-w-0 overflow-hidden border border-white/25 p-0 shadow-wg-card dark:border-white/10"
     >
       <div className="flex flex-col gap-4 border-b border-wg-border/60 bg-gradient-to-r from-cyan-500/[0.08] via-transparent to-indigo-500/[0.06] px-5 py-4 sm:flex-row sm:items-center sm:justify-between dark:border-white/10">
@@ -116,20 +118,62 @@ export function AdminLiveOpsCommandBar({ snapshot }) {
       </div>
 
       {snapshot.delayedJobs?.length ? (
-        <div className="mt-4 border-t border-white/10 pt-4 dark:border-white/5">
-          <p className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wide text-amber-900 dark:text-amber-100">
-            <AlertTriangle className="size-3.5" strokeWidth={2} aria-hidden />
+        <div className="border-t border-wg-border/60 px-4 pb-3 pt-3 dark:border-white/10 lg:px-5">
+          <p className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wide text-amber-800 dark:text-amber-200">
+            <AlertTriangle className="size-4 shrink-0" strokeWidth={2} aria-hidden />
             Delayed jobs
+            <span className="font-normal normal-case tracking-normal text-wg-muted">
+              · past scheduled window
+            </span>
           </p>
-          <ul className="mt-2 flex flex-wrap gap-2">
+          <ul className="mt-2 space-y-1.5">
             {snapshot.delayedJobs.map((j) => (
-              <li key={j.id}>
+              <li key={j.rawId || j.id}>
                 <Link
-                  to="/admin/bookings"
-                  className="inline-flex items-center gap-2 rounded-lg border border-amber-500/30 bg-amber-500/10 px-2.5 py-1.5 text-xs font-semibold text-amber-950 transition hover:bg-amber-500/20 dark:text-amber-50"
+                  to="/admin/operations"
+                  className={cn(
+                    'flex flex-col gap-2 rounded-lg border px-3 py-2.5 transition hover:bg-amber-500/10 sm:flex-row sm:items-center sm:justify-between sm:gap-4',
+                    j.stale
+                      ? 'border-rose-500/35 bg-rose-500/8 dark:border-rose-500/25'
+                      : 'border-amber-500/30 bg-amber-500/8 dark:border-amber-500/20',
+                  )}
                 >
-                  <span className="font-mono text-[10px] text-wg-muted">{j.id}</span>
-                  {j.customer} · +{j.minutesLate}m · {j.zone}
+                  <div className="min-w-0 flex-1">
+                    <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                      <p className="truncate text-sm font-bold text-wg-text">{j.customer}</p>
+                      <span className="font-mono text-[10px] text-wg-muted">{j.id}</span>
+                      <StatusPill
+                        status={j.status}
+                        className="!px-2 !py-0.5 !text-[9px] !tracking-wider"
+                      />
+                    </div>
+                    <p className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-[11px] text-wg-muted">
+                      <span className="inline-flex items-center gap-1 font-medium text-wg-text">
+                        <Truck className="size-3 shrink-0 text-cyan-600 dark:text-cyan-400" strokeWidth={2} aria-hidden />
+                        {j.washerLabel}
+                      </span>
+                      <span className="inline-flex items-center gap-1">{j.phase}</span>
+                      <span className="inline-flex items-center gap-1">
+                        <MapPin className="size-3 shrink-0" strokeWidth={2} aria-hidden />
+                        {j.zone}
+                      </span>
+                      <span className="inline-flex items-center gap-1 tabular-nums">
+                        <Clock className="size-3 shrink-0" strokeWidth={2} aria-hidden />
+                        {formatDateTime(j.scheduledAt)}
+                      </span>
+                    </p>
+                  </div>
+                  <p
+                    className={cn(
+                      'shrink-0 text-xs font-bold tabular-nums sm:text-right',
+                      j.stale ? 'text-rose-700 dark:text-rose-300' : 'text-amber-800 dark:text-amber-200',
+                    )}
+                  >
+                    {j.latenessLabel} late
+                    {j.stale ? (
+                      <span className="mt-0.5 block text-[10px] font-semibold normal-case">Stale · review</span>
+                    ) : null}
+                  </p>
                 </Link>
               </li>
             ))}

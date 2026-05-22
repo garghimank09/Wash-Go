@@ -7,7 +7,7 @@ import { useReducedMotion } from '../../lib/useReducedMotion';
 import { cn } from '../../lib/cn';
 
 const POOL = [
-  { icon: Zap, text: 'Surge · SOMA +$4 active', tone: 'border-amber-400/30 bg-amber-500/15 text-amber-950 dark:text-amber-50' },
+  { icon: Zap, text: 'Surge · Okhla +₹99 active', tone: 'border-amber-400/30 bg-amber-500/15 text-amber-950 dark:text-amber-50' },
   { icon: Radio, text: 'Dispatch · zone rebalanced', tone: 'border-cyan-400/25 bg-cyan-500/12 text-wg-text' },
   { icon: Bell, text: 'Customer opened live ETA link', tone: 'border-indigo-400/25 bg-indigo-500/10 text-wg-text' },
   { icon: Zap, text: 'Peak · acceptance window 90s', tone: 'border-rose-400/25 bg-rose-500/10 text-rose-950 dark:text-rose-50' },

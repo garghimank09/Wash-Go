@@ -2,19 +2,18 @@ import { Outlet, useLocation } from 'react-router-dom';
 
 import { PartnerBookingSyncBridge } from '../components/BookingSyncBridge';
 import { useWasherAvailability } from '../hooks/useWasherAvailability';
-import { useLiveDispatchSimulation } from '../hooks/useLiveDispatchSimulation';
 import { WasherBottomNav } from '../features/washer/WasherBottomNav';
 import { WasherLiveActivityLayer } from '../features/washer/WasherLiveActivityLayer';
 import { WasherPartnerSyncBar } from '../features/washer/WasherPartnerSyncBar';
 import { WasherSidebar } from '../features/washer/WasherSidebar';
 import { WasherTopBar } from '../features/washer/WasherTopBar';
+import { railMainOffset } from '../lib/collapsibleRailSidebar';
 import { PageShell } from './PageShell';
 import { cn } from '../lib/cn';
 
 /** Partner shell: sidebar + wide content on desktop; bottom nav on small screens. */
 export function WasherLayout() {
   const av = useWasherAvailability();
-  useLiveDispatchSimulation(av.online);
   const location = useLocation();
   const isJobDetail = /\/partner\/jobs\/.+/.test(location.pathname);
 
@@ -31,7 +30,7 @@ export function WasherLayout() {
     >
       <PartnerBookingSyncBridge />
       <WasherSidebar />
-      <div className="flex min-w-0 flex-1 flex-col">
+      <div className={cn('flex min-w-0 flex-1 flex-col transition-[padding] duration-200 ease-out', railMainOffset())}>
         <WasherTopBar av={av} />
         <WasherPartnerSyncBar online={av.online} />
         <WasherLiveActivityLayer online={av.online} />

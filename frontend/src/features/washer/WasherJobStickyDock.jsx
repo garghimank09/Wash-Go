@@ -75,7 +75,7 @@ export function WasherJobStickyDock({ phase, reduced, onAdvance, showSwipeComple
   return (
     <div
       className={cn(
-        'fixed bottom-0 left-0 right-0 z-50 border-t border-white/18 bg-[color:var(--wg-glass-bg)]/96 px-4 pt-3 shadow-[0_-16px_48px_-14px_rgb(0_0_0/0.4)] backdrop-blur-2xl dark:border-white/10 dark:bg-slate-950/92 md:left-64',
+        'fixed bottom-0 left-0 right-0 z-50 border-t border-white/18 bg-[color:var(--wg-glass-bg)]/96 px-4 pt-3 shadow-[0_-16px_48px_-14px_rgb(0_0_0/0.4)] backdrop-blur-2xl dark:border-white/10 dark:bg-slate-950/92 md:left-16',
         'pb-[calc(4.5rem+env(safe-area-inset-bottom))] md:pb-6',
       )}
     >

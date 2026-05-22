@@ -3,6 +3,7 @@ import { m } from 'framer-motion';
 
 import { StatCard } from '../../../ui/stat-card';
 import { useReducedMotion } from '../../../lib/useReducedMotion';
+import { formatCents } from '../../../utils/format';
 
 export function AdminKpiStrip({ kpis, loading, tickVersion = 0 }) {
   const reduced = useReducedMotion();
@@ -17,10 +18,9 @@ export function AdminKpiStrip({ kpis, loading, tickVersion = 0 }) {
       >
         <StatCard
           label="Revenue (30d)"
-          value={kpis ? Math.round(kpis.revenue30dCents / 100) : 0}
+          value={kpis ? formatCents(kpis.revenue30dCents) : '—'}
           loading={loading}
-          prefix="$"
-          decimals={0}
+          animate={false}
           icon={DollarSign}
           variant="glass"
         />

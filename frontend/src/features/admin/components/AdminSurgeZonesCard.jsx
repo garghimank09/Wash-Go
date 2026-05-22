@@ -7,12 +7,12 @@ export function AdminSurgeZonesCard({ zones }) {
   if (!zones?.length) return null;
 
   return (
-    <Card variant="glass" className="min-w-0 border-l-4 border-l-amber-500/60 border-white/20 p-4 dark:border-white/10">
+    <Card variant="enterprise" className="min-w-0 border-l-4 border-l-amber-500/60 border-white/20 p-4 dark:border-white/10">
       <div className="flex items-center gap-2">
         <Zap className="size-5 text-amber-600 dark:text-amber-400" strokeWidth={1.75} aria-hidden />
         <div>
           <h2 className="wg-heading-section">Surge demand zones</h2>
-          <p className="mt-0.5 text-xs text-wg-muted">Pricing multipliers & demand index (mock).</p>
+          <p className="mt-0.5 text-xs text-wg-muted">Pricing multipliers & demand index (next 24h).</p>
         </div>
       </div>
       <ul className="mt-4 grid gap-2 sm:grid-cols-3">

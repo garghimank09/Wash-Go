@@ -8,6 +8,8 @@ import {
 } from 'react';
 import { Outlet } from 'react-router-dom';
 
+import { redirectToMarketingHome } from '../lib/appPaths';
+import { loginViaPartnerPortal } from '../lib/partnerLoginFlow';
 import { partnerAuthService } from '../services/partnerAuthService';
 
 const PartnerAuthContext = createContext(null);
@@ -19,20 +21,18 @@ function usePartnerAuthState() {
   const logoutPartner = useCallback(() => {
     partnerAuthService.setToken(null);
     setUser(null);
+    redirectToMarketingHome();
   }, []);
 
   const loginPartner = useCallback(async (email, password) => {
-    const data = await partnerAuthService.login(email, password);
-    partnerAuthService.setToken(data.access_token);
-    const me = await partnerAuthService.me();
-    if (me.role !== 'washer') {
-      partnerAuthService.setToken(null);
-      setUser(null);
-      const err = new Error('PARTNER_ROLE');
+    const result = await loginViaPartnerPortal(email, password);
+    if (result.kind === 'admin') {
+      const err = new Error('ADMIN_ROLE');
+      err.user = result.user;
       throw err;
     }
-    setUser(me);
-    return me;
+    setUser(result.user);
+    return result.user;
   }, []);
 
   useEffect(() => {
@@ -83,6 +83,25 @@ function usePartnerAuthState() {
     [loginPartner],
   );
 
+  const refreshPartner = useCallback(async () => {
+    const token = partnerAuthService.getToken();
+    if (!token) return null;
+    try {
+      const me = await partnerAuthService.me();
+      if (me.role !== 'washer') {
+        partnerAuthService.setToken(null);
+        setUser(null);
+        return null;
+      }
+      setUser(me);
+      return me;
+    } catch {
+      partnerAuthService.setToken(null);
+      setUser(null);
+      return null;
+    }
+  }, []);
+
   return useMemo(
     () => ({
       user,
@@ -90,8 +109,9 @@ function usePartnerAuthState() {
       loginPartner,
       logoutPartner,
       signupPartner,
+      refreshPartner,
     }),
-    [user, initializing, loginPartner, logoutPartner, signupPartner],
+    [user, initializing, loginPartner, logoutPartner, signupPartner, refreshPartner],
   );
 }
 

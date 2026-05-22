@@ -3,7 +3,7 @@ import { ArrowRight, Clock, Radio, TrendingUp, Zap } from 'lucide-react';
 
 import { Card } from '../../../ui/card';
 import { cn } from '../../../lib/cn';
-import { formatCents, formatDateTime } from '../../../utils/format';
+import { formatCents, formatDateTime, formatRupeesAxis } from '../../../utils/format';
 
 const SLA_RING = {
   critical: 'border-l-4 border-l-rose-500/70 bg-rose-500/[0.04]',
@@ -15,12 +15,12 @@ const SLA_RING = {
 export function AdminDispatchQueuePreview({ queue, isLive = false }) {
   const rows = (queue || []).slice(0, 4);
   return (
-    <Card variant="glass" className="flex h-full min-h-0 min-w-0 flex-col border-l-4 border-l-violet-500/55 border-white/20 dark:border-white/10">
+    <Card variant="enterprise" className="flex min-w-0 flex-col border-l-4 border-l-violet-500/55 border-white/20 dark:border-white/10">
       <div className="flex flex-wrap items-start justify-between gap-2 border-b border-white/10 px-4 py-3 dark:border-white/5">
         <div>
           <h2 className="wg-heading-section">Dispatch monitor</h2>
           <p className="mt-0.5 text-xs text-wg-muted">
-            {isLive ? 'Unassigned queue · live from API (SSE).' : 'Unassigned queue · sample data.'}
+            Unassigned queue · live from API (SSE).
           </p>
         </div>
         <Link
@@ -30,9 +30,14 @@ export function AdminDispatchQueuePreview({ queue, isLive = false }) {
           Desk <ArrowRight className="size-3.5" aria-hidden />
         </Link>
       </div>
-      <ul className="min-h-0 flex-1 divide-y divide-wg-border/50 overflow-y-auto">
+      <ul
+        className={cn(
+          'divide-y divide-wg-border/50',
+          rows.length > 3 && 'max-h-[200px] overflow-y-auto',
+        )}
+      >
         {rows.length === 0 ? (
-          <li className="px-4 py-6 text-center text-xs text-wg-muted">Queue clear.</li>
+          <li className="px-4 py-4 text-center text-xs text-wg-muted">Queue clear.</li>
         ) : (
           rows.map((q) => (
             <li key={q.id} className="px-4 py-2.5">
@@ -58,12 +63,20 @@ export function AdminDispatchQueuePreview({ queue, isLive = false }) {
 export function AdminSlaAlertsCard({ items }) {
   const list = items || [];
   return (
-    <Card variant="glass" className="flex h-full min-h-0 min-w-0 flex-col border-white/20 dark:border-white/10">
+    <Card variant="enterprise" className="flex min-w-0 flex-col border-white/20 dark:border-white/10">
       <div className="border-b border-white/10 px-4 py-3 dark:border-white/5">
         <h2 className="wg-heading-section">SLA alerts</h2>
-        <p className="mt-0.5 text-xs text-wg-muted">Time-to-breach watchlist (mock).</p>
+        <p className="mt-0.5 text-xs text-wg-muted">Time-to-breach watchlist from live queue.</p>
       </div>
-      <ul className="min-h-0 flex-1 space-y-2 overflow-y-auto p-3">
+      <ul
+        className={cn(
+          'space-y-2 p-3',
+          list.length > 4 && 'max-h-[200px] overflow-y-auto',
+        )}
+      >
+        {list.length === 0 ? (
+          <li className="px-2 py-4 text-center text-xs text-wg-muted">No SLA risks in the queue.</li>
+        ) : null}
         {list.map((a) => (
           <li
             key={a.id}
@@ -90,12 +103,20 @@ export function AdminSlaAlertsCard({ items }) {
 export function AdminEscalationTrackerCard({ items }) {
   const list = items || [];
   return (
-    <Card variant="glass" className="flex h-full min-h-0 min-w-0 flex-col border-l-4 border-l-rose-500/45 border-white/20 dark:border-white/10">
+    <Card variant="enterprise" className="flex min-w-0 flex-col border-l-4 border-l-rose-500/45 border-white/20 dark:border-white/10">
       <div className="border-b border-white/10 px-4 py-3 dark:border-white/5">
         <h2 className="wg-heading-section">Escalation tracker</h2>
-        <p className="mt-0.5 text-xs text-wg-muted">Cross-team queue · aging (mock).</p>
+        <p className="mt-0.5 text-xs text-wg-muted">Cross-team queue · aging from late jobs.</p>
       </div>
-      <ul className="min-h-0 flex-1 divide-y divide-wg-border/40 overflow-y-auto text-xs">
+      <ul
+        className={cn(
+          'divide-y divide-wg-border/40 text-xs',
+          list.length > 4 && 'max-h-[200px] overflow-y-auto',
+        )}
+      >
+        {list.length === 0 ? (
+          <li className="px-4 py-4 text-center text-xs text-wg-muted">No escalations — fleet on track.</li>
+        ) : null}
         {list.map((e) => (
           <li key={e.id} className="px-4 py-2.5">
             <p className="font-semibold leading-snug text-wg-text">{e.subject}</p>
@@ -120,12 +141,12 @@ export function AdminRevenuePulseCard({ series, kpis }) {
   const up = pct != null && pct >= 0;
 
   return (
-    <Card variant="glass" className="h-full min-w-0 border-l-4 border-l-emerald-500/50 border-white/20 p-4 dark:border-white/10">
+    <Card variant="enterprise" className="min-w-0 border-l-4 border-l-emerald-500/50 border-white/20 p-4 dark:border-white/10">
       <div className="flex items-start justify-between gap-2">
         <div>
           <h2 className="text-xs font-black uppercase tracking-[0.14em] text-wg-muted">Revenue pulse</h2>
           <p className="mt-2 text-2xl font-black tabular-nums text-wg-text">
-            {last ? `$${Math.round(last.revenue / 1000)}k` : '—'}
+            {last ? formatRupeesAxis(last.revenue) : '—'}
             {last?.label ? <span className="ml-1 text-sm font-bold text-wg-muted">{last.label}</span> : null}
           </p>
         </div>
@@ -136,7 +157,7 @@ export function AdminRevenuePulseCard({ series, kpis }) {
       {pct != null ? (
         <p className={cn('mt-2 text-xs font-bold tabular-nums', up ? 'text-emerald-700 dark:text-emerald-300' : 'text-rose-700 dark:text-rose-300')}>
           {up ? '+' : ''}
-          {pct}% vs prior month (mock)
+          {pct}% vs prior month
         </p>
       ) : null}
       {kpis?.revenue30dCents != null ? (
@@ -151,7 +172,7 @@ export function AdminRevenuePulseCard({ series, kpis }) {
 export function AdminPeakHourInsightCard({ insight }) {
   if (!insight) return null;
   return (
-    <Card variant="glass" className="min-w-0 border-l-4 border-l-amber-500/50 border-white/20 p-4 dark:border-white/10">
+    <Card variant="enterprise" className="min-w-0 border-l-4 border-l-amber-500/50 border-white/20 p-4 dark:border-white/10">
       <div className="flex flex-wrap items-start gap-3">
         <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-amber-500/12 text-amber-800 dark:text-amber-200">
           <Zap className="size-5" strokeWidth={2} aria-hidden />
@@ -181,7 +202,7 @@ export function AdminPeakHourInsightCard({ insight }) {
 export function AdminFleetStatusStrip({ snapshot }) {
   if (!snapshot) return null;
   return (
-    <Card variant="glass" className="min-w-0 border-white/20 p-3 dark:border-white/10">
+    <Card variant="enterprise" className="min-w-0 border-white/20 p-3 dark:border-white/10">
       <div className="flex flex-wrap items-center gap-3 text-xs">
         <span className="inline-flex items-center gap-1.5 font-bold text-wg-text">
           <Radio className="size-4 text-emerald-600 dark:text-emerald-400" aria-hidden />

@@ -19,6 +19,7 @@ export function LoginPage() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
+  if (user?.role === 'admin') return <Navigate to="/admin" replace />;
   if (user) return <Navigate to={defaultAppPathForRole(user)} replace />;
 
   const submit = async (e) => {

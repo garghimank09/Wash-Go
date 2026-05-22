@@ -151,6 +151,8 @@ export function LiveTrackingMap({
   className,
   compact = false,
   perspective = 'customer',
+  /** Hide badges/legend when parent (e.g. WasherEtaRouteCard) provides its own chrome. */
+  embedded = false,
 }) {
   const customer = tracking?.customer;
   const washerTarget = tracking?.washer;
@@ -217,18 +219,20 @@ export function LiveTrackingMap({
         </div>
       ) : null}
 
-      <div className="absolute inset-x-0 top-2 z-[450] flex justify-center px-2 pointer-events-none">
-        {live ? (
-          <span className="flex items-center gap-1.5 rounded-full border border-emerald-400/40 bg-emerald-600/90 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-white shadow-lg">
-            <Radio className="size-3 wg-partner-live-dot" strokeWidth={2} aria-hidden />
-            Live GPS
-          </span>
-        ) : simulated ? (
-          <span className="rounded-full border border-cyan-400/35 bg-cyan-900/85 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-cyan-50 shadow-lg">
-            Estimated route
-          </span>
-        ) : null}
-      </div>
+      {!embedded ? (
+        <div className="absolute inset-x-0 top-2 z-[450] flex justify-center px-2 pointer-events-none">
+          {live ? (
+            <span className="flex items-center gap-1.5 rounded-full border border-emerald-400/40 bg-emerald-600/90 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-white shadow-lg">
+              <Radio className="size-3 wg-partner-live-dot" strokeWidth={2} aria-hidden />
+              Live GPS
+            </span>
+          ) : simulated ? (
+            <span className="rounded-full border border-cyan-400/35 bg-cyan-900/85 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-cyan-50 shadow-lg">
+              Estimated route
+            </span>
+          ) : null}
+        </div>
+      ) : null}
 
       <MapContainer
         key={mapKey}

@@ -1,12 +1,7 @@
-import { API_URL } from '../constants/config';
+import { mediaUrl } from '../lib/mediaUrl';
 import { partnerApi } from './partnerApi';
 
-export function photoUrl(path) {
-  if (!path) return null;
-  if (path.startsWith('http')) return path;
-  const base = API_URL.replace(/\/$/, '');
-  return `${base}${path.startsWith('/') ? path : `/${path}`}`;
-}
+export const photoUrl = mediaUrl;
 
 export const partnerPhotoService = {
   list: (bookingId) => partnerApi.get(`/bookings/${bookingId}/photos`).then((r) => r.data),

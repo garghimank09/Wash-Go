@@ -13,9 +13,9 @@ export function AdminAssignmentQueueViz({ queueLength }) {
   const stage = queueLength >= 3 ? 0 : queueLength >= 1 ? 1 : 2;
 
   return (
-    <Card variant="glass" className="border-l-4 border-l-emerald-500/50 border-white/15 p-4 dark:border-white/10">
+    <Card variant="enterprise" className="border-l-4 border-l-emerald-500/50 border-white/15 p-4 dark:border-white/10">
       <h2 className="text-sm font-black uppercase tracking-[0.14em] text-wg-muted">Dispatcher pipeline</h2>
-      <p className="mt-1 text-xs text-wg-muted">Queue depth drives stage emphasis (mock).</p>
+      <p className="mt-1 text-xs text-wg-muted">Queue depth drives stage emphasis (live).</p>
       <ol className="mt-4 flex flex-wrap items-center gap-2 md:gap-4">
         {STEPS.map((step, i) => {
           const done = i < stage;

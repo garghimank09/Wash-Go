@@ -35,7 +35,7 @@ export function ReviewStep({
       key: 'package',
       label: 'Package',
       value: pkg?.label ?? packageId,
-      sub: null,
+      sub: pkg?.desc ?? null,
       Icon: Package,
     },
     {

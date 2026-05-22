@@ -7,12 +7,14 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
 from app.config.settings import settings
-from app.database.database import Base, engine
+from app.database.database import Base, async_session_maker, engine
+from app.services import user_service
 from app.routes import (
     assistant_routes,
     auth_routes,
     booking_routes,
     cars_routes,
+    geocode_routes,
     partner_routes,
     pricing_routes,
     user_routes,
@@ -25,6 +27,9 @@ async def lifespan(_: FastAPI):
     if settings.ENVIRONMENT == "development":
         async with engine.begin() as conn:
             await conn.run_sync(Base.metadata.create_all)
+    if settings.ADMIN_SEED_ENABLED:
+        async with async_session_maker() as db:
+            await user_service.ensure_default_admin(db)
     yield
     await engine.dispose()
 
@@ -61,6 +66,7 @@ app.include_router(cars_routes.router)
 app.include_router(booking_routes.router)
 app.include_router(partner_routes.router)
 app.include_router(pricing_routes.router)
+app.include_router(geocode_routes.router)
 app.include_router(assistant_routes.router)
 
 

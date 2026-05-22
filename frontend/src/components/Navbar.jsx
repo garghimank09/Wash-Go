@@ -1,15 +1,14 @@
 import { Link, NavLink } from 'react-router-dom';
-import { Menu, Shield } from 'lucide-react';
+import { Menu } from 'lucide-react';
 
 import { CustomerNavMenu } from './CustomerNavMenu';
 import { useAuth } from '../context/AuthContext';
-import { canAccessAdmin } from '../lib/canAccessAdmin';
 import { Button } from '../ui/button';
 import { cn } from '../lib/cn';
 import { ThemeToggle } from './ThemeToggle';
 
 export function Navbar({ variant = 'marketing', onMenuClick }) {
-  const { user } = useAuth();
+  const { user } = useAuth(); // used in marketing variant
 
   if (variant === 'dashboard') {
     return (
@@ -36,16 +35,6 @@ export function Navbar({ variant = 'marketing', onMenuClick }) {
           </div>
         </div>
         <div className="flex items-center gap-2 sm:gap-3">
-          <ThemeToggle />
-          {user && canAccessAdmin(user) ? (
-            <Link
-              to="/admin"
-              className="hidden items-center gap-1.5 rounded-lg border border-indigo-500/20 bg-indigo-500/[0.07] px-2.5 py-1.5 text-[11px] font-bold uppercase tracking-wide text-indigo-800 transition hover:border-indigo-500/35 hover:bg-indigo-500/12 wg-focus-ring md:inline-flex dark:border-indigo-500/20 dark:text-indigo-100"
-            >
-              <Shield className="size-3.5" strokeWidth={2} aria-hidden />
-              Console
-            </Link>
-          ) : null}
           <CustomerNavMenu />
         </div>
       </header>
@@ -55,25 +44,28 @@ export function Navbar({ variant = 'marketing', onMenuClick }) {
   return (
     <header
       className={cn(
-        'sticky top-0 z-40 border-b border-white/25 wg-glass-surface shadow-sm dark:border-white/10',
+        'sticky top-0 z-40 border-b border-white/25 wg-glass-surface shadow-sm shadow-cyan-500/[0.04] dark:border-white/10 dark:shadow-cyan-500/[0.02]',
       )}
     >
       <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4 sm:px-6">
         <Link to="/" className="text-xl font-black tracking-tight text-wg-text">
           Wash<span className="text-cyan-500">Go</span>
         </Link>
-        <nav className="hidden items-center gap-8 text-sm font-medium text-wg-muted md:flex">
+        <nav className="hidden items-center gap-6 text-sm font-medium text-wg-muted lg:flex">
+          <a href="#why-washgo" className="transition hover:text-cyan-600 dark:hover:text-cyan-400">
+            Why WashGo
+          </a>
+          <a href="#how-it-works" className="transition hover:text-cyan-600 dark:hover:text-cyan-400">
+            How it works
+          </a>
           <a href="#features" className="transition hover:text-cyan-600 dark:hover:text-cyan-400">
             Features
           </a>
+          <a href="#experience" className="transition hover:text-cyan-600 dark:hover:text-cyan-400">
+            Preview
+          </a>
           <a href="#plans" className="transition hover:text-cyan-600 dark:hover:text-cyan-400">
             Plans
-          </a>
-          <a href="#ai" className="transition hover:text-cyan-600 dark:hover:text-cyan-400">
-            AI
-          </a>
-          <a href="#builders" className="transition hover:text-cyan-600 dark:hover:text-cyan-400">
-            For builders
           </a>
         </nav>
         <div className="flex items-center gap-2 sm:gap-3">

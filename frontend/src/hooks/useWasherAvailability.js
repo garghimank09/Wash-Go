@@ -125,7 +125,12 @@ export function useWasherAvailability() {
     (busy) => {
       applyState((prev) => {
         if (!prev.online) return prev;
-        return { ...prev, busy, acceptingJobs: busy ? false : prev.acceptingJobs };
+        return {
+          ...prev,
+          busy,
+          onBreak: busy ? false : prev.onBreak,
+          acceptingJobs: busy ? false : prev.acceptingJobs,
+        };
       });
     },
     [applyState],
@@ -138,24 +143,33 @@ export function useWasherAvailability() {
         return {
           ...prev,
           onBreak,
-          acceptingJobs: onBreak ? false : prev.acceptingJobs,
           busy: onBreak ? false : prev.busy,
+          acceptingJobs: onBreak ? false : prev.acceptingJobs,
         };
       });
     },
     [applyState],
   );
 
+  const workMode = useMemo(() => {
+    if (!state.online) return 'offline';
+    if (state.onBreak) return 'break';
+    if (state.busy) return 'busy';
+    if (state.acceptingJobs) return 'accepting';
+    return 'idle';
+  }, [state]);
+
   const summary = useMemo(() => {
     if (!state.online) return 'Offline';
     if (state.onBreak) return 'On break';
-    if (state.busy) return 'Busy';
-    if (!state.acceptingJobs) return 'Paused';
-    return 'Accepting jobs';
+    if (state.busy) return 'Busy on job';
+    if (!state.acceptingJobs) return 'Not accepting';
+    return 'Accepting offers';
   }, [state]);
 
   return {
     ...state,
+    workMode,
     summary,
     profile,
     setOnline,

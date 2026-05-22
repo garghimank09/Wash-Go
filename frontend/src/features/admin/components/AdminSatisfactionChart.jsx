@@ -16,9 +16,9 @@ export function AdminSatisfactionChart({ segments, chartsReady }) {
 
   if (!chartsReady) {
     return (
-      <Card variant="glass" className="min-h-[200px] min-w-0">
+      <Card variant="enterprise" className="min-w-0">
         <h2 className="wg-heading-section">Satisfaction mix</h2>
-        <p className="mt-1 text-xs text-wg-muted">Survey-weighted NPS-style buckets (mock).</p>
+        <p className="mt-1 text-xs text-wg-muted">Survey-weighted NPS-style buckets from completion ratio.</p>
         <div className="mt-6">
           <Skeleton height={72} borderRadius={12} />
         </div>
@@ -27,10 +27,10 @@ export function AdminSatisfactionChart({ segments, chartsReady }) {
   }
 
   return (
-    <Card variant="glass" className="min-h-[200px] min-w-0 transition hover:ring-1 hover:ring-cyan-500/20 dark:hover:ring-cyan-400/15">
+    <Card variant="enterprise" className="min-w-0 transition hover:ring-1 hover:ring-cyan-500/20 dark:hover:ring-cyan-400/15">
       <div>
         <h2 className="wg-heading-section">Satisfaction mix</h2>
-        <p className="mt-1 text-xs text-wg-muted">Share of promoters, passive, and detractors (mock).</p>
+        <p className="mt-1 text-xs text-wg-muted">Share of promoters, passive, and detractors from completion ratio.</p>
       </div>
       <ChartMeasuredContainer className="mt-4 h-24 w-full min-w-0">
         {({ width, height }) => (

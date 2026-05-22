@@ -1,5 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 
+import { redirectToMarketingHome } from '../lib/appPaths';
 import { authService } from '../services/authService';
 
 const AuthContext = createContext(null);
@@ -11,6 +12,7 @@ export function AuthProvider({ children }) {
   const logout = useCallback(() => {
     authService.setToken(null);
     setUser(null);
+    redirectToMarketingHome();
   }, []);
 
   const login = useCallback(async (email, password) => {
@@ -53,9 +55,23 @@ export function AuthProvider({ children }) {
     return () => window.removeEventListener('washgo:unauthorized', on401);
   }, []);
 
+  const refreshUser = useCallback(async () => {
+    const token = authService.getToken();
+    if (!token) return null;
+    try {
+      const me = await authService.me();
+      setUser(me);
+      return me;
+    } catch {
+      authService.setToken(null);
+      setUser(null);
+      return null;
+    }
+  }, []);
+
   const value = useMemo(
-    () => ({ user, initializing, login, signup, logout }),
-    [user, initializing, login, signup, logout],
+    () => ({ user, initializing, login, signup, logout, refreshUser }),
+    [user, initializing, login, signup, logout, refreshUser],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

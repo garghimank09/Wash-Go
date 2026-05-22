@@ -7,6 +7,7 @@ import { Check, Flame, MapPin, Radio, Sparkles, Target, X } from 'lucide-react';
 import { usePartnerOffers } from '../../hooks/usePartnerOffers';
 import { useReducedMotion } from '../../lib/useReducedMotion';
 import { dispatchBookingsSync } from '../../lib/bookingSyncEvents';
+import { parseBookingMeta } from '../../lib/bookingMeta';
 import { enrichDispatchOffer } from '../../lib/partnerFieldDemo';
 import { getErrorMessage } from '../../services/api';
 import { partnerBookingsService } from '../../services/partnerBookingsService';
@@ -39,13 +40,14 @@ function dismissOffer(id) {
 function mapOffer(o) {
   const scheduled = new Date(o.scheduled_at);
   const mins = Math.max(5, Math.round((scheduled.getTime() - Date.now()) / 60000));
+  const { packageLabel } = parseBookingMeta(o.notes);
   return {
     id: o.id,
     customerName: o.customer_name || 'Customer',
     address: o.service_address,
     earningsCents: o.price_cents,
     vehicle: o.car_label || 'Vehicle',
-    packageLabel: 'On-demand wash',
+    packageLabel: packageLabel ?? '—',
     windowLabel: formatDateTime(o.scheduled_at),
     etaMinutes: mins,
     isLiveSim: false,
@@ -115,11 +117,7 @@ export function WasherRequestsPage() {
         <Card variant="glass" className="border-dashed border-cyan-500/25 bg-gradient-to-br from-cyan-500/[0.06] to-transparent py-12 text-center">
           <p className="text-sm font-bold text-wg-text">No open offers right now</p>
           <p className="mx-auto mt-2 max-w-xs text-sm text-wg-muted">
-            New customer bookings appear here in real time. Try the{' '}
-            <Link to="/partner/jobs/demo" className="font-bold text-cyan-700 dark:text-cyan-300">
-              demo job
-            </Link>{' '}
-            to walk through the field UI.
+            New customer bookings appear here in real time while you are online and accepting jobs.
           </p>
         </Card>
       ) : (
@@ -169,7 +167,7 @@ export function WasherRequestsPage() {
                         ) : null}
                       </div>
                       <span className="rounded-full bg-gradient-to-r from-emerald-400 to-cyan-500 px-2 py-0.5 text-[10px] font-black uppercase text-slate-950 shadow-md ring-2 ring-white/25 dark:ring-slate-900/40">
-                        +{formatCents(r.earningsCents, 'USD')}
+                        +{formatCents(r.earningsCents)}
                       </span>
                     </m.div>
                   </div>

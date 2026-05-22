@@ -29,7 +29,7 @@ export function AdminDirectoryPartnerTable({ rows, onPreview, tickVersion }) {
 
   if (!rows?.length) {
     return (
-      <Card variant="glass" className="p-8">
+      <Card variant="enterprise" className="p-8">
         <EmptyState icon={Truck} title="No partners match" description="Adjust filters or search." />
       </Card>
     );
@@ -38,10 +38,10 @@ export function AdminDirectoryPartnerTable({ rows, onPreview, tickVersion }) {
   const colCount = 10;
 
   return (
-    <Card variant="glass" className="min-w-0 overflow-hidden border-l-4 border-l-emerald-500/55 border-white/20 p-0 dark:border-white/10">
+    <Card variant="enterprise" className="min-w-0 overflow-hidden border-l-4 border-l-emerald-500/55 border-white/20 p-0 dark:border-white/10">
       <div className="border-b border-white/10 px-4 py-3 dark:border-white/5">
         <h2 className="wg-heading-section">Partner / fleet directory</h2>
-        <p className="mt-0.5 text-xs text-wg-muted">Fleet operations view — live presence pulses on a slow demo refresh.</p>
+        <p className="mt-0.5 text-xs text-wg-muted">Fleet operations view — availability synced from fleet API.</p>
       </div>
       <div className="overflow-x-auto">
         <table className="w-full min-w-[1040px] text-left text-sm">

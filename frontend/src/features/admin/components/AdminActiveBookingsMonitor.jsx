@@ -4,40 +4,29 @@ import { MapPin, Radio } from 'lucide-react';
 import { Card } from '../../../ui/card';
 import { cn } from '../../../lib/cn';
 import { StatusPill } from '../../../ui/status-pill';
-import { AdminDataSourceBadge } from './AdminDataSourceBadge';
-
 export function AdminActiveBookingsMonitor({ rows, liveCount = 0, loading = false }) {
   const list = rows || [];
-  const hasLive = liveCount > 0;
 
   return (
-    <Card variant="glass" className="min-w-0 border-l-4 border-l-indigo-500/55 border-white/20 p-0 dark:border-white/10">
+    <Card variant="enterprise" className="min-w-0 border-l-4 border-l-indigo-500/55 border-white/20 p-0 dark:border-white/10">
       <div className="border-b border-white/10 px-4 py-3 dark:border-white/5">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div>
             <div className="flex flex-wrap items-center gap-2">
               <h2 className="wg-heading-section">Active bookings monitor</h2>
-              {hasLive ? (
-                <span className="inline-flex items-center gap-1 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2 py-0.5 text-[9px] font-bold uppercase text-emerald-800 dark:text-emerald-200">
-                  <Radio className="size-3" aria-hidden />
-                  Live · {liveCount}
-                </span>
-              ) : (
-                <AdminDataSourceBadge source="demo" />
-              )}
+              <span className="inline-flex items-center gap-1 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2 py-0.5 text-[9px] font-bold uppercase text-emerald-800 dark:text-emerald-200">
+                <Radio className="size-3" aria-hidden />
+                Live · {liveCount}
+              </span>
             </div>
-            <p className="mt-0.5 text-xs text-wg-muted">
-              {hasLive
-                ? 'Synced from bookings API (SSE ~4s). Demo rows tagged when shown as samples.'
-                : 'Sample rows until active bookings exist in the API.'}
-            </p>
+            <p className="mt-0.5 text-xs text-wg-muted">Synced from bookings API (SSE ~4s).</p>
           </div>
           <Link to="/admin/operations" className="text-xs font-bold text-cyan-700 dark:text-cyan-300">
             Open desk →
           </Link>
         </div>
       </div>
-      <div className="max-h-[220px] overflow-y-auto">
+      <div className="max-h-[min(220px,40vh)] overflow-y-auto">
         {loading && !list.length ? (
           <p className="px-4 py-8 text-center text-xs text-wg-muted">Loading active jobs…</p>
         ) : !list.length ? (
@@ -53,12 +42,11 @@ export function AdminActiveBookingsMonitor({ rows, liveCount = 0, loading = fals
                 <th className="px-3 py-2">Zone</th>
                 <th className="px-3 py-2">ETA slip</th>
                 <th className="px-3 py-2">Status</th>
-                <th className="px-4 py-2">Src</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-wg-border/60">
               {list.map((r) => (
-                <tr key={`${r.source}-${r.id}`} className="bg-white/[0.02] dark:bg-transparent">
+                <tr key={r.rawId || r.id} className="bg-white/[0.02] dark:bg-transparent">
                   <td className="whitespace-nowrap px-4 py-2 font-mono text-wg-muted">{r.id}</td>
                   <td className="whitespace-nowrap px-3 py-2 font-semibold text-wg-text">{r.customer}</td>
                   <td className="whitespace-nowrap px-3 py-2 text-wg-muted">{r.washer}</td>
@@ -81,9 +69,6 @@ export function AdminActiveBookingsMonitor({ rows, liveCount = 0, loading = fals
                   </td>
                   <td className="whitespace-nowrap px-3 py-2">
                     <StatusPill status={r.status} />
-                  </td>
-                  <td className="whitespace-nowrap px-4 py-2">
-                    <AdminDataSourceBadge source={r.source || 'live'} />
                   </td>
                 </tr>
               ))}

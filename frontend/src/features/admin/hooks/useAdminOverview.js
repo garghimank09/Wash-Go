@@ -2,37 +2,30 @@ import { useEffect, useMemo, useState } from 'react';
 
 import { useAdminBookings } from '../../../hooks/useAdminBookings';
 import {
+  computeCustomerGrowth,
+  computeEarningsBreakdown,
+  computeEscalations,
+  computeHeatmap,
+  computePeakHourInsight,
+  computeRepeatCustomerPct,
+  computeRevenueSeries,
+  computeSatisfactionSegments,
+  computeSlaAlerts,
+  computeSurgeZones,
+  computeTopPerformers,
+  computeZonePerformance,
+} from '../../../lib/adminAnalytics';
+import {
   computeActiveMonitorRows,
   computeBookingVolumeSeries,
   fleetWashersToGridRows,
-  mergeActiveMonitorWithDemo,
-  mergeFleetWithDemo,
   toDispatchQueueItem,
 } from '../../../lib/adminBookingsMap';
-import {
-  adminActiveMonitorRows,
-  adminBookingVolumeSeries,
-  adminCustomerGrowth,
-  adminDayLabels,
-  adminEarningsBreakdown,
-  adminEscalations,
-  adminHeatmapHourLabels,
-  adminHeatmapMatrix,
-  adminLiveFeed,
-  adminPeakHourInsight,
-  adminRevenueSeries,
-  adminSatisfactionSegments,
-  adminSlaAlerts,
-  adminSurgeZones,
-  adminTopPerformers,
-  adminWashers,
-  adminZonePerformance,
-} from '../mock/adminMock';
 
-const CHART_LOAD_MS = 520;
+const CHART_LOAD_MS = 320;
 
 export function useAdminOverview() {
-  const { items, fleetWashers, loading, error, kpis, liveOpsSnapshot } = useAdminBookings();
+  const { items, fleetWashers, loading, error, kpis: baseKpis, liveOpsSnapshot } = useAdminBookings();
   const [chartsReady, setChartsReady] = useState(false);
 
   useEffect(() => {
@@ -45,53 +38,69 @@ export function useAdminOverview() {
     return pending.map((b, i) => toDispatchQueueItem(b, i));
   }, [items]);
 
-  const activeMonitorRows = useMemo(() => {
-    const live = computeActiveMonitorRows(items);
-    return mergeActiveMonitorWithDemo(live, adminActiveMonitorRows);
+  const activeMonitorRows = useMemo(() => computeActiveMonitorRows(items), [items]);
+
+  const bookingVolumeSeries = useMemo(() => {
+    const live = computeBookingVolumeSeries(items);
+    return live || [
+      { label: 'Mon', bookings: 0 },
+      { label: 'Tue', bookings: 0 },
+      { label: 'Wed', bookings: 0 },
+      { label: 'Thu', bookings: 0 },
+      { label: 'Fri', bookings: 0 },
+      { label: 'Sat', bookings: 0 },
+      { label: 'Sun', bookings: 0 },
+    ];
   }, [items]);
 
-  const bookingVolumeFromApi = useMemo(() => computeBookingVolumeSeries(items), [items]);
-  const bookingVolumeSeries = useMemo(
-    () => bookingVolumeFromApi || adminBookingVolumeSeries,
-    [bookingVolumeFromApi],
-  );
+  const washers = useMemo(() => fleetWashersToGridRows(fleetWashers), [fleetWashers]);
 
-  const washers = useMemo(() => {
-    const live = fleetWashersToGridRows(fleetWashers);
-    return mergeFleetWithDemo(live, adminWashers);
-  }, [fleetWashers]);
+  const kpis = useMemo(
+    () => ({
+      ...baseKpis,
+      repeatCustomerPct: computeRepeatCustomerPct(items),
+      customerGrowthPct:
+        baseKpis.bookings30d > 0
+          ? Math.min(99, Math.round(computeRepeatCustomerPct(items)))
+          : 0,
+    }),
+    [baseKpis, items],
+  );
 
   const data = useMemo(
     () => ({
-      kpis: {
-        ...kpis,
-        openComplaints: 12,
-        customerGrowthPct: kpis.bookings30d > 0 ? 12 : 0,
-        csatScore: 4.7,
-      },
-      revenueSeries: adminRevenueSeries,
+      kpis,
+      revenueSeries: computeRevenueSeries(items),
       bookingVolumeSeries,
-      bookingVolumeFromApi: !!bookingVolumeFromApi,
-      customerGrowth: adminCustomerGrowth,
-      satisfaction: adminSatisfactionSegments,
-      earnings: adminEarningsBreakdown,
-      heatmap: { matrix: adminHeatmapMatrix, dayLabels: adminDayLabels, hourLabels: adminHeatmapHourLabels },
+      bookingVolumeFromApi: true,
+      customerGrowth: computeCustomerGrowth(items),
+      satisfaction: computeSatisfactionSegments(items),
+      earnings: computeEarningsBreakdown(kpis),
+      heatmap: computeHeatmap(items),
       washers,
       washersFromApi: !!fleetWashers?.length,
       fleetWashers,
-      feed: adminLiveFeed,
       liveOpsSnapshot,
-      zonePerformance: adminZonePerformance,
-      peakHourInsight: adminPeakHourInsight,
-      topPerformers: adminTopPerformers,
-      surgeZones: adminSurgeZones,
+      zonePerformance: computeZonePerformance(items),
+      peakHourInsight: computePeakHourInsight(items),
+      topPerformers: computeTopPerformers(fleetWashers),
+      surgeZones: computeSurgeZones(items),
       activeMonitorRows,
-      activeMonitorLiveCount: activeMonitorRows.filter((r) => r.source === 'live').length,
+      activeMonitorLiveCount: activeMonitorRows.length,
       dispatchQueue,
-      slaAlerts: adminSlaAlerts,
-      escalations: adminEscalations,
+      slaAlerts: computeSlaAlerts(items, kpis),
+      escalations: computeEscalations(items),
     }),
-    [kpis, liveOpsSnapshot, dispatchQueue, activeMonitorRows, bookingVolumeSeries, bookingVolumeFromApi, washers, fleetWashers],
+    [
+      kpis,
+      liveOpsSnapshot,
+      dispatchQueue,
+      activeMonitorRows,
+      bookingVolumeSeries,
+      washers,
+      fleetWashers,
+      items,
+    ],
   );
 
   return {

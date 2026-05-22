@@ -1,10 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
 import { animate } from 'framer-motion';
 
-import { formatCents } from '../../utils/format';
+import { DEFAULT_CURRENCY, formatCents } from '../../utils/format';
 
 /** Count-up / spring-style earnings display for demo psychology. */
-export function AnimatedCents({ cents, currency = 'USD', className = '' }) {
+export function AnimatedCents({ cents, currency = DEFAULT_CURRENCY, className = '' }) {
   const [v, setV] = useState(() => Math.round(Number(cents) || 0));
   const fromRef = useRef(v);
 

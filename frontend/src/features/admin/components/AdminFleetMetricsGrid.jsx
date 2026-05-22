@@ -41,7 +41,7 @@ export function AdminFleetMetricsGrid({ washers }) {
   const completes7d = list.reduce((s, w) => s + (w.completed7d ?? 0), 0);
 
   return (
-    <Card variant="glass" className="min-w-0 border-l-4 border-l-teal-500/50 border-white/20 p-5 dark:border-white/10">
+    <Card variant="enterprise" className="min-w-0 border-l-4 border-l-teal-500/50 border-white/20 p-5 dark:border-white/10">
       <h2 className="wg-heading-section">Fleet utilization</h2>
       <p className="mt-1 text-xs text-wg-muted">Network aggregates from live fleet API (SSE-synced).</p>
 
@@ -75,7 +75,7 @@ export function AdminFleetMetricsGrid({ washers }) {
                 key={w.id}
                 className={cn(
                   'flex w-[min(100%,288px)] shrink-0 snap-start flex-col rounded-2xl border border-white/12 bg-gradient-to-b from-white/[0.06] to-black/[0.02] p-5 shadow-sm dark:from-white/[0.05] dark:to-white/[0.02]',
-                  'min-h-[320px]',
+                  'min-h-0',
                 )}
               >
                 <div className="flex items-start justify-between gap-3">

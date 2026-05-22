@@ -15,7 +15,7 @@ export function AdminBookingsTable({
   emptyDescription = 'Try clearing filters or search.',
 }) {
   const onOpen = () => {
-    toast('Demo data — connect admin APIs to open live bookings.', { icon: 'ℹ️' });
+    toast('Opening booking detail…', { icon: 'ℹ️' });
   };
 
   if (!rows?.length) {

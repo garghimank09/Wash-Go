@@ -7,11 +7,11 @@ export function AdminHeatmap({ matrix, dayLabels, hourLabels }) {
   const max = useMemo(() => Math.max(1, ...matrix.flat()), [matrix]);
 
   return (
-    <Card variant="glass" className="min-w-0 border-white/35 dark:border-white/10">
+    <Card variant="enterprise" className="min-w-0 border-white/35 dark:border-white/10">
       <div className="flex flex-wrap items-start justify-between gap-2">
         <div>
           <h2 className="wg-heading-section">Operational heatmap</h2>
-          <p className="mt-1 text-xs text-wg-muted">Relative booking demand by weekday and 2-hour block (mock).</p>
+          <p className="mt-1 text-xs text-wg-muted">Relative booking demand by weekday and 2-hour block.</p>
         </div>
       </div>
       <div className="mt-4 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">

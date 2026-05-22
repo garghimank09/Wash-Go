@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import { m } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import { PieChart } from 'lucide-react';
@@ -10,23 +11,35 @@ import { AdminDispatchConsole } from './components/AdminDispatchConsole';
 import { AdminFleetMetricsGrid } from './components/AdminFleetMetricsGrid';
 import { AdminRefundQueueCard } from './components/AdminRefundQueueCard';
 import { AdminTopPerformerCards } from './components/AdminTopPerformerCards';
-import { useMemo } from 'react';
-
-import { fleetWashersToGridRows, mergeFleetWithDemo } from '../../lib/adminBookingsMap';
+import { useAdminOverview } from './hooks/useAdminOverview';
+import { fleetWashersToGridRows } from '../../lib/adminBookingsMap';
 import { useAdminDispatch } from './hooks/useAdminDispatch';
-import { adminComplaintsRows, adminTopPerformers, adminWashers } from './mock/adminMock';
 
 export function AdminOperationsView() {
   const reduced = useReducedMotion();
   const dispatch = useAdminDispatch();
-  const fleetGrid = useMemo(() => {
-    const live = fleetWashersToGridRows(dispatch.fleetWashers);
-    return mergeFleetWithDemo(live, adminWashers);
-  }, [dispatch.fleetWashers]);
+  const { data } = useAdminOverview();
+  const fleetGrid = useMemo(
+    () => fleetWashersToGridRows(dispatch.fleetWashers),
+    [dispatch.fleetWashers],
+  );
+
+  const refundRows = useMemo(
+    () =>
+      (data.escalations || []).map((e) => ({
+        id: e.id,
+        customer: e.subject,
+        subject: e.subject,
+        status: 'open',
+        refundStatus: 'none',
+        refundCents: 0,
+      })),
+    [data.escalations],
+  );
 
   return (
     <m.div
-      className="space-y-6 lg:space-y-8"
+      className="space-y-3 md:space-y-4"
       variants={adminSectionContainer(reduced)}
       initial="hidden"
       animate="show"
@@ -35,7 +48,7 @@ export function AdminOperationsView() {
         <div className="min-w-0">
           <h1 className="wg-heading-display">Operations hub</h1>
           <p className="mt-1 max-w-2xl text-sm text-wg-muted">
-            Dispatch, fleet health, and assignment queue. Select a pending booking, then Assign a partner (e.g. vikas) from suggestions.
+            Dispatch, fleet health, and assignment queue — synced from bookings and fleet APIs.
           </p>
         </div>
         <Link
@@ -51,7 +64,7 @@ export function AdminOperationsView() {
         <AdminDataNotice />
       </m.div>
 
-      <m.div variants={adminSectionItem(reduced)} className="space-y-4">
+      <m.div variants={adminSectionItem(reduced)} className="space-y-3">
         <AdminAssignmentQueueViz queueLength={dispatch.queue.length} />
         <AdminDispatchConsole
           queue={dispatch.queue}
@@ -61,9 +74,9 @@ export function AdminOperationsView() {
           suggestions={dispatch.suggestions}
           onAssign={dispatch.assignWasher}
         />
-        <AdminTopPerformerCards performers={adminTopPerformers} />
+        <AdminTopPerformerCards performers={data.topPerformers} />
         <AdminFleetMetricsGrid washers={fleetGrid} />
-        <AdminRefundQueueCard rows={adminComplaintsRows} />
+        <AdminRefundQueueCard rows={refundRows} />
       </m.div>
     </m.div>
   );

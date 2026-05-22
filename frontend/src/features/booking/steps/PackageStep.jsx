@@ -1,6 +1,6 @@
 import { AnimatePresence, m } from 'framer-motion';
 import Skeleton from 'react-loading-skeleton';
-import { Crown, Droplets, Ruler, Sparkles } from 'lucide-react';
+import { CarFront, Crown, Droplets, Sparkles, Star } from 'lucide-react';
 
 import { PACKAGES, VEHICLE_SIZES } from '../../../constants/config';
 import { formatCents } from '../../../utils/format';
@@ -12,12 +12,13 @@ import { useReducedMotion } from '../../../lib/useReducedMotion';
 const PKG_ICONS = {
   basic: Droplets,
   deluxe: Sparkles,
+  super_deluxe: Star,
   premium: Crown,
 };
 
 const gridVariants = {
   hidden: {},
-  show: { transition: { staggerChildren: 0.06, delayChildren: 0.02 } },
+  show: { transition: { staggerChildren: 0.05, delayChildren: 0.02 } },
 };
 
 const cardVariants = {
@@ -39,18 +40,20 @@ export function PackageStep({
     <div className="space-y-8">
       <div className="flex items-start gap-3">
         <div className="flex size-10 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-brand-from/20 to-brand-to/15 text-cyan-700 dark:text-cyan-300">
-          <Sparkles className="size-5" strokeWidth={1.75} aria-hidden />
+          <CarFront className="size-5" strokeWidth={1.75} aria-hidden />
         </div>
         <div className="min-w-0">
           <h2 className="text-base font-bold text-wg-text">Package & vehicle size</h2>
-          <p className="mt-1 text-sm leading-relaxed text-wg-muted">Tier sets the wash depth; size fine-tunes your live estimate.</p>
+          <p className="mt-1 text-sm leading-relaxed text-wg-muted">
+            Pick your wash tier — price updates live for your vehicle size.
+          </p>
         </div>
       </div>
 
       <div>
         <p className="text-xs font-bold uppercase tracking-wide text-wg-muted">Wash tier</p>
         <m.div
-          className="mt-3 grid gap-3 sm:grid-cols-3"
+          className="mt-3 grid gap-3 sm:grid-cols-2 xl:grid-cols-4"
           variants={reduced ? undefined : gridVariants}
           initial={reduced ? false : 'hidden'}
           animate={reduced ? undefined : 'show'}
@@ -59,7 +62,19 @@ export function PackageStep({
             const Icon = PKG_ICONS[p.id] ?? Sparkles;
             const selected = packageId === p.id;
             return (
-              <m.div key={p.id} variants={reduced ? undefined : cardVariants}>
+              <m.div key={p.id} variants={reduced ? undefined : cardVariants} className="relative">
+                {p.badge ? (
+                  <span
+                    className={cn(
+                      'absolute -top-2 right-3 z-[1] rounded-full px-2 py-0.5 text-[9px] font-black uppercase tracking-wide text-white shadow',
+                      p.badge === 'Popular'
+                        ? 'bg-gradient-to-r from-cyan-500 to-indigo-600'
+                        : 'bg-gradient-to-r from-amber-500 to-orange-500',
+                    )}
+                  >
+                    {p.badge}
+                  </span>
+                ) : null}
                 <m.button
                   type="button"
                   whileHover={reduced ? undefined : { y: -2 }}
@@ -82,7 +97,15 @@ export function PackageStep({
                     <Icon className="size-5" strokeWidth={1.75} aria-hidden />
                   </span>
                   <span className="font-bold text-wg-text">{p.label}</span>
-                  <span className="mt-1.5 text-xs leading-snug text-wg-muted">{p.desc}</span>
+                  <span className="mt-1 text-xs leading-snug text-wg-muted">{p.desc}</span>
+                  <ul className="mt-3 flex flex-1 flex-col gap-1 border-t border-wg-border/60 pt-3 dark:border-white/10">
+                    {(p.features ?? []).slice(0, 4).map((f) => (
+                      <li key={f} className="text-[11px] leading-snug text-wg-muted">
+                        <span className="text-cyan-600 dark:text-cyan-400">· </span>
+                        {f}
+                      </li>
+                    ))}
+                  </ul>
                 </m.button>
               </m.div>
             );
@@ -92,7 +115,6 @@ export function PackageStep({
 
       <div>
         <p className="flex items-center gap-2 text-xs font-bold uppercase tracking-wide text-wg-muted">
-          <Ruler className="size-3.5" strokeWidth={2} aria-hidden />
           Vehicle size
         </p>
         <m.div
@@ -117,7 +139,10 @@ export function PackageStep({
         <div className="flex items-start justify-between gap-3">
           <div>
             <h3 className="text-xs font-bold uppercase tracking-wide text-wg-muted">Estimated price</h3>
-            <p className="mt-1 max-w-md text-xs leading-relaxed text-wg-muted">Estimate only — final price is set at booking confirmation.</p>
+            <p className="mt-1 max-w-md text-xs leading-relaxed text-wg-muted">
+              {PACKAGES.find((p) => p.id === packageId)?.label ?? 'Selected tier'} · estimate for your size — final
+              price confirmed at booking.
+            </p>
           </div>
         </div>
         <div className="relative mt-4 min-h-[3rem] overflow-hidden">

@@ -32,14 +32,14 @@ export function AdminWasherGrid({ washers }) {
   const headingId = useId();
 
   return (
-    <Card variant="glass" className="min-w-0 border-white/35 dark:border-white/10">
+    <Card variant="enterprise" className="min-w-0 border-white/35 dark:border-white/10">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <h2 id={headingId} className="wg-heading-section">
             Washer performance
           </h2>
           <p className="mt-1 max-w-xl text-xs leading-relaxed text-wg-muted">
-            Live partner names from fleet API (SSE). Demo cards tagged when roster is thin.
+            Partner roster and performance metrics from the fleet API (SSE).
           </p>
         </div>
         <p className="text-[10px] font-semibold uppercase tracking-wide text-wg-muted">Scroll →</p>

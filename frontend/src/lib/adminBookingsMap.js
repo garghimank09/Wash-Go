@@ -26,17 +26,7 @@ export function fleetWashersToGridRows(fleetItems) {
   });
 }
 
-/** Live fleet first; pad with demo cards when roster is thin. */
-export function mergeFleetWithDemo(liveRows, demoRows, { maxDemo = 2 } = {}) {
-  if (liveRows.length > 0) {
-    if (liveRows.length >= 4) return liveRows;
-    const demo = (demoRows || [])
-      .slice(0, maxDemo)
-      .map((r) => ({ ...r, source: 'demo' }));
-    return [...liveRows, ...demo];
-  }
-  return (demoRows || []).map((r) => ({ ...r, source: 'demo' }));
-}
+import { parseBookingMeta } from './bookingMeta';
 
 /** Map API admin booking rows to ops-desk table / dispatch shapes. */
 
@@ -60,6 +50,7 @@ export function toDispatchQueueItem(b, index) {
   const mins = Math.round((new Date(b.scheduled_at).getTime() - Date.now()) / 60000);
   const priorityLabel =
     mins <= 120 && mins >= 0 ? `SLA · starts in ${mins}m` : mins < 0 ? 'Overdue window' : 'Scheduled';
+  const { packageLabel } = parseBookingMeta(b.notes);
   return {
     id,
     customer: b.customer_name || 'Customer',
@@ -68,7 +59,7 @@ export function toDispatchQueueItem(b, index) {
     priceCents: b.price_cents ?? 0,
     priorityLabel,
     priorityRank: index + 1,
-    packageLabel: 'On-demand',
+    packageLabel: packageLabel ?? 'On-demand',
   };
 }
 
@@ -98,18 +89,23 @@ export function computeAdminKpis(bookings) {
   const washerIds = new Set(
     bookings.filter((b) => b.washer_id).map((b) => String(b.washer_id)),
   );
+  const allCompleted = bookings.filter((b) => b.status === 'completed').length;
+  const allCancelled = bookings.filter((b) => b.status === 'cancelled').length;
+  const csatDenom = allCompleted + allCancelled;
+  const csatScore =
+    csatDenom > 0 ? Math.round((allCompleted / csatDenom) * 47) / 10 : 0;
   return {
     revenue30dCents,
     bookings30d: recent.length,
     activeWashers: washerIds.size,
     openComplaints: 0,
-    csatScore: 4.7,
+    csatScore,
     customerGrowthPct: 0,
     avgTicketCents: completed.length
       ? Math.round(revenue30dCents / completed.length)
       : 0,
     repeatCustomerPct: 0,
-    refundsPending: 0,
+    refundsPending: bookings.filter((b) => b.status === 'cancelled').length,
     avgAcceptancePct: 0,
     pendingAssignment,
     inProgress,
@@ -117,11 +113,26 @@ export function computeAdminKpis(bookings) {
   };
 }
 
-function phaseForStatus(status, washerId) {
+export function phaseForStatus(status, washerId) {
   if (status === 'pending') return washerId ? 'Awaiting confirm' : 'Matching';
   if (status === 'confirmed') return 'Scheduled / en route';
   if (status === 'in_progress') return 'In progress';
   return status;
+}
+
+/** Human-readable lateness (minutes since scheduled_at). */
+export function formatLateness(minutes) {
+  const m = Math.max(0, Math.round(minutes));
+  if (m < 60) return `${m}m`;
+  if (m < 24 * 60) {
+    const h = Math.floor(m / 60);
+    const rem = m % 60;
+    return rem > 0 ? `${h}h ${rem}m` : `${h}h`;
+  }
+  const d = Math.floor(m / (24 * 60));
+  const h = Math.floor((m % (24 * 60)) / 60);
+  if (d >= 3) return `${d}d+`;
+  return h > 0 ? `${d}d ${h}h` : `${d}d`;
 }
 
 function shortId(id) {
@@ -155,18 +166,6 @@ export function computeActiveMonitorRows(bookings) {
     });
 }
 
-/** Live rows first; pad with demo samples when the queue is thin (clearly tagged). */
-export function mergeActiveMonitorWithDemo(liveRows, demoRows, { maxDemo = 2 } = {}) {
-  if (liveRows.length > 0) {
-    if (liveRows.length >= 5) return liveRows;
-    const demo = (demoRows || [])
-      .slice(0, maxDemo)
-      .map((r) => ({ ...r, source: 'demo' }));
-    return [...liveRows, ...demo];
-  }
-  return (demoRows || []).map((r) => ({ ...r, source: 'demo' }));
-}
-
 export function computeLiveHealthScores(kpis, bookings, dispatchWashers = []) {
   const dispatch = Math.max(48, Math.min(98, 96 - kpis.pendingAssignment * 5));
   const available = dispatchWashers.filter((w) => w.is_available).length;
@@ -178,7 +177,7 @@ export function computeLiveHealthScores(kpis, bookings, dispatchWashers = []) {
   return { dispatch, fleet, csat };
 }
 
-function computeDelayedJobs(bookings) {
+export function computeDelayedJobs(bookings) {
   const now = Date.now();
   return bookings
     .filter((b) => {
@@ -188,12 +187,24 @@ function computeDelayedJobs(bookings) {
     })
     .sort((a, b) => new Date(a.scheduled_at) - new Date(b.scheduled_at))
     .slice(0, 5)
-    .map((b) => ({
-      id: shortId(b.id),
-      customer: b.customer_name || 'Customer',
-      minutesLate: Math.max(0, Math.round((now - new Date(b.scheduled_at).getTime()) / 60000)),
-      zone: b.city || '—',
-    }));
+    .map((b) => {
+      const minutesLate = Math.max(0, Math.round((now - new Date(b.scheduled_at).getTime()) / 60000));
+      const hasWasher = Boolean(b.washer_id);
+      return {
+        id: shortId(b.id),
+        rawId: String(b.id),
+        customer: b.customer_name || 'Customer',
+        washer: b.washer_name || null,
+        washerLabel: b.washer_name || (hasWasher ? 'Assigned washer' : 'Unassigned'),
+        status: b.status,
+        phase: phaseForStatus(b.status, b.washer_id),
+        minutesLate,
+        latenessLabel: formatLateness(minutesLate),
+        zone: b.city || '—',
+        scheduledAt: b.scheduled_at,
+        stale: minutesLate >= 24 * 60,
+      };
+    });
 }
 
 export function computeLiveOpsSnapshot(kpis, bookings, dispatchWashers = []) {
@@ -230,7 +241,7 @@ export function computeBookingVolumeSeries(bookings) {
       const t = new Date(b.scheduled_at).getTime();
       return t >= d.getTime() && t < next.getTime();
     }).length;
-    days.push({ day: label, bookings: count });
+    days.push({ label, bookings: count });
   }
   const hasData = days.some((d) => d.bookings > 0);
   return hasData ? days : null;

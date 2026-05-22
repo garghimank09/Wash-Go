@@ -1,0 +1,8 @@
+from pydantic import BaseModel
+
+
+class GeocodeRead(BaseModel):
+    lat: float
+    lng: float
+    found: bool = True
+    approximate: bool = False

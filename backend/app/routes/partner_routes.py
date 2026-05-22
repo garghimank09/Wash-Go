@@ -1,14 +1,19 @@
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, File, UploadFile, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.auth.dependencies import require_roles
 from app.database.database import get_db
 from app.models.user import User, UserRole
-from app.schemas.partner_schema import WasherAvailabilityRead, WasherAvailabilityUpdate
+from app.schemas.partner_schema import (
+    PartnerProfileRead,
+    PartnerProfileUpdate,
+    WasherAvailabilityRead,
+    WasherAvailabilityUpdate,
+)
 from app.schemas.tracking_schema import WasherLocationUpdate
-from app.services import partner_service, tracking_service
+from app.services import partner_profile_service, partner_service, tracking_service
 
 router = APIRouter(prefix="/partner", tags=["Partner"])
 
@@ -38,3 +43,29 @@ async def update_partner_location(
 ) -> None:
     """Report live GPS from the partner app (called while on active jobs)."""
     await tracking_service.upsert_washer_location(db, current, payload)
+
+
+@router.get("/profile", response_model=PartnerProfileRead)
+async def get_partner_profile(
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current: Annotated[User, Depends(require_roles(UserRole.washer))],
+) -> PartnerProfileRead:
+    return await partner_profile_service.get_partner_profile(db, current)
+
+
+@router.patch("/profile", response_model=PartnerProfileRead)
+async def update_partner_profile(
+    payload: PartnerProfileUpdate,
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current: Annotated[User, Depends(require_roles(UserRole.washer))],
+) -> PartnerProfileRead:
+    return await partner_profile_service.update_partner_profile(db, current, payload)
+
+
+@router.post("/profile/avatar", response_model=PartnerProfileRead)
+async def upload_partner_avatar(
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current: Annotated[User, Depends(require_roles(UserRole.washer))],
+    file: UploadFile = File(...),
+) -> PartnerProfileRead:
+    return await partner_profile_service.upload_partner_avatar(db, current, file)

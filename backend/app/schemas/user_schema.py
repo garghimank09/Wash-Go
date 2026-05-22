@@ -47,8 +47,22 @@ class UserRead(BaseModel):
     email: EmailStr
     full_name: str
     phone: str | None
+    avatar_url: str | None = None
     role: UserRole
     is_active: bool
     is_verified: bool
 
     model_config = {"from_attributes": True}
+
+
+class CustomerProfileRead(BaseModel):
+    id: UUID
+    email: str
+    full_name: str
+    phone: str | None = None
+    avatar_url: str | None = None
+
+
+class CustomerProfileUpdate(BaseModel):
+    full_name: str | None = Field(default=None, min_length=1, max_length=200)
+    phone: str | None = Field(default=None, max_length=32)

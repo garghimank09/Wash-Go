@@ -23,7 +23,7 @@ export function AdminBookingsView() {
       <m.div variants={adminSectionItem(reduced)} className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="wg-heading-display">Booking management</h1>
-          <p className="mt-1 max-w-2xl text-sm text-wg-muted">Filter and review the live queue (mock). Full triage lives in Operations hub.</p>
+          <p className="mt-1 max-w-2xl text-sm text-wg-muted">Filter and review the live queue. Full triage lives in Operations hub.</p>
         </div>
         <Link
           to="/admin/operations"

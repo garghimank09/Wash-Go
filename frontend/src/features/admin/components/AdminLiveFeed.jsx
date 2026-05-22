@@ -27,20 +27,32 @@ const SEVERITY_ICON = {
 
 export function AdminLiveFeed({ items, className }) {
   const reduced = useReducedMotion();
+  const list = items || [];
+  const scrollable = list.length > 4;
 
   return (
     <Card
-      variant="glass"
-      className={cn('flex min-h-[280px] min-w-0 flex-col border-white/35 dark:border-white/10', className)}
+      variant="enterprise"
+      className={cn('flex min-w-0 flex-col border-white/35 dark:border-white/10', className)}
     >
       <div className="flex shrink-0 items-start justify-between gap-2">
         <div>
           <h2 className="wg-heading-section">Live activity</h2>
-          <p className="mt-1 text-xs text-wg-muted">Booking events from API first; demo samples tagged below.</p>
+          <p className="mt-1 text-xs text-wg-muted">Recent booking events from the live API stream.</p>
         </div>
       </div>
-      <ul className="mt-4 min-h-0 flex-1 space-y-2 overflow-y-auto pr-0.5">
-        {(items || []).map((ev, i) => {
+      {list.length === 0 ? (
+        <p className="mt-3 rounded-lg border border-dashed border-wg-border/80 px-3 py-4 text-center text-xs text-wg-muted">
+          No recent events yet.
+        </p>
+      ) : (
+      <ul
+        className={cn(
+          'mt-3 space-y-2 pr-0.5',
+          scrollable && 'max-h-[280px] overflow-y-auto',
+        )}
+      >
+        {list.map((ev, i) => {
           const Icon = ICONS[ev.type] || Activity;
           const sev = ev.severity || 'info';
           const SevIcon = SEVERITY_ICON[sev] || Info;
@@ -65,7 +77,7 @@ export function AdminLiveFeed({ items, className }) {
               <div className="min-w-0 flex-1">
                 <div className="flex flex-wrap items-center gap-2">
                   <p className="text-sm font-semibold leading-snug text-wg-text">{ev.title}</p>
-                  <AdminDataSourceBadge source={ev.source || 'demo'} />
+                  <AdminDataSourceBadge source={ev.source || 'live'} />
                 </div>
                 <p className="mt-0.5 text-xs font-medium text-wg-muted">{ev.time}</p>
               </div>
@@ -73,6 +85,7 @@ export function AdminLiveFeed({ items, className }) {
           );
         })}
       </ul>
+      )}
     </Card>
   );
 }

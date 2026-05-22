@@ -10,7 +10,7 @@ export const DEMO_JOB = {
   service_address: '555 California St, San Francisco, CA',
   scheduled_at: new Date(Date.now() + 45 * 60000).toISOString(),
   price_cents: 8900,
-  currency: 'USD',
+  currency: 'INR',
   etaMinutes: 18,
   notes: 'Customer prefers microfiber only on glass.',
   repeatCustomer: true,

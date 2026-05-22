@@ -6,9 +6,9 @@ import { useReducedMotion } from '../../lib/useReducedMotion';
 import { cn } from '../../lib/cn';
 
 const ALERTS = [
-  { id: 'surge', icon: Zap, title: 'Surge +$4', body: 'SOMA · next 25 min', tone: 'from-amber-500/20 to-orange-500/10 border-amber-400/25 text-amber-950 dark:text-amber-50' },
+  { id: 'surge', icon: Zap, title: 'Surge +₹99', body: 'Okhla · next 25 min', tone: 'from-amber-500/20 to-orange-500/10 border-amber-400/25 text-amber-950 dark:text-amber-50' },
   { id: 'ops', icon: Radio, title: 'Dispatch ping', body: 'Stay online — 3 drivers short', tone: 'from-cyan-500/15 to-indigo-500/10 border-cyan-400/20 text-wg-text' },
-  { id: 'bonus', icon: Flame, title: 'Streak bonus', body: '2 more completes unlock +$12', tone: 'from-rose-500/15 to-fuchsia-500/10 border-rose-400/25 text-rose-950 dark:text-rose-50' },
+  { id: 'bonus', icon: Flame, title: 'Streak bonus', body: '2 more completes unlock +₹299', tone: 'from-rose-500/15 to-fuchsia-500/10 border-rose-400/25 text-rose-950 dark:text-rose-50' },
 ];
 
 /** Rotating operational micro-alerts — investor-demo energy without APIs. */
