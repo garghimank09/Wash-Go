@@ -16,7 +16,7 @@ export function AdminLayout() {
     <div className="relative flex min-h-dvh bg-wg-surface">
       <AdminBookingSyncBridge />
       <div
-        className="pointer-events-none absolute inset-0 opacity-70 dark:opacity-100"
+        className="pointer-events-none absolute inset-0 opacity-50 dark:opacity-75"
         style={{ background: 'var(--wg-mesh)' }}
         aria-hidden
       />

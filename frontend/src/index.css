@@ -117,6 +117,90 @@
   -webkit-backdrop-filter: blur(var(--wg-glass-blur));
 }
 
+/* Admin — unified table chrome */
+@utility wg-admin-table-wrap {
+  @apply overflow-x-auto rounded-[var(--radius-wg-card)];
+}
+
+@utility wg-admin-table {
+  @apply w-full min-w-[560px] text-left text-sm;
+}
+
+@utility wg-admin-table-head {
+  @apply sticky top-0 z-10 border-b border-wg-border bg-wg-surface-elevated/95 backdrop-blur-md;
+}
+
+@utility wg-admin-table-th {
+  @apply px-4 py-2.5 text-[10px] font-bold uppercase tracking-[0.1em] text-wg-muted;
+}
+
+@utility wg-admin-table-row {
+  @apply border-b border-wg-border/60 transition-colors last:border-b-0 hover:bg-cyan-500/[0.06] dark:hover:bg-cyan-400/[0.08];
+}
+
+@utility wg-admin-table-td {
+  @apply px-4 py-2.5 text-wg-text;
+}
+
+@utility wg-admin-accent-ops {
+  @apply border-l-4 border-violet-500/70;
+}
+
+@utility wg-admin-accent-revenue {
+  @apply border-l-4 border-cyan-500/70;
+}
+
+@utility wg-admin-accent-alert {
+  @apply border-l-4 border-rose-500/70;
+}
+
+@utility wg-admin-accent-partner {
+  @apply border-l-4 border-emerald-500/70;
+}
+
+@utility wg-admin-scroll-fade {
+  mask-image: linear-gradient(to right, #000 92%, transparent 100%);
+}
+
+/* Partner field-ops — status & stat emphasis */
+@utility wg-partner-stat-emphasis {
+  @apply ring-2 ring-cyan-500/35 ring-offset-2 ring-offset-wg-surface dark:ring-cyan-400/30;
+}
+
+@utility wg-partner-status-online {
+  @apply bg-emerald-500/15 text-emerald-800 ring-1 ring-emerald-500/30 dark:text-emerald-200;
+}
+
+@utility wg-partner-status-busy {
+  @apply bg-amber-500/15 text-amber-900 ring-1 ring-amber-500/35 dark:text-amber-100;
+}
+
+@utility wg-partner-status-break {
+  @apply bg-indigo-500/15 text-indigo-900 ring-1 ring-indigo-500/30 dark:text-indigo-200;
+}
+
+@utility wg-partner-cta-gradient {
+  @apply bg-gradient-to-r from-emerald-500 to-cyan-500 text-white shadow-lg shadow-cyan-500/20;
+}
+
+@utility wg-partner-empty-dashed {
+  @apply rounded-[var(--radius-wg-card)] border-2 border-dashed border-cyan-500/25 bg-cyan-500/[0.04] p-8 text-center;
+}
+
+.wg-partner-celebration-fade {
+  animation: wg-partner-celebration-fade 5s ease-out forwards;
+}
+
+@keyframes wg-partner-celebration-fade {
+  0%,
+  70% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0.35;
+  }
+}
+
 /* Partner field-ops — animated route / live pulse */
 @keyframes wg-partner-route-dash {
   to {

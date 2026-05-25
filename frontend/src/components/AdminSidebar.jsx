@@ -34,7 +34,7 @@ const GROUPS = [
     items: [
       { to: '/admin/operations', label: 'Operations hub', Icon: LayoutGrid },
       { to: '/admin/bookings', label: 'Booking management', Icon: ClipboardList },
-      { to: '/admin/complaints', label: 'Complaints', Icon: MessageSquareWarning },
+      { to: '/admin/complaints', label: 'Feedback', Icon: MessageSquareWarning },
     ],
   },
   {

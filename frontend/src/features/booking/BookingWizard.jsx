@@ -1,4 +1,4 @@
-import { Fragment, useEffect, useMemo, useRef, useState } from 'react';
+import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import toast from 'react-hot-toast';
 import { AnimatePresence, m } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
@@ -19,6 +19,7 @@ import { ScheduleStep } from './steps/ScheduleStep';
 import { VehicleStep } from './steps/VehicleStep';
 import { PACKAGES } from '../../constants/config';
 import { DEFAULT_CURRENCY } from '../../constants/config';
+import { gpsAccuracyHint } from '../../lib/geolocation';
 import { formatCents } from '../../utils/format';
 import { BookingCarsSkeleton } from './BookingCarsSkeleton';
 import { BookingSummaryPanel } from './BookingSummaryPanel';
@@ -92,6 +93,8 @@ export function BookingWizard() {
   const [geocoding, setGeocoding] = useState(false);
   const [geocodeError, setGeocodeError] = useState(null);
   const geocodeSeqRef = useRef(0);
+  const skipAddressGeocodeRef = useRef(false);
+  const reverseSeqRef = useRef(0);
   const [priceCents, setPriceCents] = useState(null);
   const [pricingLoading, setPricingLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -175,7 +178,65 @@ export function BookingWizard() {
     return toLocalTimeValue(d);
   }, [scheduledDate]);
 
+  const applyPlaceFromAutocomplete = useCallback(({ address: addr, lat, lng }) => {
+    reverseSeqRef.current += 1;
+    geocodeSeqRef.current += 1;
+    skipAddressGeocodeRef.current = true;
+    setAddress(addr);
+    setServiceLat(lat);
+    setServiceLng(lng);
+    setGeocodeError(null);
+    setGeocoding(false);
+  }, []);
+
+  const applyResolvedPin = useCallback((lat, lng, resolvedAddress, meta = {}) => {
+    reverseSeqRef.current += 1;
+    skipAddressGeocodeRef.current = true;
+    setAddress(resolvedAddress);
+    setServiceLat(lat);
+    setServiceLng(lng);
+    const accuracyHint = meta.source === 'gps' ? gpsAccuracyHint(meta.accuracyMeters) : null;
+    setGeocodeError(accuracyHint);
+    setGeocoding(false);
+  }, []);
+
+  const resolveAddressFromPin = useCallback(async (lat, lng, meta = {}) => {
+    if (meta.source === 'places') return;
+
+    const trimmed = (meta.address || '').trim();
+    if (trimmed.length >= 5) {
+      applyResolvedPin(lat, lng, trimmed, meta);
+      return;
+    }
+
+    const seq = ++reverseSeqRef.current;
+    setGeocoding(true);
+    const accuracyHint = meta.source === 'gps' ? gpsAccuracyHint(meta.accuracyMeters) : null;
+    setGeocodeError(accuracyHint);
+    try {
+      const { address: resolved } = await geocodeService.reverse(lat, lng);
+      if (seq !== reverseSeqRef.current) return;
+      applyResolvedPin(lat, lng, resolved, meta);
+      if (!accuracyHint) setGeocodeError(null);
+    } catch (err) {
+      if (seq !== reverseSeqRef.current) return;
+      setServiceLat(lat);
+      setServiceLng(lng);
+      const base = getErrorMessage(err);
+      setGeocodeError(accuracyHint ? `${accuracyHint} ${base}` : base);
+    } finally {
+      if (seq === reverseSeqRef.current) setGeocoding(false);
+    }
+  }, [applyResolvedPin]);
+
   useEffect(() => {
+    if (skipAddressGeocodeRef.current) {
+      skipAddressGeocodeRef.current = false;
+      return undefined;
+    }
+
+    reverseSeqRef.current += 1;
+
     const trimmed = address.trim();
     if (trimmed.length < 5) {
       setServiceLat(null);
@@ -470,11 +531,17 @@ export function BookingWizard() {
                     setAddress={setAddress}
                     serviceLat={serviceLat}
                     serviceLng={serviceLng}
-                    onLocationChange={({ lat, lng }) => {
-                      setServiceLat(lat);
-                      setServiceLng(lng);
-                      setGeocodeError(null);
+                    onLocationChange={(payload) => {
+                      setServiceLat(payload.lat);
+                      setServiceLng(payload.lng);
+                      const fromMap = (payload.address || '').trim();
+                      if (fromMap.length >= 5) {
+                        applyResolvedPin(payload.lat, payload.lng, fromMap, payload);
+                        return;
+                      }
+                      void resolveAddressFromPin(payload.lat, payload.lng, payload);
                     }}
+                    onPlaceSelect={applyPlaceFromAutocomplete}
                     scheduledDate={scheduledDate}
                     setScheduledDate={setScheduledDate}
                     scheduledTime={scheduledTime}

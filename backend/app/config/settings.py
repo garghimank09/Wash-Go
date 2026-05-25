@@ -44,6 +44,8 @@ class Settings(BaseSettings):
     SMTP_USER: str | None = None
     SMTP_PASSWORD: str | None = None
     SMTP_FROM: str | None = None
+    # Google Maps Platform — Geocoding on server; Maps/Places use VITE_* on frontend.
+    GOOGLE_MAPS_API_KEY: str | None = None
 
     @field_validator("DATABASE_URL")
     @classmethod

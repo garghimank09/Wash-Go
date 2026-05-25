@@ -15,12 +15,20 @@ const SLA_RING = {
 export function AdminDispatchQueuePreview({ queue, isLive = false }) {
   const rows = (queue || []).slice(0, 4);
   return (
-    <Card variant="enterprise" className="flex min-w-0 flex-col border-l-4 border-l-violet-500/55 border-white/20 dark:border-white/10">
+    <Card variant="enterprise" className="wg-admin-accent-ops flex min-w-0 flex-col">
       <div className="flex flex-wrap items-start justify-between gap-2 border-b border-white/10 px-4 py-3 dark:border-white/5">
         <div>
-          <h2 className="wg-heading-section">Dispatch monitor</h2>
+          <div className="flex flex-wrap items-center gap-2">
+            <h2 className="wg-heading-section">Dispatch monitor</h2>
+            {isLive ? (
+              <span className="inline-flex items-center gap-1 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2 py-0.5 text-[9px] font-bold uppercase text-emerald-800 dark:text-emerald-200">
+                <Radio className="size-3" aria-hidden />
+                Live
+              </span>
+            ) : null}
+          </div>
           <p className="mt-0.5 text-xs text-wg-muted">
-            Unassigned queue · live from API (SSE).
+            Unassigned queue · synced from API (SSE).
           </p>
         </div>
         <Link
@@ -63,8 +71,8 @@ export function AdminDispatchQueuePreview({ queue, isLive = false }) {
 export function AdminSlaAlertsCard({ items }) {
   const list = items || [];
   return (
-    <Card variant="enterprise" className="flex min-w-0 flex-col border-white/20 dark:border-white/10">
-      <div className="border-b border-white/10 px-4 py-3 dark:border-white/5">
+    <Card variant="enterprise" className="wg-admin-accent-alert flex min-w-0 flex-col">
+      <div className="border-b border-wg-border px-4 py-3">
         <h2 className="wg-heading-section">SLA alerts</h2>
         <p className="mt-0.5 text-xs text-wg-muted">Time-to-breach watchlist from live queue.</p>
       </div>
@@ -103,7 +111,7 @@ export function AdminSlaAlertsCard({ items }) {
 export function AdminEscalationTrackerCard({ items }) {
   const list = items || [];
   return (
-    <Card variant="enterprise" className="flex min-w-0 flex-col border-l-4 border-l-rose-500/45 border-white/20 dark:border-white/10">
+    <Card variant="enterprise" className="wg-admin-accent-alert flex min-w-0 flex-col">
       <div className="border-b border-white/10 px-4 py-3 dark:border-white/5">
         <h2 className="wg-heading-section">Escalation tracker</h2>
         <p className="mt-0.5 text-xs text-wg-muted">Cross-team queue · aging from late jobs.</p>
@@ -141,7 +149,7 @@ export function AdminRevenuePulseCard({ series, kpis }) {
   const up = pct != null && pct >= 0;
 
   return (
-    <Card variant="enterprise" className="min-w-0 border-l-4 border-l-emerald-500/50 border-white/20 p-4 dark:border-white/10">
+    <Card variant="enterprise" className="wg-admin-accent-revenue min-w-0 p-4">
       <div className="flex items-start justify-between gap-2">
         <div>
           <h2 className="text-xs font-black uppercase tracking-[0.14em] text-wg-muted">Revenue pulse</h2>
@@ -172,7 +180,7 @@ export function AdminRevenuePulseCard({ series, kpis }) {
 export function AdminPeakHourInsightCard({ insight }) {
   if (!insight) return null;
   return (
-    <Card variant="enterprise" className="min-w-0 border-l-4 border-l-amber-500/50 border-white/20 p-4 dark:border-white/10">
+    <Card variant="enterprise" className="wg-admin-accent-alert min-w-0 p-4">
       <div className="flex flex-wrap items-start gap-3">
         <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-amber-500/12 text-amber-800 dark:text-amber-200">
           <Zap className="size-5" strokeWidth={2} aria-hidden />

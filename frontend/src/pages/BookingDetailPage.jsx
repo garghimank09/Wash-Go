@@ -7,6 +7,7 @@ import Skeleton from 'react-loading-skeleton';
 
 import { BookingCancelModal } from '../features/bookings/BookingCancelModal';
 import { BookingRescheduleModal } from '../features/bookings/BookingRescheduleModal';
+import { BookingReviewForm, BookingReviewSubmitted } from '../features/bookings/BookingReviewForm';
 import { CustomerBookingStatusPill } from '../features/bookings/CustomerBookingStatusPill';
 import { CustomerServiceTimeline } from '../features/bookings/CustomerServiceTimeline';
 import { formatCustomerWashTiming } from '../features/dashboard/dashboardEta';
@@ -265,6 +266,20 @@ export function BookingDetailPage() {
           <p className="text-sm text-wg-muted">Washer assignment pending — your job stays in the matching queue.</p>
         )}
       </Card>
+
+      {b.status === 'completed' && b.washer ? (
+        b.review ? (
+          <BookingReviewSubmitted review={b.review} washerName={b.washer.full_name} />
+        ) : (
+          <BookingReviewForm
+            bookingId={b.id}
+            washerName={b.washer.full_name}
+            onSubmitted={async () => {
+              await load(true);
+            }}
+          />
+        )
+      ) : null}
 
       {!terminal && (canCancel || canReschedule) ? (
         <Card variant="glass" className="border-white/20 shadow-wg-card dark:border-white/10">

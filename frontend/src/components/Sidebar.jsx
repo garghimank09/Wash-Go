@@ -28,7 +28,7 @@ export function Sidebar({ mobileOpen, onNavigate }) {
       className={railAsideClass({
         mobileOpen,
         surfaceClass:
-          'border-white/20 wg-glass-surface backdrop-blur-2xl dark:border-white/10',
+          'border-wg-border/80 wg-glass-surface backdrop-blur-2xl dark:border-white/10',
       })}
     >
       <div className={cn('flex h-16 shrink-0 items-center border-b border-wg-border', RAIL_BRAND_ROW)}>

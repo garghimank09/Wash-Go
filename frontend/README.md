@@ -20,7 +20,12 @@ npm install
 
 ```env
 VITE_API_URL=http://127.0.0.1:8000
+# Optional — Google Maps (booking address search, map, 2D/3D/satellite views)
+VITE_GOOGLE_MAPS_API_KEY=your_browser_key
+# VITE_GOOGLE_MAP_ID=your_vector_map_id
 ```
+
+Enable **Maps JavaScript API**, **Places API**, and **Geocoding API** in Google Cloud. Use a **browser-restricted** key for `VITE_*` and a **server-restricted** key as `GOOGLE_MAPS_API_KEY` in `backend/.env`.
 
 Restart the dev server whenever you change `.env` (Vite reads it at startup).
 

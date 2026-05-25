@@ -41,7 +41,7 @@ export function AdminFleetMetricsGrid({ washers }) {
   const completes7d = list.reduce((s, w) => s + (w.completed7d ?? 0), 0);
 
   return (
-    <Card variant="enterprise" className="min-w-0 border-l-4 border-l-teal-500/50 border-white/20 p-5 dark:border-white/10">
+    <Card variant="enterprise" className="wg-admin-accent-revenue min-w-0 p-5">
       <h2 className="wg-heading-section">Fleet utilization</h2>
       <p className="mt-1 text-xs text-wg-muted">Network aggregates from live fleet API (SSE-synced).</p>
 
@@ -66,7 +66,7 @@ export function AdminFleetMetricsGrid({ washers }) {
 
       <p className="mt-6 text-[10px] font-bold uppercase tracking-[0.12em] text-wg-muted">Operator roster</p>
       <div className="relative mt-3 min-w-0">
-        <div className="-mx-1 flex gap-5 overflow-x-auto px-1 pb-2 pt-1 [scrollbar-width:thin]">
+        <div className="wg-admin-scroll-fade -mx-1 flex gap-5 overflow-x-auto px-1 pb-2 pt-1 [scrollbar-width:thin]">
           {list.map((w) => {
             const chartData = sparkData(w.trend7d);
             const [y0, y1] = yDomain(w.trend7d);

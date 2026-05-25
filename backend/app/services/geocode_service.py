@@ -4,11 +4,18 @@ from typing import Any
 
 import httpx
 
-from app.utils.geo import fallback_coords_for_address, is_in_india_bounds, looks_like_india
+from app.services import google_maps_service
+from app.utils.geo import (
+    fallback_coords_for_address,
+    haversine_km,
+    is_in_india_bounds,
+    looks_like_india,
+)
 
 logger = logging.getLogger(__name__)
 
 _NOMINATIM = "https://nominatim.openstreetmap.org/search"
+_NOMINATIM_REVERSE = "https://nominatim.openstreetmap.org/reverse"
 _USER_AGENT = "WashGo/1.0 (dev; contact@washgo.local)"
 
 # Delhi NCR viewbox (left, top, right, bottom) — bias results
@@ -155,6 +162,161 @@ async def geocode_address(address: str) -> tuple[float, float] | None:
     return None
 
 
+def _format_reverse_address(payload: dict[str, Any]) -> str:
+    """Build a readable single-line address from Nominatim reverse JSON."""
+    display = (payload.get("display_name") or "").strip()
+    addr = payload.get("address")
+    if not isinstance(addr, dict):
+        return display
+
+    parts: list[str] = []
+
+    def add(val: Any) -> None:
+        if not val:
+            return
+        s = str(val).strip()
+        if not s:
+            return
+        if parts and parts[-1].lower() == s.lower():
+            return
+        parts.append(s)
+
+    # Street-level first (most useful for service drop-off).
+    add(addr.get("house_number"))
+    add(addr.get("house_name"))
+    add(addr.get("building"))
+    add(addr.get("amenity"))
+    add(addr.get("shop"))
+    add(addr.get("road") or addr.get("pedestrian") or addr.get("footway") or addr.get("residential"))
+
+    for key in (
+        "quarter",
+        "neighbourhood",
+        "suburb",
+        "locality",
+        "hamlet",
+        "village",
+        "town",
+        "city_district",
+        "district",
+        "city",
+        "state_district",
+        "state",
+        "postcode",
+        "country",
+    ):
+        add(addr.get(key))
+
+    if parts:
+        return ", ".join(parts)
+    return display
+
+
+def _format_photon_reverse(props: dict[str, Any]) -> str:
+    parts: list[str] = []
+
+    def add(val: Any) -> None:
+        if not val:
+            return
+        s = str(val).strip()
+        if not s:
+            return
+        if parts and parts[-1].lower() == s.lower():
+            return
+        parts.append(s)
+
+    add(props.get("housenumber"))
+    add(props.get("street") or props.get("name"))
+    add(props.get("district") or props.get("locality") or props.get("suburb"))
+    add(props.get("city") or props.get("county"))
+    add(props.get("state"))
+    add(props.get("postcode"))
+    add(props.get("country"))
+    return ", ".join(parts)
+
+
+async def _nominatim_reverse(lat: float, lng: float, *, zoom: int = 19) -> str | None:
+    params: dict[str, Any] = {
+        "lat": lat,
+        "lon": lng,
+        "format": "json",
+        "addressdetails": 1,
+        "zoom": zoom,
+        "accept-language": "en",
+    }
+    try:
+        async with httpx.AsyncClient(timeout=httpx.Timeout(12.0)) as client:
+            response = await client.get(
+                _NOMINATIM_REVERSE,
+                params=params,
+                headers={"User-Agent": _USER_AGENT},
+            )
+            response.raise_for_status()
+            payload = response.json()
+    except (httpx.HTTPError, ValueError, TypeError) as exc:
+        logger.warning("nominatim reverse failed for %s,%s: %s", lat, lng, exc)
+        return None
+
+    if not isinstance(payload, dict):
+        return None
+    formatted = _format_reverse_address(payload).strip()
+    return formatted if len(formatted) >= 5 else None
+
+
+async def _photon_reverse(lat: float, lng: float) -> str | None:
+    try:
+        async with httpx.AsyncClient(timeout=httpx.Timeout(10.0)) as client:
+            response = await client.get(
+                "https://photon.komoot.io/reverse",
+                params={"lat": lat, "lon": lng, "lang": "en"},
+            )
+            response.raise_for_status()
+            features = response.json().get("features") or []
+    except (httpx.HTTPError, ValueError, TypeError) as exc:
+        logger.warning("photon reverse failed for %s,%s: %s", lat, lng, exc)
+        return None
+
+    best: tuple[float, str] | None = None
+    for feat in features[:5]:
+        props = feat.get("properties") or {}
+        coords = feat.get("geometry", {}).get("coordinates")
+        if not coords or len(coords) < 2:
+            continue
+        feat_lng, feat_lat = float(coords[0]), float(coords[1])
+        dist_km = haversine_km(lat, lng, feat_lat, feat_lng)
+        formatted = _format_photon_reverse(props).strip()
+        if len(formatted) < 5:
+            continue
+        if best is None or dist_km < best[0]:
+            best = (dist_km, formatted)
+
+    return best[1] if best else None
+
+
+async def reverse_geocode_coords(lat: float, lng: float) -> str | None:
+    """Resolve map pin coordinates to a service address string."""
+    if not (-90 <= lat <= 90 and -180 <= lng <= 180):
+        return None
+
+    if google_maps_service.is_configured():
+        google_addr = await google_maps_service.reverse_geocode(lat, lng)
+        if google_addr:
+            return google_addr
+
+    # High zoom first for street-level; fall back for sparse OSM areas.
+    for zoom in (19, 18, 17):
+        result = await _nominatim_reverse(lat, lng, zoom=zoom)
+        if result:
+            return result
+
+    if is_in_india_bounds(lat, lng):
+        photon = await _photon_reverse(lat, lng)
+        if photon:
+            return photon
+
+    return None
+
+
 async def geocode_for_preview(address: str) -> tuple[float, float, bool] | None:
     """
     Resolve address for booking UI.
@@ -163,6 +325,11 @@ async def geocode_for_preview(address: str) -> tuple[float, float, bool] | None:
     trimmed = (address or "").strip()
     if len(trimmed) < 3:
         return None
+
+    if google_maps_service.is_configured():
+        google_coords = await google_maps_service.geocode_address(trimmed)
+        if google_coords:
+            return google_coords[0], google_coords[1], False
 
     coords = await geocode_address(trimmed)
     if coords:
@@ -190,6 +357,11 @@ async def resolve_service_coords(
             lat, lng = None, None
         else:
             return float(lat), float(lng)
+
+    if google_maps_service.is_configured():
+        google_coords = await google_maps_service.geocode_address(address)
+        if google_coords:
+            return google_coords
 
     coords = await geocode_address(address)
     if coords:

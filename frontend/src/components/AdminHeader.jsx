@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { ArrowLeft, LogOut, Menu, Shield } from 'lucide-react';
+import { LogOut, Menu, Shield } from 'lucide-react';
 
 import { useAuth } from '../context/AuthContext';
 import { isAdminDemoMode } from '../lib/canAccessAdmin';
@@ -55,20 +55,6 @@ export function AdminHeader({ onMenuClick }) {
       </div>
 
       <div className="flex shrink-0 items-center gap-2 sm:gap-3">
-        <Link
-          to="/dashboard"
-          className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-xl border border-wg-border/80 bg-white/40 sm:hidden dark:bg-white/5"
-          aria-label="Customer app"
-        >
-          <ArrowLeft className="size-4" strokeWidth={2} aria-hidden />
-        </Link>
-        <Link
-          to="/dashboard"
-          className="hidden items-center gap-1.5 rounded-xl border border-wg-border/80 bg-white/40 px-3 py-2 text-xs font-semibold text-wg-text transition hover:border-indigo-400/40 hover:bg-indigo-500/10 sm:inline-flex dark:bg-white/5"
-        >
-          <ArrowLeft className="size-3.5" strokeWidth={2} aria-hidden />
-          Customer app
-        </Link>
         <ThemeToggle className="border-indigo-200/50 dark:border-indigo-500/20" />
         <Button variant="outline" size="sm" className="gap-2 border-indigo-200/60 dark:border-indigo-500/25" onClick={logout}>
           <LogOut className="size-4" strokeWidth={1.75} aria-hidden />

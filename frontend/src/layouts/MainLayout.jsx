@@ -24,9 +24,19 @@ export function MainLayout() {
         />
       ) : null}
       <Sidebar mobileOpen={mobileMenu} onNavigate={() => setMobileMenu(false)} />
-      <div className={cn('flex min-w-0 flex-1 flex-col transition-[padding] duration-200 ease-out', railMainOffset())}>
+      <div
+        className={cn(
+          'relative flex min-w-0 flex-1 flex-col transition-[padding] duration-200 ease-out',
+          railMainOffset(),
+        )}
+      >
+        <div
+          className="pointer-events-none absolute inset-0 opacity-35 dark:opacity-50"
+          style={{ background: 'var(--wg-mesh)' }}
+          aria-hidden
+        />
         <Navbar variant="dashboard" onMenuClick={() => setMobileMenu((v) => !v)} />
-        <main className="flex-1 p-4 md:p-8">
+        <main className="relative flex-1 p-4 md:p-8">
           <PageShell>
             <PageTransition />
           </PageShell>

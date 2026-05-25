@@ -58,7 +58,7 @@ export function CustomerNavMenu() {
 
       {open ? (
         <div
-          className="absolute right-0 top-[calc(100%+0.5rem)] z-50 min-w-[220px] overflow-hidden rounded-2xl border border-white/25 bg-[color:var(--wg-glass-bg)] py-2 shadow-xl backdrop-blur-xl dark:border-white/10"
+          className="absolute right-0 top-[calc(100%+0.5rem)] z-50 min-w-[220px] overflow-hidden rounded-2xl border border-wg-border/80 wg-glass-surface py-2 shadow-xl backdrop-blur-xl dark:border-white/10"
           role="menu"
         >
           <div className="border-b border-wg-border/80 px-4 py-3 sm:hidden">

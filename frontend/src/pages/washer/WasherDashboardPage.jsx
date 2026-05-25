@@ -13,6 +13,7 @@ import { Card } from '../../ui/card';
 import { CustomerBookingStatusPill } from '../../features/bookings/CustomerBookingStatusPill';
 import { WasherAvailabilityControls } from '../../features/washer/WasherAvailabilityControls';
 import { WasherDashboardOpsBanner } from '../../features/washer/WasherDashboardOpsBanner';
+import { WasherRecentFeedback } from '../../features/washer/WasherRecentFeedback';
 
 const ACTIVE = ['pending', 'confirmed', 'in_progress'];
 
@@ -95,7 +96,7 @@ export function WasherDashboardPage() {
             ))
           : (
               <>
-                <Card variant="glass" className="p-4 transition-shadow hover:shadow-lg">
+                <Card variant="glass" className="wg-partner-stat-emphasis p-4 transition-shadow hover:shadow-lg">
                   <Clock className="size-5 text-cyan-600 dark:text-cyan-400" strokeWidth={1.75} aria-hidden />
                   <p className="mt-2 text-[10px] font-bold uppercase text-wg-muted">Today</p>
                   <p className="text-2xl font-black tabular-nums text-wg-text">{today.length}</p>
@@ -134,6 +135,8 @@ export function WasherDashboardPage() {
 
       {error ? <p className="text-sm text-rose-600">{error}</p> : null}
 
+      <WasherRecentFeedback limit={5} />
+
       <div className="flex items-center justify-between">
         <h2 className="text-sm font-black uppercase tracking-[0.14em] text-wg-muted">Today&apos;s line</h2>
         <Link to="/partner/requests" className="inline-flex items-center gap-1 text-xs font-bold text-cyan-700 dark:text-cyan-300">
@@ -148,7 +151,7 @@ export function WasherDashboardPage() {
           ))}
         </ul>
       ) : today.length === 0 ? (
-        <Card variant="glass" className="border-dashed border-cyan-500/25 bg-gradient-to-br from-cyan-500/[0.07] to-transparent py-10 text-center">
+        <Card variant="glass" className="wg-partner-empty-dashed py-10">
           <p className="text-sm font-bold text-wg-text">No roster sync for today yet</p>
           <p className="mx-auto mt-2 max-w-xs text-sm text-wg-muted">
             Go <strong className="text-wg-text">online</strong> and open <strong className="text-wg-text">Offers</strong> — new customer bookings appear in real time.

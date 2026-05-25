@@ -18,6 +18,7 @@ from app.schemas.booking_schema import (
     BookingCreate,
     BookingDetailRead,
     BookingPhotoSummary,
+    BookingReviewSummary,
     BookingOfferRead,
     BookingRescheduleBody,
     BookingStatusUpdate,
@@ -469,6 +470,7 @@ async def get_booking_detail(db: AsyncSession, user: User, booking_id: UUID) -> 
             selectinload(Booking.customer),
             selectinload(Booking.washer).selectinload(Washer.user),
             selectinload(Booking.photos),
+            selectinload(Booking.reviews),
         )
     )
     result = await db.execute(stmt)
@@ -533,4 +535,14 @@ async def get_booking_detail(db: AsyncSession, user: User, booking_id: UUID) -> 
             )
             for p in sorted(booking.photos, key=lambda x: x.kind.value)
         ],
+        review=(
+            BookingReviewSummary(
+                id=booking.reviews[0].id,
+                rating=booking.reviews[0].rating,
+                comment=booking.reviews[0].comment,
+                created_at=booking.reviews[0].created_at,
+            )
+            if booking.reviews
+            else None
+        ),
     )

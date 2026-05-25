@@ -34,17 +34,17 @@ export function AdminDirectoryCustomerTable({ rows, onPreview }) {
   const colCount = 9;
 
   return (
-    <Card variant="enterprise" className="min-w-0 overflow-hidden border-l-4 border-l-cyan-500/55 border-white/20 p-0 dark:border-white/10">
+    <Card variant="enterprise" className="wg-admin-accent-revenue min-w-0 overflow-hidden p-0">
       <div className="border-b border-white/10 px-4 py-3 dark:border-white/5">
         <h2 className="wg-heading-section">Customer directory</h2>
         <p className="mt-0.5 text-xs text-wg-muted">Consumer CRM view — loyalty and LTV derived from bookings.</p>
       </div>
       <div className="overflow-x-auto">
         <table className="w-full min-w-[960px] text-left text-sm">
-          <thead className="sticky top-0 z-10 bg-wg-surface-elevated/95 text-[10px] font-black uppercase tracking-wide text-wg-muted backdrop-blur-md">
-            <tr className="border-b border-wg-border">
-              <th className="w-10 px-2 py-3" aria-label="Expand" />
-              <th className="px-3 py-3">Name</th>
+          <thead className="wg-admin-table-head">
+            <tr>
+              <th className="wg-admin-table-th w-10" aria-label="Expand" />
+              <th className="wg-admin-table-th">Name</th>
               <th className="px-3 py-3">Email</th>
               <th className="px-3 py-3">Bookings</th>
               <th className="px-3 py-3">Loyalty</th>

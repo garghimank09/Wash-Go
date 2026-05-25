@@ -8,12 +8,15 @@ import { adminSectionContainer, adminSectionItem } from './adminMotion';
 import { AdminComplaintsTable } from './components/AdminComplaintsTable';
 import { AdminDataNotice } from './components/AdminDataNotice';
 import { AdminOperationsToolbar } from './components/AdminOperationsToolbar';
+import { AdminReviewsTable } from './components/AdminReviewsTable';
 import { useAdminOperations } from './hooks/useAdminOperations';
+import { useAdminReviews } from './hooks/useAdminReviews';
 import { Card } from '../../ui/card';
 
 export function AdminComplaintsView() {
   const reduced = useReducedMotion();
   const { complaints, query, setQuery, complaintStatus, setComplaintStatus } = useAdminOperations();
+  const { items: reviews, loading: reviewsLoading, error: reviewsError } = useAdminReviews();
 
   const stats = useMemo(() => {
     const rows = complaints;
@@ -34,8 +37,10 @@ export function AdminComplaintsView() {
     >
       <m.div variants={adminSectionItem(reduced)} className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="wg-heading-display">Complaints</h1>
-          <p className="mt-1 max-w-2xl text-sm text-wg-muted">Case queue and SLA signals — synced when a complaints API is connected.</p>
+          <h1 className="wg-heading-display">Feedback & complaints</h1>
+          <p className="mt-1 max-w-2xl text-sm text-wg-muted">
+            Customer washer ratings after completed washes, plus formal complaint cases when that API is connected.
+          </p>
         </div>
         <Link
           to="/admin/operations"
@@ -73,6 +78,11 @@ export function AdminComplaintsView() {
           </p>
           <p className="mt-1 text-2xl font-black tabular-nums text-wg-text">{stats.refundsPending}</p>
         </Card>
+      </m.div>
+
+      <m.div variants={adminSectionItem(reduced)} className="space-y-3">
+        {reviewsError ? <p className="text-sm text-rose-600 dark:text-rose-400">{reviewsError}</p> : null}
+        <AdminReviewsTable rows={reviews} loading={reviewsLoading} />
       </m.div>
 
       <m.div variants={adminSectionItem(reduced)}>

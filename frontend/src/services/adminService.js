@@ -6,4 +6,5 @@ export const adminService = {
   listAdminFleet: () => api.get('/bookings/admin/fleet').then((r) => r.data),
   assignBooking: (bookingId, washerId) =>
     api.patch(`/bookings/${bookingId}/assign`, { washer_id: washerId }).then((r) => r.data),
+  listReviews: () => api.get('/bookings/admin/reviews').then((r) => r.data),
 };

@@ -8,7 +8,7 @@ export function AdminActiveBookingsMonitor({ rows, liveCount = 0, loading = fals
   const list = rows || [];
 
   return (
-    <Card variant="enterprise" className="min-w-0 border-l-4 border-l-indigo-500/55 border-white/20 p-0 dark:border-white/10">
+    <Card variant="enterprise" className="wg-admin-accent-ops min-w-0 p-0">
       <div className="border-b border-white/10 px-4 py-3 dark:border-white/5">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div>
@@ -32,32 +32,32 @@ export function AdminActiveBookingsMonitor({ rows, liveCount = 0, loading = fals
         ) : !list.length ? (
           <p className="px-4 py-8 text-center text-xs text-wg-muted">No active bookings in the queue.</p>
         ) : (
-          <table className="w-full min-w-[560px] text-left text-xs">
-            <thead className="sticky top-0 z-10 bg-wg-surface-elevated/95 text-[10px] font-bold uppercase tracking-wide text-wg-muted backdrop-blur-md">
-              <tr className="border-b border-wg-border">
-                <th className="px-4 py-2">ID</th>
-                <th className="px-3 py-2">Customer</th>
-                <th className="px-3 py-2">Washer</th>
-                <th className="px-3 py-2">Phase</th>
-                <th className="px-3 py-2">Zone</th>
-                <th className="px-3 py-2">ETA slip</th>
-                <th className="px-3 py-2">Status</th>
+          <table className="wg-admin-table min-w-[560px] text-xs">
+            <thead className="wg-admin-table-head">
+              <tr>
+                <th className="wg-admin-table-th">ID</th>
+                <th className="wg-admin-table-th">Customer</th>
+                <th className="wg-admin-table-th">Washer</th>
+                <th className="wg-admin-table-th">Phase</th>
+                <th className="wg-admin-table-th">Zone</th>
+                <th className="wg-admin-table-th">ETA slip</th>
+                <th className="wg-admin-table-th">Status</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-wg-border/60">
+            <tbody>
               {list.map((r) => (
-                <tr key={r.rawId || r.id} className="bg-white/[0.02] dark:bg-transparent">
-                  <td className="whitespace-nowrap px-4 py-2 font-mono text-wg-muted">{r.id}</td>
-                  <td className="whitespace-nowrap px-3 py-2 font-semibold text-wg-text">{r.customer}</td>
-                  <td className="whitespace-nowrap px-3 py-2 text-wg-muted">{r.washer}</td>
-                  <td className="px-3 py-2 text-wg-text">{r.phase}</td>
-                  <td className="px-3 py-2 text-wg-muted">
+                <tr key={r.rawId || r.id} className="wg-admin-table-row">
+                  <td className="wg-admin-table-td whitespace-nowrap font-mono text-wg-muted">{r.id}</td>
+                  <td className="wg-admin-table-td whitespace-nowrap font-semibold">{r.customer}</td>
+                  <td className="wg-admin-table-td whitespace-nowrap text-wg-muted">{r.washer}</td>
+                  <td className="wg-admin-table-td text-wg-text">{r.phase}</td>
+                  <td className="wg-admin-table-td text-wg-muted">
                     <span className="inline-flex items-center gap-1">
                       <MapPin className="size-3 shrink-0 text-cyan-600 dark:text-cyan-400" strokeWidth={2} aria-hidden />
                       {r.zone}
                     </span>
                   </td>
-                  <td className="px-3 py-2 tabular-nums">
+                  <td className="wg-admin-table-td tabular-nums">
                     <span
                       className={cn(
                         'font-semibold',
@@ -67,7 +67,7 @@ export function AdminActiveBookingsMonitor({ rows, liveCount = 0, loading = fals
                       {r.etaSlipMinutes > 0 ? `+${r.etaSlipMinutes}m` : '—'}
                     </span>
                   </td>
-                  <td className="whitespace-nowrap px-3 py-2">
+                  <td className="wg-admin-table-td whitespace-nowrap">
                     <StatusPill status={r.status} />
                   </td>
                 </tr>

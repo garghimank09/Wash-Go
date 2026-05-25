@@ -42,7 +42,7 @@ function WorkStatusTab({ active, disabled, icon: Icon, label, sub, tone, onClick
         active
           ? cn('shadow-lg ring-2 ring-offset-2 ring-offset-transparent dark:ring-offset-slate-950', tone.active)
           : cn(
-              'border-white/15 bg-white/5 text-wg-muted hover:border-white/25 hover:bg-white/10 dark:border-white/10 dark:bg-white/[0.04] dark:hover:bg-white/[0.08]',
+              'border-wg-border bg-wg-surface-elevated/80 text-wg-muted hover:border-cyan-500/25 hover:bg-wg-surface dark:border-white/15 dark:bg-white/[0.06] dark:hover:bg-white/[0.1]',
             ),
       )}
     >

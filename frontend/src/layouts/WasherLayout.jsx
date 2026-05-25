@@ -25,7 +25,7 @@ export function WasherLayout() {
       )}
       style={{
         backgroundImage:
-          'var(--wg-mesh), radial-gradient(ellipse 120% 80% at 50% -10%, rgb(6 182 212 / 0.08), transparent 55%)',
+          'var(--wg-mesh), radial-gradient(ellipse 120% 80% at 50% -10%, rgb(6 182 212 / 0.05), transparent 55%)',
       }}
     >
       <PartnerBookingSyncBridge />

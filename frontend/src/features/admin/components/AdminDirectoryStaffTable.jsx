@@ -42,7 +42,7 @@ export function AdminDirectoryStaffTable({ rows, onPreview }) {
   const colCount = 8;
 
   return (
-    <Card variant="enterprise" className="min-w-0 overflow-hidden border-l-4 border-l-violet-500/60 border-white/20 p-0 dark:border-white/10">
+    <Card variant="enterprise" className="wg-admin-accent-ops min-w-0 overflow-hidden p-0">
       <div className="border-b border-white/10 px-4 py-3 dark:border-white/5">
         <h2 className="wg-heading-section">Internal admin directory</h2>
         <p className="mt-0.5 text-xs text-wg-muted">Signed-in admin staff — expand when IAM API is connected.</p>

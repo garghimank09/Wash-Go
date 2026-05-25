@@ -114,7 +114,7 @@ export function WasherRequestsPage() {
       ) : null}
 
       {!loading && offers.length === 0 ? (
-        <Card variant="glass" className="border-dashed border-cyan-500/25 bg-gradient-to-br from-cyan-500/[0.06] to-transparent py-12 text-center">
+        <Card variant="glass" className="wg-partner-empty-dashed py-12">
           <p className="text-sm font-bold text-wg-text">No open offers right now</p>
           <p className="mx-auto mt-2 max-w-xs text-sm text-wg-muted">
             New customer bookings appear here in real time while you are online and accepting jobs.
