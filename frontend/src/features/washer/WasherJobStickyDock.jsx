@@ -85,7 +85,7 @@ export function WasherJobStickyDock({
   return (
     <div
       className={cn(
-        'fixed bottom-0 left-0 right-0 z-50 border-t border-white/18 bg-[color:var(--wg-glass-bg)]/96 px-4 pt-3 shadow-[0_-16px_48px_-14px_rgb(0_0_0/0.4)] backdrop-blur-2xl dark:border-white/10 dark:bg-slate-950/92 md:left-16',
+        'fixed bottom-0 left-0 right-0 z-50 border-t border-wg-border/90 bg-wg-surface-elevated/98 px-4 pt-3 shadow-[0_-20px_48px_-12px_rgb(15_23_42/0.28)] backdrop-blur-xl dark:border-white/10 dark:bg-slate-950/95 md:left-16',
         'pb-[calc(4.5rem+env(safe-area-inset-bottom))] md:pb-6',
       )}
     >
@@ -94,7 +94,7 @@ export function WasherJobStickyDock({
           <m.div
             initial={reduced ? false : { scale: 0.96, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
-            className="rounded-2xl border border-emerald-400/35 bg-gradient-to-r from-emerald-500/25 via-cyan-500/18 to-emerald-500/12 px-4 py-3 text-center shadow-lg ring-1 ring-emerald-400/20"
+            className="wg-partner-celebration-fade rounded-2xl border border-emerald-400/35 bg-gradient-to-r from-emerald-500/25 via-cyan-500/18 to-emerald-500/12 px-4 py-3 text-center shadow-lg ring-1 ring-emerald-400/20"
           >
             <p className="text-sm font-black text-emerald-900 dark:text-emerald-100">Payout queued · customer notified</p>
             <p className="mt-0.5 text-xs font-medium text-wg-muted">Demo celebration — production hooks to ledger + push.</p>
@@ -110,7 +110,7 @@ export function WasherJobStickyDock({
             <Button
               type="button"
               disabled={dockDisabled}
-              className="h-14 w-full gap-2 rounded-2xl bg-gradient-to-r from-emerald-600 via-cyan-600 to-cyan-500 text-base font-black text-white shadow-[0_10px_32px_-6px_rgb(6_182_212/0.55)] active:scale-[0.99] disabled:opacity-55"
+              className="wg-partner-cta-gradient h-14 w-full gap-2 rounded-2xl text-base font-black active:scale-[0.99] disabled:opacity-55"
               onClick={() => !dockDisabled && onAdvance()}
             >
               {copy.label}

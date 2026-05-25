@@ -7,7 +7,7 @@ import { useReducedMotion } from '../../lib/useReducedMotion';
 import { cn } from '../../lib/cn';
 
 /** Compact trust strip — investor-safe demo metrics (not from live APIs). */
-export function WasherTrustCompactBar() {
+export function WasherTrustCompactBar({ className }) {
   const { user } = usePartnerAuth();
   const reduced = useReducedMotion();
   const t = getPartnerTrustDemo(user);
@@ -25,7 +25,10 @@ export function WasherTrustCompactBar() {
       initial={reduced ? false : { opacity: 0, y: 4 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ type: 'spring', stiffness: 380, damping: 32 }}
-      className="mx-auto mt-2 flex w-full flex-wrap items-center gap-1.5 rounded-2xl border border-white/12 bg-gradient-to-r from-white/50 to-white/30 px-2 py-1.5 shadow-sm ring-1 ring-black/[0.04] backdrop-blur-md dark:from-white/[0.07] dark:to-white/[0.03] dark:ring-white/10"
+      className={cn(
+        'flex w-full flex-wrap items-center gap-1.5 rounded-2xl border border-wg-border/80 bg-wg-surface-elevated/90 px-2 py-1.5 shadow-sm backdrop-blur-md dark:border-white/10 dark:bg-wg-surface-elevated/80',
+        className,
+      )}
     >
       {t.safetyVerified ? (
         <span className="flex items-center gap-1 rounded-lg bg-emerald-500/15 px-2 py-0.5 text-[9px] font-black uppercase tracking-wide text-emerald-900 dark:text-emerald-100">

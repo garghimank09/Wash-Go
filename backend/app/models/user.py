@@ -35,6 +35,8 @@ class User(Base):
     hashed_password: Mapped[str] = mapped_column(String(255), nullable=False)
     full_name: Mapped[str] = mapped_column(String(200), nullable=False)
     phone: Mapped[str | None] = mapped_column(String(32), nullable=True, index=True)
+    avatar_storage_name: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    home_address: Mapped[str | None] = mapped_column(String(500), nullable=True)
     role: Mapped[UserRole] = mapped_column(
         Enum(UserRole, name="user_role", native_enum=False, length=32),
         nullable=False,
@@ -72,3 +74,9 @@ class User(Base):
     notifications: Mapped[list["Notification"]] = relationship(
         "Notification", back_populates="user", cascade="all, delete-orphan"
     )
+
+    @property
+    def avatar_url(self) -> str | None:
+        if not self.avatar_storage_name:
+            return None
+        return f"/media/user_avatars/{self.id}/{self.avatar_storage_name}"

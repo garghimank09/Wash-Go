@@ -38,7 +38,7 @@ const GROUPS = [
       { to: '/admin/bookings', label: 'Booking management', Icon: ClipboardList },
       { to: '/admin/wash-tiers', label: 'Wash tiers', Icon: Sparkles },
       { to: '/admin/membership-plans', label: 'Membership plans', Icon: CreditCard },
-      { to: '/admin/complaints', label: 'Complaints', Icon: MessageSquareWarning },
+      { to: '/admin/complaints', label: 'Feedback', Icon: MessageSquareWarning },
     ],
   },
   {

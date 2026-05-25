@@ -193,6 +193,15 @@ class BookingTimelineStep(BaseModel):
     at: datetime | None = None
 
 
+class BookingReviewSummary(BaseModel):
+    id: UUID
+    rating: int
+    comment: str | None
+    created_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
 class BookingPhotoSummary(BaseModel):
     """Lightweight photo ref embedded in booking detail."""
 
@@ -224,5 +233,6 @@ class BookingDetailRead(BaseModel):
     eta_minutes: int | None = None
     timeline: list[BookingTimelineStep]
     photos: list[BookingPhotoSummary] = []
+    review: BookingReviewSummary | None = None
 
     model_config = {"from_attributes": True}

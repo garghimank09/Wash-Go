@@ -12,6 +12,7 @@ import { WasherJobProgress } from '../../features/washer/WasherJobProgress';
 import { WasherJobSkeleton } from '../../features/washer/WasherJobSkeleton';
 import { WasherJobStickyDock } from '../../features/washer/WasherJobStickyDock';
 import { WasherPhotoProofSection } from '../../features/washer/WasherPhotoProofSection';
+import { WasherCustomerFeedbackCard } from '../../features/washer/WasherCustomerFeedbackCard';
 import { WasherJobServiceContext } from '../../features/washer/WasherJobServiceContext';
 import { DEMO_JOB } from '../../features/washer/mock/demoJob';
 import { partnerBookingsService } from '../../services/partnerBookingsService';
@@ -133,6 +134,8 @@ export function WasherJobPage() {
   );
   const advanceBlockedReason = washerAdvanceBlockedReason(phase, { hasArrivalPhoto });
   const advanceDisabled = !canWasherAdvancePhase(phase, { hasArrivalPhoto, servicePhase });
+  const customerReview = job?.review ?? null;
+  const showFeedbackSection = apiStatus === 'completed' || phase === 'completed';
 
   const trackActive = !isDemo && Boolean(id) && phase !== 'completed';
   const { tracking, error: trackingError } = useBookingTracking(id, {
@@ -334,6 +337,14 @@ export function WasherJobPage() {
         }}
       />
 
+      {showFeedbackSection && !isDemo ? (
+        <WasherCustomerFeedbackCard
+          review={customerReview}
+          customerName={displayJob.customerName}
+          bookingId={id}
+        />
+      ) : null}
+
       <Card variant="glass" className="border-white/15 !p-5 dark:border-white/10">
         <div className="flex items-center justify-between gap-2">
           <h2 className="wg-heading-section">Service checklist</h2>
@@ -364,7 +375,7 @@ export function WasherJobPage() {
                   'flex min-h-[48px] w-full items-center gap-3 rounded-2xl border px-3.5 py-3 text-left text-sm font-semibold transition-colors',
                   c.done
                     ? 'border-emerald-500/30 bg-emerald-500/10 text-wg-muted line-through dark:border-emerald-500/20'
-                    : 'border-white/15 bg-white/40 hover:border-cyan-500/35 dark:border-white/10 dark:bg-white/[0.04] dark:hover:border-cyan-500/30',
+                    : 'border-wg-border bg-wg-surface-elevated hover:border-cyan-500/40 dark:border-white/15 dark:bg-white/[0.06] dark:hover:border-cyan-500/35',
                 )}
               >
                 <CheckSquare className={cn('size-5 shrink-0', c.done ? 'text-emerald-600' : 'text-wg-muted')} strokeWidth={1.75} aria-hidden />

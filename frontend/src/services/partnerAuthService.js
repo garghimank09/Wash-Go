@@ -25,6 +25,14 @@ export const partnerAuthService = {
     const { data } = await partnerApi.post('/auth/partner/signup', payload);
     return data;
   },
+  async resetPassword(body) {
+    const { data } = await partnerApi.post('/auth/password/reset', {
+      email: body.email.trim().toLowerCase(),
+      otp_code: body.otp_code.trim(),
+      new_password: body.new_password,
+    });
+    return data;
+  },
   async me() {
     const { data } = await partnerApi.get('/auth/me');
     return data;

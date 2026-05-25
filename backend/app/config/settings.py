@@ -30,6 +30,11 @@ class Settings(BaseSettings):
     BOOKING_SYNC_POLL_SECONDS: float = 4.0
     UPLOAD_DIR: str = "uploads"
     BOOKING_PHOTO_MAX_BYTES: int = 5 * 1024 * 1024
+    # Default admin account (created/updated on API startup when ADMIN_SEED_ENABLED=true).
+    ADMIN_SEED_ENABLED: bool = True
+    ADMIN_SEED_EMAIL: str = "admin@gmail.com"
+    ADMIN_SEED_PASSWORD: str = "Admin@123"
+    ADMIN_SEED_FULL_NAME: str = "WashGo Admin"
     # Email verification links point here (no trailing slash).
     FRONTEND_BASE_URL: str = "http://127.0.0.1:5173"
     EMAIL_VERIFY_TOKEN_MINUTES: int = 60 * 48
@@ -42,6 +47,7 @@ class Settings(BaseSettings):
     SMTP_USER: str | None = None
     SMTP_PASSWORD: str | None = None
     SMTP_FROM: str | None = None
+    # Google Maps Platform — Geocoding on server; Maps/Places use VITE_* on frontend.
     GOOGLE_MAPS_API_KEY: str | None = None
 
     @field_validator("DATABASE_URL")

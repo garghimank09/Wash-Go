@@ -47,7 +47,7 @@ export function AdminWasherGrid({ washers }) {
 
       <div className="relative mt-5 min-w-0">
         <div
-          className="-mx-1 flex gap-4 overflow-x-auto px-1 pb-2 pt-0.5 [scrollbar-width:thin] md:gap-5"
+          className="wg-admin-scroll-fade -mx-1 flex gap-4 overflow-x-auto px-1 pb-2 pt-0.5 [scrollbar-width:thin] md:gap-5"
           role="list"
           aria-labelledby={headingId}
         >

@@ -8,7 +8,7 @@ import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { useAuth } from '../context/AuthContext';
 import { isDemoEmail } from '../lib/demoAccounts';
-import { defaultAppPathForRole, resolvePostLoginPath } from '../lib/appPaths';
+import { resolvePostLoginPath } from '../lib/appPaths';
 import { authService } from '../services/authService';
 import { getErrorMessage } from '../services/api';
 import { isValidEmail, validateOtpCode } from '../utils/validators';
@@ -30,6 +30,7 @@ export function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [resendLoading, setResendLoading] = useState(false);
 
+  if (user?.role === 'admin') return <Navigate to="/admin" replace />;
   if (user) return <Navigate to={resolvePostLoginPath(user, from)} replace />;
 
   const normalizedEmail = email.trim().toLowerCase();

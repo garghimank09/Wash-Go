@@ -8,11 +8,11 @@ logger = logging.getLogger(__name__)
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-
-from app.config.settings import settings
 from sqlalchemy import text
 
+from app.config.settings import settings
 from app.database.database import Base, async_session_maker, engine
+from app.services import user_service
 from app.routes import (
     assistant_routes,
     auth_routes,
@@ -56,6 +56,9 @@ async def lifespan(_: FastAPI):
             await seed_wash_tiers_if_empty(db)
             await seed_membership_plans_if_empty(db)
             await seed_demo_users(db)
+    if settings.ADMIN_SEED_ENABLED:
+        async with async_session_maker() as db:
+            await user_service.ensure_default_admin(db)
     yield
     await engine.dispose()
 

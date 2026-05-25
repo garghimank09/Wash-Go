@@ -8,5 +8,8 @@ export function CustomerShellRoute() {
   if (user?.role === 'washer') {
     return <Navigate to="/partner" replace />;
   }
+  if (user?.role === 'admin') {
+    return <Navigate to="/admin" replace />;
+  }
   return <Outlet />;
 }

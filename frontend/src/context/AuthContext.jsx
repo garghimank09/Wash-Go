@@ -32,6 +32,20 @@ export function AuthProvider({ children }) {
     return me;
   }, []);
 
+  const refreshUser = useCallback(async () => {
+    const token = authService.getToken();
+    if (!token) return null;
+    try {
+      const me = await authService.me();
+      setUser(me);
+      return me;
+    } catch {
+      authService.clearSession();
+      setUser(null);
+      return null;
+    }
+  }, []);
+
   useEffect(() => {
     const on401 = () => {
       authService.clearSession();
@@ -80,8 +94,8 @@ export function AuthProvider({ children }) {
   }, [user]);
 
   const value = useMemo(
-    () => ({ user, initializing, login, signup, logout }),
-    [user, initializing, login, signup, logout],
+    () => ({ user, initializing, login, signup, logout, refreshUser }),
+    [user, initializing, login, signup, logout, refreshUser],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

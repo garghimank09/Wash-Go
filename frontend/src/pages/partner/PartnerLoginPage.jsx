@@ -5,6 +5,7 @@ import { ShieldCheck, Sparkles } from 'lucide-react';
 import { DemoCredentialsPanel } from '../../components/DemoCredentialsPanel';
 import { ForgotPasswordForm } from '../../components/ForgotPasswordForm';
 import { OtpVerificationFields } from '../../components/OtpVerificationFields';
+import { useAuth } from '../../context/AuthContext';
 import { usePartnerAuth } from '../../context/PartnerAuthContext';
 import { Button } from '../../ui/button';
 import { Input } from '../../ui/input';
@@ -15,6 +16,7 @@ import { getErrorMessage } from '../../services/api';
 import { isValidEmail, validateOtpCode } from '../../utils/validators';
 
 export function PartnerLoginPage() {
+  const { refreshUser, user: customerUser } = useAuth();
   const { loginPartner, user, initializing } = usePartnerAuth();
   const navigate = useNavigate();
   const location = useLocation();
@@ -37,6 +39,10 @@ export function PartnerLoginPage() {
         <p className="text-sm font-medium text-white/70">Checking partner session…</p>
       </div>
     );
+  }
+
+  if (customerUser?.role === 'admin') {
+    return <Navigate to="/admin" replace />;
   }
 
   if (user?.role === 'washer') {
@@ -100,6 +106,11 @@ export function PartnerLoginPage() {
           : '/partner';
       navigate(safeFrom, { replace: true });
     } catch (err) {
+      if (err?.message === 'ADMIN_ROLE') {
+        await refreshUser();
+        navigate('/admin', { replace: true });
+        return;
+      }
       if (err?.message === 'PARTNER_ROLE') {
         setError('This portal is for approved WashGo partners only. Use the customer app to book washes.');
         return;
@@ -131,7 +142,7 @@ export function PartnerLoginPage() {
         className="pointer-events-none absolute inset-0 opacity-45"
         style={{
           background:
-            'radial-gradient(ellipse 90% 55% at 50% -15%, rgba(16,185,129,0.38), transparent), radial-gradient(ellipse 55% 45% at 100% 10%, rgba(99,102,241,0.28), transparent), radial-gradient(ellipse 50% 40% at 0% 80%, rgba(6,182,212,0.2), transparent)',
+            'var(--wg-mesh), radial-gradient(ellipse 90% 55% at 50% -15%, rgba(16,185,129,0.28), transparent), radial-gradient(ellipse 55% 45% at 100% 10%, rgba(99,102,241,0.18), transparent)',
         }}
       />
       <div className="relative mx-auto w-full max-w-md">

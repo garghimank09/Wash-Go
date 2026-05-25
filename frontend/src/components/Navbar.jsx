@@ -16,8 +16,8 @@ export function Navbar({ variant = 'marketing', onMenuClick }) {
     return (
       <header
         className={cn(
-          'sticky top-0 z-30 flex h-16 items-center justify-between gap-4 border-b border-white/20 px-4 md:px-6',
-          'wg-glass-surface shadow-sm dark:border-white/10',
+          'sticky top-0 z-30 flex h-16 items-center justify-between gap-4 border-b border-wg-border/80 px-4 md:px-6',
+          'wg-glass-surface shadow-sm backdrop-blur-xl dark:border-white/10',
         )}
       >
         <div className="flex min-w-0 flex-1 items-center gap-3">

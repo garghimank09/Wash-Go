@@ -10,6 +10,7 @@ import { Outlet } from 'react-router-dom';
 
 import { redirectToMarketingHome } from '../lib/appPaths';
 import { scheduleTokenExpiryLogout } from '../lib/authSession';
+import { loginViaPartnerPortal } from '../lib/partnerLoginFlow';
 import { partnerAuthService } from '../services/partnerAuthService';
 
 const PartnerAuthContext = createContext(null);
@@ -25,17 +26,33 @@ function usePartnerAuthState() {
   }, []);
 
   const loginPartner = useCallback(async (email, password, otpCode) => {
-    const data = await partnerAuthService.login(email, password, otpCode);
-    partnerAuthService.saveSession(data);
-    const me = await partnerAuthService.me();
-    if (me.role !== 'washer') {
-      partnerAuthService.clearSession();
-      setUser(null);
-      const err = new Error('PARTNER_ROLE');
+    if (otpCode) {
+      const data = await partnerAuthService.login(email, password, otpCode);
+      partnerAuthService.saveSession(data);
+      const me = await partnerAuthService.me();
+      if (me.role === 'admin') {
+        partnerAuthService.clearSession();
+        const err = new Error('ADMIN_ROLE');
+        err.user = me;
+        throw err;
+      }
+      if (me.role !== 'washer') {
+        partnerAuthService.clearSession();
+        setUser(null);
+        throw new Error('PARTNER_ROLE');
+      }
+      setUser(me);
+      return me;
+    }
+
+    const result = await loginViaPartnerPortal(email, password);
+    if (result.kind === 'admin') {
+      const err = new Error('ADMIN_ROLE');
+      err.user = result.user;
       throw err;
     }
-    setUser(me);
-    return me;
+    setUser(result.user);
+    return result.user;
   }, []);
 
   useEffect(() => {
@@ -111,6 +128,25 @@ function usePartnerAuthState() {
     return me;
   }, []);
 
+  const refreshPartner = useCallback(async () => {
+    const token = partnerAuthService.getToken();
+    if (!token) return null;
+    try {
+      const me = await partnerAuthService.me();
+      if (me.role !== 'washer') {
+        partnerAuthService.clearSession();
+        setUser(null);
+        return null;
+      }
+      setUser(me);
+      return me;
+    } catch {
+      partnerAuthService.clearSession();
+      setUser(null);
+      return null;
+    }
+  }, []);
+
   return useMemo(
     () => ({
       user,
@@ -118,8 +154,9 @@ function usePartnerAuthState() {
       loginPartner,
       logoutPartner,
       signupPartner,
+      refreshPartner,
     }),
-    [user, initializing, loginPartner, logoutPartner, signupPartner],
+    [user, initializing, loginPartner, logoutPartner, signupPartner, refreshPartner],
   );
 }
 

@@ -8,6 +8,7 @@ export function redirectToMarketingHome() {
 /** Default home route after auth, by role. */
 export function defaultAppPathForRole(user) {
   if (!user) return '/dashboard';
+  if (user.role === 'admin') return '/admin';
   if (user.role === 'washer') return '/partner';
   if (user.role === 'admin') return '/admin';
   return '/dashboard';
@@ -22,6 +23,7 @@ export function resolvePostLoginPath(user, from) {
   if (!user) return '/dashboard';
   const safeFrom = typeof from === 'string' && from.startsWith('/') && from !== '/login' ? from : null;
   if (safeFrom) {
+    if (user.role === 'admin') return safeFrom.startsWith('/admin') ? safeFrom : '/admin';
     if (user.role === 'washer' && !safeFrom.startsWith('/partner')) return '/partner';
     if (user.role === 'customer' && safeFrom.startsWith('/partner')) return '/dashboard';
     if (user.role !== 'admin' && safeFrom.startsWith('/admin')) return defaultAppPathForRole(user);

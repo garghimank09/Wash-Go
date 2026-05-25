@@ -16,4 +16,5 @@ export const adminService = {
     api.patch(`/membership-plans/${slug}`, body).then((r) => r.data),
   deactivateMembershipPlan: (slug) =>
     api.delete(`/membership-plans/${slug}`).then((r) => r.data),
+  listReviews: () => api.get('/bookings/admin/reviews').then((r) => r.data),
 };
