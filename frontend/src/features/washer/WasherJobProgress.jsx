@@ -10,9 +10,10 @@ const LABELS = {
   accepted: 'Queued · heading soon',
   on_the_way: 'Heading to customer',
   arrived: 'Arrived onsite',
+  awaiting_approval: 'Arrival photo · customer OK',
+  arrival_approved: 'Customer approved',
   wash_started: 'Service in progress',
   qc_review: 'QC review',
-  awaiting_approval: 'Awaiting customer approval',
   completed: 'Completed',
 };
 

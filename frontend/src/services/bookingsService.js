@@ -6,4 +6,5 @@ export const bookingsService = {
   create: (body) => api.post('/bookings', body).then((r) => r.data),
   cancel: (id, body) => api.post(`/bookings/${id}/cancel`, body).then((r) => r.data),
   reschedule: (id, body) => api.patch(`/bookings/${id}/schedule`, body).then((r) => r.data),
+  approveArrival: (id) => api.post(`/bookings/${id}/approve-arrival`).then((r) => r.data),
 };

@@ -18,12 +18,15 @@ import { partnerBookingsService } from '../../services/partnerBookingsService';
 import { getErrorMessage } from '../../services/api';
 import { onBookingsSync } from '../../lib/bookingSyncEvents';
 import { enrichPartnerJob } from '../../lib/partnerFieldDemo';
+import { servicePhaseForWasherPhase } from '../../lib/customerServiceMilestones';
 import {
   advanceWasherPhase,
   apiStatusForPhase,
+  canWasherAdvancePhase,
   effectiveWasherPhase,
   getNextWasherPhase,
   setStoredPhase,
+  washerAdvanceBlockedReason,
 } from '../../lib/washerJobPhase';
 import { dispatchBookingsSync } from '../../lib/bookingSyncEvents';
 import { useReducedMotion } from '../../lib/useReducedMotion';
@@ -120,9 +123,16 @@ export function WasherJobPage() {
   }, [id]);
 
   const apiStatus = job?.status ?? 'pending';
+  const servicePhase = job?.service_phase ?? null;
   const displayJob = useMemo(() => enrichPartnerJob(job), [job]);
+  const hasArrivalPhoto = Boolean(job?.photos?.some((p) => p.kind === 'arrival'));
   // eslint-disable-next-line react-hooks/exhaustive-deps -- phaseTick forces re-read of sessionStorage after advanceWasherPhase
-  const phase = useMemo(() => effectiveWasherPhase(id, apiStatus), [id, apiStatus, phaseTick]);
+  const phase = useMemo(
+    () => effectiveWasherPhase(id, apiStatus, servicePhase),
+    [id, apiStatus, servicePhase, phaseTick],
+  );
+  const advanceBlockedReason = washerAdvanceBlockedReason(phase, { hasArrivalPhoto });
+  const advanceDisabled = !canWasherAdvancePhase(phase, { hasArrivalPhoto, servicePhase });
 
   const trackActive = !isDemo && Boolean(id) && phase !== 'completed';
   const { tracking, error: trackingError } = useBookingTracking(id, {
@@ -163,10 +173,15 @@ export function WasherJobPage() {
       reloadPhase();
       return;
     }
-    const current = effectiveWasherPhase(id, apiStatus);
+    const current = effectiveWasherPhase(id, apiStatus, job?.service_phase);
+    if (!canWasherAdvancePhase(current, { hasArrivalPhoto, servicePhase: job?.service_phase })) {
+      toast.error(washerAdvanceBlockedReason(current, { hasArrivalPhoto }) || 'Complete the step above first');
+      return;
+    }
     const nextPhase = getNextWasherPhase(current);
     setAdvancing(true);
     try {
+      const milestonePhase = servicePhaseForWasherPhase(nextPhase);
       if (apiStatus === 'pending') {
         await partnerBookingsService.accept(id);
       } else {
@@ -174,6 +189,9 @@ export function WasherJobPage() {
         if (targetStatus !== apiStatus) {
           await partnerBookingsService.updateStatus(id, targetStatus);
         }
+      }
+      if (milestonePhase) {
+        await partnerBookingsService.updateMilestone(id, milestonePhase);
       }
       setStoredPhase(id, nextPhase);
       await load(true);
@@ -299,7 +317,22 @@ export function WasherJobPage() {
         </div>
       </Card>
 
-      <WasherPhotoProofSection key={id || 'job'} jobId={id} isDemo={isDemo} />
+      <WasherPhotoProofSection
+        key={id || 'job'}
+        jobId={id}
+        isDemo={isDemo}
+        washerPhase={phase}
+        servicePhase={servicePhase}
+        onArrivalUploaded={() => {
+          if (isDemo) {
+            setStoredPhase(id, 'awaiting_approval');
+          } else {
+            setStoredPhase(id, 'awaiting_approval');
+          }
+          reloadPhase();
+          void load(true);
+        }}
+      />
 
       <Card variant="glass" className="border-white/15 !p-5 dark:border-white/10">
         <div className="flex items-center justify-between gap-2">
@@ -365,6 +398,8 @@ export function WasherJobPage() {
         onAdvance={onAdvance}
         showSwipeComplete
         showCelebrationBanner={celebrate}
+        advanceDisabled={advanceDisabled || advancing}
+        advanceHint={advanceBlockedReason}
       />
     </div>
   );

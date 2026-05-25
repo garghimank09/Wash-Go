@@ -40,6 +40,11 @@ async def lifespan(_: FastAPI):
         async with engine.begin() as conn:
             await conn.run_sync(Base.metadata.create_all)
             await ensure_membership_plan_columns(conn)
+            await conn.execute(
+                text(
+                    "ALTER TABLE bookings ADD COLUMN IF NOT EXISTS service_phase VARCHAR(64)"
+                )
+            )
         try:
             async with engine.begin() as conn:
                 await conn.execute(

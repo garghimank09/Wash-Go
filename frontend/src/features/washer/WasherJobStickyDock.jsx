@@ -9,11 +9,12 @@ import { Button } from '../../ui/button';
 const PHASE_PRIMARY = {
   received: { label: 'Accept job', sub: 'Lock this run into your queue' },
   accepted: { label: 'Heading to customer', sub: 'Live navigation + ETA' },
-  on_the_way: { label: "I've arrived onsite", sub: 'Pin verified · start check-in' },
-  arrived: { label: 'Start service', sub: 'Begin wash timer + proof flow' },
-  wash_started: { label: 'Service in progress', sub: 'Quality pass + photos' },
+  on_the_way: { label: "I've arrived onsite", sub: 'Pin verified · upload arrival photo' },
+  arrived: { label: 'Upload arrival photo', sub: 'Customer must approve before wash' },
+  awaiting_approval: { label: 'Waiting for customer', sub: 'They review your arrival photo' },
+  arrival_approved: { label: 'Start service', sub: 'Customer approved — begin wash' },
+  wash_started: { label: 'Service in progress', sub: 'Quality pass + wash photos' },
   qc_review: { label: 'Run QC review', sub: 'Checklist + shine verification' },
-  awaiting_approval: { label: 'Notify customer', sub: 'Request in-app approval' },
   completed: { label: 'Job complete', sub: 'Great work — back to ops' },
 };
 
@@ -68,9 +69,18 @@ function SwipeCompleteRail({ reduced, onComplete, disabled }) {
 /**
  * Sticky driver-style action dock — sits above bottom nav.
  */
-export function WasherJobStickyDock({ phase, reduced, onAdvance, showSwipeComplete, showCelebrationBanner }) {
+export function WasherJobStickyDock({
+  phase,
+  reduced,
+  onAdvance,
+  showSwipeComplete,
+  showCelebrationBanner,
+  advanceDisabled = false,
+  advanceHint = null,
+}) {
   const copy = PHASE_PRIMARY[phase] || PHASE_PRIMARY.received;
   const isDone = phase === 'completed';
+  const dockDisabled = advanceDisabled || phase === 'awaiting_approval';
 
   return (
     <div
@@ -95,17 +105,18 @@ export function WasherJobStickyDock({ phase, reduced, onAdvance, showSwipeComple
           <>
             <div className="flex flex-col gap-0.5 px-0.5">
               <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-wg-muted">Next action</p>
-              <p className="text-xs text-wg-muted">{copy.sub}</p>
+              <p className="text-xs text-wg-muted">{advanceHint || copy.sub}</p>
             </div>
             <Button
               type="button"
-              className="h-14 w-full gap-2 rounded-2xl bg-gradient-to-r from-emerald-600 via-cyan-600 to-cyan-500 text-base font-black text-white shadow-[0_10px_32px_-6px_rgb(6_182_212/0.55)] active:scale-[0.99]"
-              onClick={() => onAdvance()}
+              disabled={dockDisabled}
+              className="h-14 w-full gap-2 rounded-2xl bg-gradient-to-r from-emerald-600 via-cyan-600 to-cyan-500 text-base font-black text-white shadow-[0_10px_32px_-6px_rgb(6_182_212/0.55)] active:scale-[0.99] disabled:opacity-55"
+              onClick={() => !dockDisabled && onAdvance()}
             >
               {copy.label}
               <ChevronRight className="size-5" strokeWidth={2.5} aria-hidden />
             </Button>
-            {showSwipeComplete && phase === 'awaiting_approval' ? (
+            {showSwipeComplete && phase === 'qc_review' ? (
               <SwipeCompleteRail reduced={reduced} onComplete={() => onAdvance()} disabled={isDone} />
             ) : null}
           </>

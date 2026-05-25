@@ -8,16 +8,18 @@ import Skeleton from 'react-loading-skeleton';
 import { BookingCancelModal } from '../features/bookings/BookingCancelModal';
 import { BookingRescheduleModal } from '../features/bookings/BookingRescheduleModal';
 import { CustomerBookingStatusPill } from '../features/bookings/CustomerBookingStatusPill';
+import { ArrivalApprovalCard } from '../features/bookings/ArrivalApprovalCard';
 import { CustomerServiceTimeline } from '../features/bookings/CustomerServiceTimeline';
 import { formatCustomerWashTiming } from '../features/dashboard/dashboardEta';
 import {
   canCustomerCancelFromApi,
   canCustomerRescheduleFromApi,
-  deriveCustomerPhase,
   requiresAssistedCancellation,
 } from '../lib/customerBookingPhase';
+import { currentMilestoneStatusPhrase, deriveCustomerMilestone } from '../lib/customerServiceMilestones';
 import { useReducedMotion } from '../lib/useReducedMotion';
 import { onBookingsSync } from '../lib/bookingSyncEvents';
+import { dispatchNotificationsSync } from '../lib/notificationSyncEvents';
 import { LiveTrackingMap } from '../components/LiveTrackingMap';
 import { useBookingTracking } from '../hooks/useBookingTracking';
 import { bookingsService } from '../services/bookingsService';
@@ -90,8 +92,18 @@ export function BookingDetailPage() {
 
   useEffect(() => {
     if (!id) return undefined;
-    return onBookingsSync(() => void load(true));
+    return onBookingsSync(() => {
+      void load(true);
+      dispatchNotificationsSync({ source: 'booking' });
+    });
   }, [id, load]);
+
+  useEffect(() => {
+    if (!id || !b) return undefined;
+    if (b.status === 'completed' || b.status === 'cancelled') return undefined;
+    const t = window.setInterval(() => void load(true), 12_000);
+    return () => window.clearInterval(t);
+  }, [id, b?.status, load]);
 
   const trackEnabled =
     Boolean(id && b?.washer_id) &&
@@ -143,11 +155,14 @@ export function BookingDetailPage() {
     );
   }
 
-  const phase = deriveCustomerPhase(b);
+  const milestone = deriveCustomerMilestone(b, tracking);
+  const liveStatus = currentMilestoneStatusPhrase(milestone);
+  const washUnderway =
+    milestone === 'wash_in_progress' || b.status === 'in_progress';
   const timing = formatCustomerWashTiming(b, { eta_minutes: b.eta_minutes });
   const canCancel = canCustomerCancelFromApi(b.status);
   const canReschedule = canCustomerRescheduleFromApi(b.status);
-  const assisted = requiresAssistedCancellation(phase);
+  const assisted = requiresAssistedCancellation(milestone);
   const terminal = b.status === 'cancelled' || b.status === 'completed';
 
   return (
@@ -187,6 +202,19 @@ export function BookingDetailPage() {
         <p className="text-2xl font-black tabular-nums text-wg-text">{formatCents(b.price_cents, b.currency)}</p>
       </m.div>
 
+      {!terminal && liveStatus ? (
+        <Card
+          variant="glass"
+          className="border-cyan-500/30 bg-gradient-to-r from-cyan-500/10 via-wg-surface-elevated/95 to-indigo-500/8 dark:border-cyan-500/20"
+        >
+          <p className="text-[10px] font-bold uppercase tracking-wide text-wg-muted">Right now</p>
+          <p className="mt-1 text-lg font-black text-wg-text">{liveStatus}</p>
+          {timing.headline ? (
+            <p className="mt-1 text-sm text-wg-muted">{timing.headline}</p>
+          ) : null}
+        </Card>
+      ) : null}
+
       {!terminal && assisted ? (
         <Card
           variant="glass"
@@ -198,10 +226,10 @@ export function BookingDetailPage() {
             </span>
             <div className="min-w-0">
               <h2 className="text-base font-black text-wg-text">
-                {phase === 'in_progress' ? 'Wash in progress' : 'Washer has already accepted this booking'}
+                {washUnderway ? 'Wash in progress' : 'Washer has already accepted this booking'}
               </h2>
               <p className="mt-2 text-sm leading-relaxed text-wg-muted">
-                {phase === 'in_progress'
+                {washUnderway
                   ? 'We cannot cancel this visit from the app while the crew is on site. For safety and payouts, please contact support or speak with your washer directly — same policy as Uber, Lyft, and Urban Company once service starts.'
                   : 'Your washer has already accepted this booking. Please contact support or the assigned washer for cancellation assistance.'}
               </p>
@@ -225,6 +253,10 @@ export function BookingDetailPage() {
             </div>
           </div>
         </Card>
+      ) : null}
+
+      {!terminal ? (
+        <ArrivalApprovalCard booking={b} onApproved={() => void load(true)} />
       ) : null}
 
       {trackEnabled && tracking ? (
@@ -287,12 +319,14 @@ export function BookingDetailPage() {
         </Card>
       ) : null}
 
-      {b.photos?.length ? (
+      {b.photos?.filter((p) => p.kind !== 'arrival')?.length ? (
         <Card variant="glass" className="border-emerald-500/20">
           <h2 className="wg-heading-section">Wash photo proof</h2>
           <p className="mt-1 text-sm text-wg-muted">Before and after photos from your washer.</p>
           <div className="mt-4 grid gap-3 sm:grid-cols-2">
-            {b.photos.map((p) => (
+            {b.photos
+              .filter((p) => p.kind !== 'arrival')
+              .map((p) => (
               <div key={p.id} className="overflow-hidden rounded-xl border border-wg-border/80 dark:border-white/10">
                 <p className="border-b border-wg-border/60 bg-wg-surface-elevated/80 px-3 py-2 text-[10px] font-bold uppercase tracking-wide text-wg-muted dark:border-white/10">
                   {p.kind === 'before' ? 'Before wash' : 'After wash'}

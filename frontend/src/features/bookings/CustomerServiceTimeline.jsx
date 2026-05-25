@@ -1,10 +1,24 @@
-import { BookingTimeline } from './BookingTimeline';
-import { buildCustomerServiceTimeline } from './buildCustomerServiceTimeline';
-import { deriveCustomerPhase } from '../../lib/customerBookingPhase';
+import { useMemo } from 'react';
 
-/** Operational “service progress” timeline derived from booking state (demo-ready). */
+import { buildCustomerMilestoneTimeline, deriveCustomerMilestone } from '../../lib/customerServiceMilestones';
+import { useBookingTracking } from '../../hooks/useBookingTracking';
+import { ServiceProgressTimeline } from './ServiceProgressTimeline';
+
+/** Operational service progress with transparency sub-steps and live tracking hints. */
 export function CustomerServiceTimeline({ booking }) {
-  const phase = deriveCustomerPhase(booking);
-  const timeline = buildCustomerServiceTimeline(phase);
-  return <BookingTimeline timeline={timeline} heading="Service progress" />;
-}
+  const trackEnabled =
+    Boolean(booking?.id && booking?.washer_id) &&
+    booking?.status !== 'cancelled' &&
+    booking?.status !== 'completed' &&
+    ['confirmed', 'in_progress'].includes(booking?.status ?? '');
+
+  const { tracking } = useBookingTracking(booking?.id, { enabled: trackEnabled });
+
+  const milestone = useMemo(
+    () => deriveCustomerMilestone(booking, tracking),
+    [booking, tracking],
+  );
+  const timeline = useMemo(() => buildCustomerMilestoneTimeline(milestone), [milestone]);
+
+  return <ServiceProgressTimeline timeline={timeline} heading="Service progress" />;
+};

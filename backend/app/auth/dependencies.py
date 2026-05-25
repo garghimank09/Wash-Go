@@ -40,7 +40,14 @@ async def get_current_user(
         if payload.get("type") != "access":
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token")
         user_id = UUID(str(payload.get("sub")))
-    except (JWTError, ValueError, TypeError):
+    except JWTError as exc:
+        detail = "Token expired — please sign in again" if "expired" in str(exc).lower() else "Could not validate credentials"
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail=detail,
+            headers={"WWW-Authenticate": "Bearer"},
+        ) from exc
+    except (ValueError, TypeError):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Could not validate credentials",

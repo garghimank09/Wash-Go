@@ -15,8 +15,9 @@ FastAPI + PostgreSQL (`washgo`) foundation with JWT auth, SQLAlchemy 2 async ORM
    - Async SQLAlchemy uses the **`asyncpg`** driver. Example:
      `postgresql+asyncpg://postgres:yourpassword@localhost:5432/washgo`
 3. Set **`SECRET_KEY`** to a random string of at least 32 characters.
-4. For partner signup place suggestions, set **`GOOGLE_MAPS_API_KEY`** and enable **Places API (New)** (not the legacy Places API) in Google Cloud Console.
-5. For **email OTP** on signup and login (all roles except demo accounts), configure SMTP in `.env`:
+4. Optional: **`ACCESS_TOKEN_EXPIRE_MINUTES`** (default `1440` = 24 hours). Login returns a JWT valid until expiry; the web app signs the user out when the token expires or the API returns 401.
+5. For partner signup place suggestions, set **`GOOGLE_MAPS_API_KEY`** and enable **Places API (New)** (not the legacy Places API) in Google Cloud Console.
+6. For **email OTP** on signup and login (all roles except demo accounts), configure SMTP in `.env`:
    - `SMTP_HOST` (e.g. `smtp.gmail.com`)
    - `SMTP_PORT` (default `587`)
    - `SMTP_USER` / `SMTP_PASSWORD` (app password for Gmail)

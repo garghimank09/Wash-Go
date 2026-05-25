@@ -1,5 +1,9 @@
 import { TOKEN_KEY } from '../constants/config';
+import { createAuthSessionStorage } from '../lib/authSession';
 import { api } from './api';
+
+const TOKEN_EXPIRES_KEY = 'washgo_access_token_expires';
+const session = createAuthSessionStorage(TOKEN_KEY, TOKEN_EXPIRES_KEY);
 
 export const authService = {
   async sendOtp(email, purpose, roleHint = 'customer') {
@@ -32,11 +36,20 @@ export const authService = {
     const { data } = await api.get('/auth/me');
     return data;
   },
+  saveSession(authResponse) {
+    session.saveAuthResponse(authResponse);
+  },
   setToken(token) {
-    if (token) localStorage.setItem(TOKEN_KEY, token);
-    else localStorage.removeItem(TOKEN_KEY);
+    if (token) session.saveAuthResponse({ access_token: token });
+    else session.clear();
   },
   getToken() {
-    return localStorage.getItem(TOKEN_KEY);
+    return session.getToken();
+  },
+  clearSession() {
+    session.clear();
+  },
+  getSessionStorage() {
+    return session;
   },
 };

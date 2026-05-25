@@ -101,8 +101,11 @@ async def upload_booking_photo(
     if washer is None or booking.washer_id != washer.id:
         raise ForbiddenError("You must be assigned to this job to upload photos")
 
-    if booking.status.value in ("cancelled",):
-        raise ValidationError("Cannot upload photos for a cancelled booking")
+    if booking.status.value in ("cancelled", "completed"):
+        raise ValidationError("Cannot upload photos for a finished booking")
+
+    if kind == BookingPhotoKind.arrival and booking.washer_id is None:
+        raise ValidationError("Assign a washer before uploading arrival proof")
 
     content_type = (upload.content_type or "image/jpeg").lower().split(";")[0].strip()
     if content_type not in ALLOWED_CONTENT_TYPES:
@@ -140,6 +143,17 @@ async def upload_booking_photo(
 
     booking.updated_at = datetime.now(timezone.utc)
     db.add(photo)
+
+    if kind == BookingPhotoKind.arrival:
+        allowed_phases = frozenset({"arrived_onsite", "awaiting_arrival_approval"})
+        if booking.service_phase not in allowed_phases:
+            raise ValidationError(
+                "Mark arrived on site before uploading an arrival check-in photo"
+            )
+        from app.services.booking_service import _apply_service_phase
+
+        await _apply_service_phase(db, booking, "awaiting_arrival_approval", notify=True)
+
     await db.commit()
     await db.refresh(photo)
     return _to_read(photo)

@@ -9,17 +9,19 @@ from sqlalchemy.orm import selectinload
 
 from app.models.booking import Booking, BookingStatus
 from app.models.payment import Payment, PaymentStatus
-from app.services.notification_service import notify_new_paid_booking
+from app.services.notification_service import notify_customer_booking_milestone, notify_new_paid_booking
 from app.services.partner_earning_service import record_earning_on_accept
 from app.services.user_membership_service import consume_wash_credit
 from app.models.car import Car
 from app.models.user import User, UserRole
 from app.models.washer import Washer
+from app.schemas.service_phase import VALID_SERVICE_PHASES, phase_rank
 from app.schemas.booking_schema import (
     BookingAdminRead,
     BookingAssignBody,
     BookingCancelBody,
     BookingCreate,
+    BookingMilestoneUpdate,
     BookingDetailRead,
     BookingPhotoSummary,
     BookingOfferRead,
@@ -56,6 +58,32 @@ async def _get_washer_for_user(db: AsyncSession, user: User) -> Washer:
     if not washer.is_available:
         raise ValidationError("Washer is not available")
     return washer
+
+
+async def _apply_service_phase(
+    db: AsyncSession,
+    booking: Booking,
+    new_phase: str,
+    *,
+    notify: bool = True,
+) -> None:
+    if new_phase not in VALID_SERVICE_PHASES:
+        raise ValidationError("Invalid service phase")
+    old_rank = phase_rank(booking.service_phase)
+    new_rank = phase_rank(new_phase)
+    if new_rank < old_rank and booking.service_phase is not None:
+        return
+    if booking.service_phase == new_phase:
+        return
+
+    booking.service_phase = new_phase
+    if new_phase == "completed":
+        booking.status = BookingStatus.completed
+    elif new_phase == "wash_in_progress" and booking.status == BookingStatus.confirmed:
+        booking.status = BookingStatus.in_progress
+
+    if notify and new_rank > old_rank:
+        await notify_customer_booking_milestone(db, booking, service_phase=new_phase)
 
 
 async def _get_washer_if_requested(db: AsyncSession, washer_id: UUID | None) -> Washer | None:
@@ -96,6 +124,7 @@ async def create_booking(db: AsyncSession, customer: User, data: BookingCreate) 
         price_cents=data.price_cents,
         currency=data.currency,
         notes=data.notes.strip() if data.notes else None,
+        service_phase="awaiting_acceptance",
     )
     db.add(booking)
     await db.flush()
@@ -111,6 +140,7 @@ async def create_booking(db: AsyncSession, customer: User, data: BookingCreate) 
     )
     await consume_wash_credit(db, customer)
     await notify_new_paid_booking(db, booking, customer)
+    await notify_customer_booking_milestone(db, booking, service_phase="awaiting_acceptance")
     try:
         await db.commit()
     except IntegrityError:
@@ -453,6 +483,7 @@ async def accept_booking(db: AsyncSession, user: User, booking_id: UUID) -> Book
         raise ConflictError("Booking is no longer available")
     booking.washer_id = washer.id
     booking.status = BookingStatus.confirmed
+    await _apply_service_phase(db, booking, "washer_accepted")
     await record_earning_on_accept(db, booking, washer)
     await db.commit()
     await db.refresh(booking)
@@ -480,7 +511,75 @@ async def update_booking_status_for_washer(
     if current not in allowed or target not in allowed[current]:
         raise ValidationError(f"Cannot change status from {current.value} to {target.value}")
 
+    if target == BookingStatus.in_progress:
+        phase = booking.service_phase or ""
+        if phase not in ("arrival_approved", "wash_in_progress"):
+            raise ValidationError(
+                "Customer must approve the arrival check-in photo before you can start the wash"
+            )
+
     booking.status = target
+    if target == BookingStatus.completed:
+        await _apply_service_phase(db, booking, "completed", notify=True)
+    elif target == BookingStatus.in_progress:
+        await _apply_service_phase(db, booking, "wash_in_progress", notify=True)
+    await db.commit()
+    await db.refresh(booking)
+    return booking
+
+
+async def update_booking_milestone_for_washer(
+    db: AsyncSession, user: User, booking_id: UUID, payload: BookingMilestoneUpdate
+) -> Booking:
+    washer = await _get_washer_for_user(db, user)
+    result = await db.execute(select(Booking).where(Booking.id == booking_id))
+    booking = result.scalar_one_or_none()
+    if booking is None:
+        raise NotFoundError("Booking not found")
+    if booking.washer_id != washer.id:
+        raise ForbiddenError("Not assigned to this booking")
+
+    new_phase = payload.service_phase.strip()
+    if new_phase == "wash_in_progress" and booking.service_phase not in (
+        "arrival_approved",
+        "wash_in_progress",
+    ):
+        raise ValidationError(
+            "Customer must approve the arrival check-in photo before starting the wash"
+        )
+
+    await _apply_service_phase(db, booking, new_phase)
+    await db.commit()
+    await db.refresh(booking)
+    return booking
+
+
+async def approve_arrival_for_customer(
+    db: AsyncSession, user: User, booking_id: UUID
+) -> Booking:
+    result = await db.execute(
+        select(Booking)
+        .where(Booking.id == booking_id)
+        .options(selectinload(Booking.photos))
+    )
+    booking = result.scalar_one_or_none()
+    if booking is None:
+        raise NotFoundError("Booking not found")
+    if booking.customer_id != user.id:
+        raise ForbiddenError("Not allowed to approve this booking")
+
+    from app.models.booking_photo import BookingPhotoKind
+
+    has_arrival = any(p.kind == BookingPhotoKind.arrival for p in booking.photos)
+    if not has_arrival:
+        raise ValidationError("No arrival check-in photo to approve yet")
+
+    if booking.service_phase != "awaiting_arrival_approval":
+        if booking.service_phase in ("arrival_approved", "wash_in_progress", "completed"):
+            return booking
+        raise ValidationError("Arrival photo is not waiting for your approval")
+
+    await _apply_service_phase(db, booking, "arrival_approved", notify=True)
     await db.commit()
     await db.refresh(booking)
     return booking
@@ -534,6 +633,7 @@ async def get_booking_detail(db: AsyncSession, user: User, booking_id: UUID) -> 
         car_id=booking.car_id,
         washer_id=booking.washer_id,
         status=booking.status,
+        service_phase=booking.service_phase,
         scheduled_at=booking.scheduled_at,
         service_address=booking.service_address,
         latitude=booking.latitude,

@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.auth.dependencies import get_current_active_user
-from app.auth.jwt_handler import create_access_token
+from app.auth.jwt_handler import build_token_response
 from app.auth.password_handler import verify_password
 from app.database.database import get_db
 from app.models.auth_otp import OtpPurpose
@@ -48,7 +48,7 @@ async def signup(payload: UserCreate, db: Annotated[AsyncSession, Depends(get_db
             db, str(payload.email), OtpPurpose.signup, payload.otp_code
         )
         user = await user_service.create_user(db, payload)
-        return Token(access_token=create_access_token(user.id, user.role))
+        return Token(**build_token_response(user.id, user.role))
     except WashGoError as exc:
         raise HTTPException(status_code=exc.status_code, detail=exc.message) from exc
 
@@ -61,7 +61,7 @@ async def partner_signup(payload: PartnerSignup, db: Annotated[AsyncSession, Dep
             db, str(payload.email), OtpPurpose.signup, payload.otp_code
         )
         user = await user_service.create_partner_user(db, payload)
-        return Token(access_token=create_access_token(user.id, user.role))
+        return Token(**build_token_response(user.id, user.role))
     except WashGoError as exc:
         raise HTTPException(status_code=exc.status_code, detail=exc.message) from exc
 
@@ -83,8 +83,7 @@ async def login(payload: UserLogin, db: Annotated[AsyncSession, Depends(get_db)]
     except ValidationError as exc:
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=exc.message) from exc
 
-    access_token = create_access_token(user.id, user.role)
-    return Token(access_token=access_token)
+    return Token(**build_token_response(user.id, user.role))
 
 
 @router.post("/password/reset", response_model=dict)

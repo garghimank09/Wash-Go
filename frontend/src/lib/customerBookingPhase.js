@@ -62,5 +62,15 @@ export function canCustomerRescheduleFromApi(status) {
 
 /** True when washer has accepted / visit underway — show support messaging, block self-serve cancel. */
 export function requiresAssistedCancellation(phase) {
-  return ['accepted', 'on_the_way', 'in_progress'].includes(phase);
+  return [
+    'accepted',
+    'on_the_way',
+    'in_progress',
+    'washer_accepted',
+    'heading_to_you',
+    'arrived_onsite',
+    'awaiting_arrival_approval',
+    'arrival_approved',
+    'wash_in_progress',
+  ].includes(phase);
 }

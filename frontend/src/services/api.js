@@ -1,6 +1,10 @@
 import axios from 'axios';
 
 import { API_URL, TOKEN_KEY } from '../constants/config';
+import { createAuthSessionStorage } from '../lib/authSession';
+
+const TOKEN_EXPIRES_KEY = 'washgo_access_token_expires';
+const customerSession = createAuthSessionStorage(TOKEN_KEY, TOKEN_EXPIRES_KEY);
 
 export const api = axios.create({
   baseURL: API_URL,
@@ -12,7 +16,7 @@ export const api = axios.create({
 });
 
 api.interceptors.request.use((config) => {
-  const token = localStorage.getItem(TOKEN_KEY);
+  const token = customerSession.getToken();
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
@@ -23,7 +27,7 @@ api.interceptors.response.use(
   (r) => r,
   (error) => {
     if (error.response?.status === 401 && typeof window !== 'undefined') {
-      localStorage.removeItem(TOKEN_KEY);
+      customerSession.clear();
       window.dispatchEvent(new CustomEvent('washgo:unauthorized'));
     }
     return Promise.reject(error);

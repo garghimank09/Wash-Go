@@ -9,26 +9,27 @@ import {
 import { Outlet } from 'react-router-dom';
 
 import { redirectToMarketingHome } from '../lib/appPaths';
+import { scheduleTokenExpiryLogout } from '../lib/authSession';
 import { partnerAuthService } from '../services/partnerAuthService';
 
 const PartnerAuthContext = createContext(null);
 
 function usePartnerAuthState() {
   const [user, setUser] = useState(null);
-  const [initializing, setInitializing] = useState(() => Boolean(partnerAuthService.getToken()));
+  const [initializing, setInitializing] = useState(true);
 
   const logoutPartner = useCallback(() => {
-    partnerAuthService.setToken(null);
+    partnerAuthService.clearSession();
     setUser(null);
     redirectToMarketingHome();
   }, []);
 
   const loginPartner = useCallback(async (email, password, otpCode) => {
     const data = await partnerAuthService.login(email, password, otpCode);
-    partnerAuthService.setToken(data.access_token);
+    partnerAuthService.saveSession(data);
     const me = await partnerAuthService.me();
     if (me.role !== 'washer') {
-      partnerAuthService.setToken(null);
+      partnerAuthService.clearSession();
       setUser(null);
       const err = new Error('PARTNER_ROLE');
       throw err;
@@ -39,7 +40,7 @@ function usePartnerAuthState() {
 
   useEffect(() => {
     const on401 = () => {
-      partnerAuthService.setToken(null);
+      partnerAuthService.clearSession();
       setUser(null);
     };
     window.addEventListener('washgo:partner-unauthorized', on401);
@@ -48,8 +49,10 @@ function usePartnerAuthState() {
 
   useEffect(() => {
     let cancelled = false;
+    let clearExpiryTimer = () => {};
     const token = partnerAuthService.getToken();
     if (!token) {
+      setInitializing(false);
       return undefined;
     }
     (async () => {
@@ -57,15 +60,23 @@ function usePartnerAuthState() {
         const me = await partnerAuthService.me();
         if (!cancelled) {
           if (me.role !== 'washer') {
-            partnerAuthService.setToken(null);
+            partnerAuthService.clearSession();
             setUser(null);
           } else {
             setUser(me);
+            clearExpiryTimer = scheduleTokenExpiryLogout(
+              partnerAuthService.getSessionStorage(),
+              () => {
+                partnerAuthService.clearSession();
+                setUser(null);
+                window.dispatchEvent(new CustomEvent('washgo:partner-session-expired'));
+              },
+            );
           }
         }
       } catch {
         if (!cancelled) {
-          partnerAuthService.setToken(null);
+          partnerAuthService.clearSession();
           setUser(null);
         }
       } finally {
@@ -74,15 +85,25 @@ function usePartnerAuthState() {
     })();
     return () => {
       cancelled = true;
+      clearExpiryTimer();
     };
   }, []);
 
+  useEffect(() => {
+    if (!user) return undefined;
+    return scheduleTokenExpiryLogout(partnerAuthService.getSessionStorage(), () => {
+      partnerAuthService.clearSession();
+      setUser(null);
+      window.dispatchEvent(new CustomEvent('washgo:partner-session-expired'));
+    });
+  }, [user]);
+
   const signupPartner = useCallback(async (payload) => {
     const data = await partnerAuthService.signup(payload);
-    partnerAuthService.setToken(data.access_token);
+    partnerAuthService.saveSession(data);
     const me = await partnerAuthService.me();
     if (me.role !== 'washer') {
-      partnerAuthService.setToken(null);
+      partnerAuthService.clearSession();
       setUser(null);
       throw new Error('PARTNER_ROLE');
     }

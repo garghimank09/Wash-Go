@@ -30,12 +30,17 @@ class BookingCreate(BaseModel):
         return self
 
 
+class BookingMilestoneUpdate(BaseModel):
+    service_phase: str = Field(min_length=2, max_length=64)
+
+
 class BookingRead(BaseModel):
     id: UUID
     customer_id: UUID
     car_id: UUID
     washer_id: UUID | None
     status: BookingStatus
+    service_phase: str | None = None
     scheduled_at: datetime
     service_address: str
     latitude: Decimal | None
@@ -203,6 +208,7 @@ class BookingDetailRead(BaseModel):
     car_id: UUID
     washer_id: UUID | None
     status: BookingStatus
+    service_phase: str | None = None
     scheduled_at: datetime
     service_address: str
     latitude: Decimal | None

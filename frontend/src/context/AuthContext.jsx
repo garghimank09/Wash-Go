@@ -1,6 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 
 import { redirectToMarketingHome } from '../lib/appPaths';
+import { scheduleTokenExpiryLogout } from '../lib/authSession';
 import { authService } from '../services/authService';
 
 const AuthContext = createContext(null);
@@ -10,14 +11,14 @@ export function AuthProvider({ children }) {
   const [initializing, setInitializing] = useState(true);
 
   const logout = useCallback(() => {
-    authService.setToken(null);
+    authService.clearSession();
     setUser(null);
     redirectToMarketingHome();
   }, []);
 
   const login = useCallback(async (email, password, otpCode) => {
     const data = await authService.login(email, password, otpCode);
-    authService.setToken(data.access_token);
+    authService.saveSession(data);
     const me = await authService.me();
     setUser(me);
     return me;
@@ -25,7 +26,7 @@ export function AuthProvider({ children }) {
 
   const signup = useCallback(async (payload) => {
     const data = await authService.signup(payload);
-    authService.setToken(data.access_token);
+    authService.saveSession(data);
     const me = await authService.me();
     setUser(me);
     return me;
@@ -33,10 +34,12 @@ export function AuthProvider({ children }) {
 
   useEffect(() => {
     const on401 = () => {
-      authService.setToken(null);
+      authService.clearSession();
       setUser(null);
     };
     window.addEventListener('washgo:unauthorized', on401);
+
+    let clearExpiryTimer = () => {};
     (async () => {
       const t = authService.getToken();
       if (!t) {
@@ -46,14 +49,35 @@ export function AuthProvider({ children }) {
       try {
         const me = await authService.me();
         setUser(me);
+        clearExpiryTimer = scheduleTokenExpiryLogout(
+          authService.getSessionStorage(),
+          () => {
+            authService.clearSession();
+            setUser(null);
+            window.dispatchEvent(new CustomEvent('washgo:session-expired'));
+          },
+        );
       } catch {
-        authService.setToken(null);
+        authService.clearSession();
       } finally {
         setInitializing(false);
       }
     })();
-    return () => window.removeEventListener('washgo:unauthorized', on401);
+
+    return () => {
+      window.removeEventListener('washgo:unauthorized', on401);
+      clearExpiryTimer();
+    };
   }, []);
+
+  useEffect(() => {
+    if (!user) return undefined;
+    return scheduleTokenExpiryLogout(authService.getSessionStorage(), () => {
+      authService.clearSession();
+      setUser(null);
+      window.dispatchEvent(new CustomEvent('washgo:session-expired'));
+    });
+  }, [user]);
 
   const value = useMemo(
     () => ({ user, initializing, login, signup, logout }),

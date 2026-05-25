@@ -26,6 +26,7 @@ from app.schemas.booking_schema import (
     BookingRead,
     BookingReadList,
     BookingRescheduleBody,
+    BookingMilestoneUpdate,
     BookingStatusUpdate,
     WasherAdminFleetList,
     WasherDispatchList,
@@ -185,6 +186,19 @@ async def update_booking_status(
     return BookingRead.model_validate(booking)
 
 
+@router.patch("/{booking_id}/milestone", response_model=BookingRead)
+async def update_booking_milestone(
+    booking_id: UUID,
+    payload: BookingMilestoneUpdate,
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current: Annotated[User, Depends(require_roles(UserRole.washer))],
+) -> BookingRead:
+    booking = await booking_service.update_booking_milestone_for_washer(
+        db, current, booking_id, payload
+    )
+    return BookingRead.model_validate(booking)
+
+
 @router.get("/{booking_id}/tracking", response_model=BookingTrackingRead)
 async def get_booking_tracking(
     booking_id: UUID,
@@ -213,6 +227,16 @@ async def upload_booking_photo(
     file: Annotated[UploadFile, File()],
 ) -> BookingPhotoRead:
     return await booking_photo_service.upload_booking_photo(db, current, booking_id, kind, file)
+
+
+@router.post("/{booking_id}/approve-arrival", response_model=BookingRead)
+async def approve_arrival(
+    booking_id: UUID,
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current: Annotated[User, Depends(require_roles(UserRole.customer))],
+) -> BookingRead:
+    booking = await booking_service.approve_arrival_for_customer(db, current, booking_id)
+    return BookingRead.model_validate(booking)
 
 
 @router.get("/{booking_id}", response_model=BookingDetailRead)

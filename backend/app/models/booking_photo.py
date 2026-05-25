@@ -15,6 +15,7 @@ if TYPE_CHECKING:
 
 
 class BookingPhotoKind(str, enum.Enum):
+    arrival = "arrival"
     before = "before"
     after = "after"
 
