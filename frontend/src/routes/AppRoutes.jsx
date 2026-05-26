@@ -39,6 +39,7 @@ import { WasherJobPage } from '../pages/washer/WasherJobPage';
 import { WasherRequestsPage } from '../pages/washer/WasherRequestsPage';
 import { WasherProfilePage } from '../pages/washer/WasherProfilePage';
 import { WasherSchedulePage } from '../pages/washer/WasherSchedulePage';
+import { WasherHistoryPage } from '../pages/washer/WasherHistoryPage';
 
 export function AppRoutes() {
   return (
@@ -64,6 +65,7 @@ export function AppRoutes() {
                 <Route index element={<WasherDashboardPage />} />
                 <Route path="requests" element={<WasherRequestsPage />} />
                 <Route path="schedule" element={<WasherSchedulePage />} />
+                <Route path="history" element={<WasherHistoryPage />} />
                 <Route path="jobs/:id" element={<WasherJobPage />} />
                 <Route path="earnings" element={<WasherEarningsPage />} />
                 <Route path="rewards" element={<WasherRewardsPage />} />

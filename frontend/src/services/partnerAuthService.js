@@ -3,7 +3,11 @@ import { createAuthSessionStorage } from '../lib/authSession';
 import { partnerApi } from './partnerApi';
 
 const PARTNER_TOKEN_EXPIRES_KEY = 'washgo_partner_token_expires';
-const session = createAuthSessionStorage(PARTNER_TOKEN_KEY, PARTNER_TOKEN_EXPIRES_KEY);
+const session = createAuthSessionStorage(
+  PARTNER_TOKEN_KEY,
+  PARTNER_TOKEN_EXPIRES_KEY,
+  PARTNER_TOKEN_KEY,
+);
 
 /** Same `/auth/*` endpoints as customer app — separate token storage. */
 export const partnerAuthService = {
@@ -46,6 +50,14 @@ export const partnerAuthService = {
   },
   getToken() {
     return session.getToken();
+  },
+  async logout() {
+    try {
+      await partnerApi.post('/auth/logout');
+    } catch {
+      /* still clear local session */
+    }
+    session.clear();
   },
   clearSession() {
     session.clear();

@@ -4,11 +4,12 @@ import { API_URL, TOKEN_KEY } from '../constants/config';
 import { createAuthSessionStorage } from '../lib/authSession';
 
 const TOKEN_EXPIRES_KEY = 'washgo_access_token_expires';
-const customerSession = createAuthSessionStorage(TOKEN_KEY, TOKEN_EXPIRES_KEY);
+const customerSession = createAuthSessionStorage(TOKEN_KEY, TOKEN_EXPIRES_KEY, TOKEN_KEY);
 
 export const api = axios.create({
   baseURL: API_URL,
   timeout: 30000,
+  withCredentials: true,
   headers: {
     'Content-Type': 'application/json',
     Accept: 'application/json',

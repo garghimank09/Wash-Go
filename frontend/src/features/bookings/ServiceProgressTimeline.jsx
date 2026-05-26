@@ -10,19 +10,31 @@ import { Card } from '../../ui/card';
  * Expandable customer service progress — tap a step for transparency sub-checkpoints.
  * @param {{ timeline: Array<{ key: string; label: string; done: boolean; statusLabel: string; subCheckpoints?: string[]; isCurrent?: boolean }>; heading?: string; noCard?: boolean; className?: string }} props
  */
-export function ServiceProgressTimeline({ timeline, heading = 'Service progress', noCard = false, className }) {
+export function ServiceProgressTimeline({
+  timeline,
+  heading = 'Service progress',
+  noCard = false,
+  compact = false,
+  className,
+}) {
   const reduced = useReducedMotion();
   const [expandedKey, setExpandedKey] = useState(null);
 
   if (!timeline?.length) return null;
 
-  const titleClass = noCard ? 'text-base font-bold text-wg-text' : 'wg-heading-section';
+  const titleClass = compact
+    ? 'text-sm font-black text-wg-text'
+    : noCard
+      ? 'text-base font-bold text-wg-text'
+      : 'wg-heading-section';
 
   const inner = (
     <>
       <h2 className={titleClass}>{heading}</h2>
-      <p className="mt-1 text-xs text-wg-muted">Tap any step to see what happens behind the scenes.</p>
-      <div className={cn('relative pl-1', noCard ? 'mt-4' : 'mt-6')}>
+      <p className={cn('text-wg-muted', compact ? 'mt-0.5 text-[11px] leading-snug' : 'mt-1 text-xs')}>
+        {compact ? 'Your wash journey' : 'Tap any step to see what happens behind the scenes.'}
+      </p>
+      <div className={cn('relative pl-1', compact ? 'mt-4' : noCard ? 'mt-4' : 'mt-6')}>
         <div
           className="absolute bottom-3 left-[15px] top-3 w-px bg-gradient-to-b from-cyan-500/45 via-wg-border to-transparent dark:from-cyan-400/35"
           aria-hidden
@@ -43,7 +55,8 @@ export function ServiceProgressTimeline({ timeline, heading = 'Service progress'
                   type="button"
                   className={cn(
                     'relative flex w-full gap-4 py-4 pl-10 pr-3 text-left transition wg-focus-ring',
-                    noCard && 'py-3',
+                    (noCard || compact) && 'py-3',
+                    compact && 'pl-9 pr-2',
                   )}
                   onClick={() => setExpandedKey((k) => (k === step.key ? null : step.key))}
                   aria-expanded={expanded}
@@ -117,7 +130,7 @@ export function ServiceProgressTimeline({ timeline, heading = 'Service progress'
   }
 
   return (
-    <Card variant="glass" className={className}>
+    <Card variant="glass" className={cn(compact && 'p-4 sm:p-5', className)}>
       {inner}
     </Card>
   );

@@ -125,10 +125,10 @@ export function canWasherAdvancePhase(phase, { hasArrivalPhoto, servicePhase }) 
 
 export function washerAdvanceBlockedReason(phase, { hasArrivalPhoto }) {
   if (phase === 'arrived' && !hasArrivalPhoto) {
-    return 'Upload the arrival check-in photo above before continuing';
+    return 'Capture the vehicle condition photo (and optional notes) above before continuing';
   }
   if (phase === 'awaiting_approval') {
-    return 'Waiting for the customer to approve your arrival photo';
+    return 'Waiting for the customer to approve the vehicle condition';
   }
   return null;
 }

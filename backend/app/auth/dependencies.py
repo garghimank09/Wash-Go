@@ -2,7 +2,7 @@ from collections.abc import Callable
 from typing import Annotated
 from uuid import UUID
 
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, HTTPException, Request, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from jose import JWTError
 from sqlalchemy import select
@@ -25,16 +25,23 @@ security = HTTPBearer(auto_error=False)
 
 
 async def get_current_user(
+    request: Request,
     db: Annotated[AsyncSession, Depends(get_db)],
     credentials: Annotated[HTTPAuthorizationCredentials | None, Depends(security)],
 ) -> User:
-    if credentials is None or credentials.scheme.lower() != "bearer":
+    token: str | None = None
+    if credentials is not None and credentials.scheme.lower() == "bearer":
+        token = credentials.credentials
+    if not token:
+        from app.auth.auth_cookies import token_from_cookies
+
+        token = token_from_cookies(request.cookies)
+    if not token:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Not authenticated",
             headers={"WWW-Authenticate": "Bearer"},
         )
-    token = credentials.credentials
     try:
         payload = decode_access_token(token)
         if payload.get("type") != "access":

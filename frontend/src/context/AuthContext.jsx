@@ -10,8 +10,8 @@ export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [initializing, setInitializing] = useState(true);
 
-  const logout = useCallback(() => {
-    authService.clearSession();
+  const logout = useCallback(async () => {
+    await authService.logout();
     setUser(null);
     redirectToMarketingHome();
   }, []);

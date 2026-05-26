@@ -47,6 +47,11 @@ async def lifespan(_: FastAPI):
                     "ALTER TABLE bookings ADD COLUMN IF NOT EXISTS service_phase VARCHAR(64)"
                 )
             )
+            await conn.execute(
+                text(
+                    "ALTER TABLE bookings ADD COLUMN IF NOT EXISTS arrival_condition_notes TEXT"
+                )
+            )
         try:
             async with engine.begin() as conn:
                 await conn.execute(
@@ -74,13 +79,27 @@ app = FastAPI(
     redoc_url="/redoc",
 )
 
-_cors = settings.CORS_ORIGINS.strip()
-_allow_origins = ["*"] if _cors == "*" else [o.strip() for o in _cors.split(",") if o.strip()]
+def _cors_origins() -> list[str]:
+    raw = settings.CORS_ORIGINS.strip()
+    if raw and raw != "*":
+        return [o.strip() for o in raw.split(",") if o.strip()]
+    base = settings.FRONTEND_BASE_URL.rstrip("/")
+    origins = {
+        base,
+        "http://127.0.0.1:5173",
+        "http://localhost:5173",
+        "http://127.0.0.1:4173",
+        "http://localhost:4173",
+    }
+    return sorted(origins)
+
+
+_allow_origins = _cors_origins()
 
 app.add_middleware(
     CORSMiddleware,
     allow_origins=_allow_origins,
-    allow_credentials=False,
+    allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )

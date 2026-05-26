@@ -34,6 +34,10 @@ class BookingMilestoneUpdate(BaseModel):
     service_phase: str = Field(min_length=2, max_length=64)
 
 
+class ArrivalConditionNotesUpdate(BaseModel):
+    notes: str | None = Field(default=None, max_length=2000)
+
+
 class BookingRead(BaseModel):
     id: UUID
     customer_id: UUID
@@ -48,6 +52,8 @@ class BookingRead(BaseModel):
     price_cents: int
     currency: str
     notes: str | None
+    created_at: datetime | None = None
+    updated_at: datetime | None = None
 
     model_config = {"from_attributes": True}
 
@@ -233,6 +239,7 @@ class BookingDetailRead(BaseModel):
     eta_minutes: int | None = None
     timeline: list[BookingTimelineStep]
     photos: list[BookingPhotoSummary] = []
+    arrival_condition_notes: str | None = None
     review: BookingReviewSummary | None = None
 
     model_config = {"from_attributes": True}

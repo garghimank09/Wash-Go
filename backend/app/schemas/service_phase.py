@@ -23,10 +23,13 @@ MILESTONE_NOTIFY: Final[dict[str, tuple[str, str]]] = {
     "heading_to_you": ("Washer on the way", "Track live progress on your booking detail."),
     "arrived_onsite": ("Washer arrived", "Your washer checked in at the service location."),
     "awaiting_arrival_approval": (
-        "Confirm arrival photo",
-        "Your washer sent a check-in photo — open your booking to approve and start the wash.",
+        "Review vehicle condition",
+        "Your washer documented the vehicle — open your booking to review and approve before the wash.",
     ),
-    "arrival_approved": ("Arrival approved", "Thanks — your washer can begin the service now."),
+    "arrival_approved": (
+        "Vehicle condition approved",
+        "Thanks — your washer can accept the vehicle and begin the wash.",
+    ),
     "wash_in_progress": ("Wash started", "Your vehicle is being cleaned now."),
     "completed": ("Wash complete", "Thanks for using WashGo — your service is done."),
 }

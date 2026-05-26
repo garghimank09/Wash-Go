@@ -5,7 +5,7 @@ import { useBookingTracking } from '../../hooks/useBookingTracking';
 import { ServiceProgressTimeline } from './ServiceProgressTimeline';
 
 /** Operational service progress with transparency sub-steps and live tracking hints. */
-export function CustomerServiceTimeline({ booking }) {
+export function CustomerServiceTimeline({ booking, compact = false, className }) {
   const trackEnabled =
     Boolean(booking?.id && booking?.washer_id) &&
     booking?.status !== 'cancelled' &&
@@ -20,5 +20,12 @@ export function CustomerServiceTimeline({ booking }) {
   );
   const timeline = useMemo(() => buildCustomerMilestoneTimeline(milestone), [milestone]);
 
-  return <ServiceProgressTimeline timeline={timeline} heading="Service progress" />;
-};
+  return (
+    <ServiceProgressTimeline
+      timeline={timeline}
+      heading="Service progress"
+      compact={compact}
+      className={className}
+    />
+  );
+}

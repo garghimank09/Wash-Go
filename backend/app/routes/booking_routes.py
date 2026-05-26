@@ -26,6 +26,7 @@ from app.schemas.booking_schema import (
     BookingRead,
     BookingReadList,
     BookingRescheduleBody,
+    ArrivalConditionNotesUpdate,
     BookingMilestoneUpdate,
     BookingStatusUpdate,
     WasherAdminFleetList,
@@ -235,8 +236,24 @@ async def upload_booking_photo(
     current: Annotated[User, Depends(require_roles(UserRole.washer))],
     kind: Annotated[BookingPhotoKind, Form()],
     file: Annotated[UploadFile, File()],
+    condition_notes: Annotated[str | None, Form()] = None,
 ) -> BookingPhotoRead:
-    return await booking_photo_service.upload_booking_photo(db, current, booking_id, kind, file)
+    return await booking_photo_service.upload_booking_photo(
+        db, current, booking_id, kind, file, condition_notes=condition_notes
+    )
+
+
+@router.patch("/{booking_id}/arrival-condition-notes", response_model=BookingRead)
+async def update_arrival_condition_notes(
+    booking_id: UUID,
+    payload: ArrivalConditionNotesUpdate,
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current: Annotated[User, Depends(require_roles(UserRole.washer))],
+) -> BookingRead:
+    booking = await booking_service.update_arrival_condition_notes_for_washer(
+        db, current, booking_id, payload.notes
+    )
+    return BookingRead.model_validate(booking)
 
 
 @router.post("/{booking_id}/approve-arrival", response_model=BookingRead)

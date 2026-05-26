@@ -4,12 +4,17 @@ import { API_URL, PARTNER_TOKEN_KEY } from '../constants/config';
 import { createAuthSessionStorage } from '../lib/authSession';
 
 const PARTNER_TOKEN_EXPIRES_KEY = 'washgo_partner_token_expires';
-const partnerSession = createAuthSessionStorage(PARTNER_TOKEN_KEY, PARTNER_TOKEN_EXPIRES_KEY);
+const partnerSession = createAuthSessionStorage(
+  PARTNER_TOKEN_KEY,
+  PARTNER_TOKEN_EXPIRES_KEY,
+  PARTNER_TOKEN_KEY,
+);
 
 /** Axios client for partner routes — uses {@link PARTNER_TOKEN_KEY} only (never customer token). */
 export const partnerApi = axios.create({
   baseURL: API_URL,
   timeout: 30000,
+  withCredentials: true,
   headers: {
     'Content-Type': 'application/json',
     Accept: 'application/json',

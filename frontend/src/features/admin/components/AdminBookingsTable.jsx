@@ -1,6 +1,7 @@
-import toast from 'react-hot-toast';
+import { useState } from 'react';
 
 import { Button } from '../../../ui/button';
+import { AdminBookingMonitorModal } from './AdminBookingMonitorModal';
 import { Card } from '../../../ui/card';
 import { StatusPill } from '../../../ui/status-pill';
 import { EmptyState } from '../../../ui/empty-state';
@@ -14,9 +15,7 @@ export function AdminBookingsTable({
   emptyTitle = 'No bookings match',
   emptyDescription = 'Try clearing filters or search.',
 }) {
-  const onOpen = () => {
-    toast('Opening booking detail…', { icon: 'ℹ️' });
-  };
+  const [monitorId, setMonitorId] = useState(null);
 
   if (!rows?.length) {
     return (
@@ -61,8 +60,8 @@ export function AdminBookingsTable({
                   {r.priceCents > 0 ? formatCents(r.priceCents) : '—'}
                 </td>
                 <td className="wg-admin-table-td whitespace-nowrap text-right">
-                  <Button type="button" size="sm" variant="outline" onClick={onOpen}>
-                    Open
+                  <Button type="button" size="sm" variant="outline" onClick={() => setMonitorId(r.id)}>
+                    Photos
                   </Button>
                 </td>
               </tr>
@@ -70,6 +69,7 @@ export function AdminBookingsTable({
           </tbody>
         </table>
       </div>
+      <AdminBookingMonitorModal bookingId={monitorId} onClose={() => setMonitorId(null)} />
     </Card>
   );
 }

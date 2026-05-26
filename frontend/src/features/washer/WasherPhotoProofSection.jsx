@@ -8,6 +8,7 @@ import { dispatchBookingsSync } from '../../lib/bookingSyncEvents';
 import { getErrorMessage } from '../../services/api';
 import { partnerPhotoService, photoUrl } from '../../services/partnerPhotoService';
 import { cn } from '../../lib/cn';
+import { phaseRank } from '../../lib/washerJobPhase';
 
 const MOCK_BEFORE =
   'https://images.unsplash.com/photo-1489824904134-891ab64532f1?auto=format&fit=crop&w=600&q=70';
@@ -45,13 +46,15 @@ const WASH_CARD_DEFS = [
   },
 ];
 
-/** Arrival + before/after proof — arrival gates customer approval before wash. */
+/** Vehicle condition (customer approval) + before/after wash proof. */
 export function WasherPhotoProofSection({
   jobId,
   isDemo = false,
   washerPhase = 'received',
   servicePhase = null,
+  initialArrivalNotes = '',
   onArrivalUploaded,
+  embedded = false,
 }) {
   const reduced = useReducedMotion();
   const fileRef = useRef(null);
@@ -61,6 +64,12 @@ export function WasherPhotoProofSection({
   const [demo, setDemo] = useState(() => (isDemo ? readDemo(jobId) : { arrival: false, before: false, after: false }));
   const [uploading, setUploading] = useState(null);
   const [loading, setLoading] = useState(!isDemo && Boolean(jobId));
+  const [arrivalNotes, setArrivalNotes] = useState(initialArrivalNotes || '');
+  const [savingNotes, setSavingNotes] = useState(false);
+
+  useEffect(() => {
+    setArrivalNotes(initialArrivalNotes || '');
+  }, [initialArrivalNotes, jobId]);
 
   const showArrival =
     isDemo ||
@@ -76,6 +85,11 @@ export function WasherPhotoProofSection({
     !isDemo &&
     servicePhase &&
     ['arrival_approved', 'wash_in_progress', 'completed'].includes(servicePhase);
+
+  const showWashPhotos =
+    isDemo ||
+    phaseRank(washerPhase) >= phaseRank('arrival_approved') ||
+    ['arrival_approved', 'wash_in_progress', 'completed'].includes(servicePhase || '');
 
   const loadPhotos = useCallback(async () => {
     if (!jobId || isDemo) {
@@ -111,14 +125,18 @@ export function WasherPhotoProofSection({
       setDemo((d) => ({ ...d, [kind]: true }));
       if (kind === 'arrival') {
         onArrivalUploaded?.();
-        toast.success('Arrival photo sent — waiting for customer OK (demo)');
+        toast.success('Vehicle condition sent — waiting for customer approval (demo)');
       } else {
         toast.success(`${kind === 'before' ? 'Before' : 'After'} photo saved (demo)`);
       }
       return;
     }
     if (kind === 'arrival' && arrivalLocked) {
-      toast.error('Customer already approved this arrival photo');
+      toast.error('Customer already approved the vehicle condition');
+      return;
+    }
+    if ((kind === 'before' || kind === 'after') && !showWashPhotos) {
+      toast.error('Customer must approve vehicle condition before wash photos');
       return;
     }
     pendingKind.current = kind;
@@ -143,7 +161,12 @@ export function WasherPhotoProofSection({
 
     setUploading(kind);
     try {
-      const saved = await partnerPhotoService.upload(jobId, kind, file);
+      const saved = await partnerPhotoService.upload(
+        jobId,
+        kind,
+        file,
+        kind === 'arrival' ? arrivalNotes : undefined,
+      );
       setPhotos((prev) => ({
         ...prev,
         [kind]: { ...saved, displayUrl: photoUrl(saved.url) },
@@ -151,7 +174,7 @@ export function WasherPhotoProofSection({
       dispatchBookingsSync();
       if (kind === 'arrival') {
         onArrivalUploaded?.();
-        toast.success('Arrival photo sent — customer notified to approve');
+        toast.success('Vehicle condition sent — customer notified to approve');
       } else {
         toast.success(`${kind === 'before' ? 'Before' : 'After'} wash photo uploaded`);
       }
@@ -166,7 +189,11 @@ export function WasherPhotoProofSection({
     <m.button
       key={def.kind}
       type="button"
-      disabled={busy || (def.kind === 'arrival' && arrivalLocked)}
+      disabled={
+        busy ||
+        (def.kind === 'arrival' && arrivalLocked) ||
+        ((def.kind === 'before' || def.kind === 'after') && !showWashPhotos)
+      }
       onClick={() => !busy && openPicker(def.kind)}
       initial={reduced ? false : { opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
@@ -221,8 +248,11 @@ export function WasherPhotoProofSection({
     </m.button>
   );
 
+  const sectionTitle = embedded ? 'text-sm font-black text-wg-text' : 'wg-heading-section';
+  const sectionSub = embedded ? 'mt-0.5 text-[11px] leading-snug text-wg-muted' : 'mt-0.5 text-xs text-wg-muted';
+
   return (
-    <div className="space-y-4">
+    <div className={embedded ? 'space-y-5' : 'space-y-4'}>
       <input
         ref={fileRef}
         type="file"
@@ -236,15 +266,15 @@ export function WasherPhotoProofSection({
         <div className="space-y-3">
           <div className="flex items-end justify-between gap-2">
             <div>
-              <h2 className="wg-heading-section">Arrival check-in</h2>
-              <p className="mt-0.5 text-xs text-wg-muted">
+              <h2 className={sectionTitle}>Vehicle condition</h2>
+              <p className={sectionSub}>
                 {arrivalDone
                   ? servicePhase === 'awaiting_arrival_approval'
-                    ? 'Photo sent — customer must tap OK before you start the wash.'
+                    ? 'Sent — customer must approve condition before you start the wash.'
                     : servicePhase === 'arrival_approved' || arrivalLocked
-                      ? 'Customer approved — you can start the service from the dock.'
-                      : 'Upload at your location so the customer can confirm you are on site.'
-                  : 'Required when you arrive — customer approves this photo before the wash starts.'}
+                      ? 'Approved — accept the vehicle and start the service from the dock.'
+                      : 'Capture the vehicle’s current state at your location.'
+                  : 'Required on arrival — photo plus optional remarks. Customer approves before the wash.'}
               </p>
             </div>
             {arrivalDone && servicePhase === 'awaiting_arrival_approval' ? (
@@ -256,25 +286,59 @@ export function WasherPhotoProofSection({
           {renderCard(
             {
               kind: 'arrival',
-              title: 'Arrival at location',
-              subtitle: 'Vehicle & spot visible — customer reviews before wash',
+              title: 'Current vehicle condition',
+              subtitle: 'Scratches, dirt, or damage — customer reviews before wash',
             },
             0,
             isDemo ? MOCK_ARRIVAL : photos.arrival?.displayUrl,
             arrivalDone,
             uploading === 'arrival',
           )}
+          <label className="block space-y-1.5">
+            <span className="text-xs font-semibold text-wg-muted">Condition notes (optional)</span>
+            <textarea
+              value={arrivalNotes}
+              onChange={(e) => setArrivalNotes(e.target.value)}
+              disabled={arrivalLocked}
+              maxLength={2000}
+              rows={3}
+              placeholder="e.g. light scratches on rear bumper, muddy wheels…"
+              className="w-full resize-y rounded-xl border border-wg-border/80 bg-wg-surface-elevated/80 px-3 py-2 text-sm text-wg-text placeholder:text-wg-muted/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/40 disabled:opacity-60 dark:border-white/10"
+            />
+          </label>
+          {arrivalDone && !arrivalLocked && !isDemo ? (
+            <button
+              type="button"
+              disabled={savingNotes}
+              onClick={async () => {
+                setSavingNotes(true);
+                try {
+                  await partnerPhotoService.updateArrivalNotes(jobId, arrivalNotes);
+                  dispatchBookingsSync();
+                  toast.success('Condition notes saved');
+                } catch (err) {
+                  toast.error(getErrorMessage(err));
+                } finally {
+                  setSavingNotes(false);
+                }
+              }}
+              className="text-xs font-semibold text-cyan-700 underline-offset-2 hover:underline disabled:opacity-60 dark:text-cyan-300"
+            >
+              {savingNotes ? 'Saving…' : 'Save notes without re-uploading photo'}
+            </button>
+          ) : null}
         </div>
       ) : null}
 
+      {showWashPhotos ? (
       <div className="space-y-3">
         <div className="flex items-end justify-between gap-2">
           <div>
-            <h2 className="wg-heading-section">Wash photos</h2>
-            <p className="mt-0.5 text-xs text-wg-muted">
+            <h2 className={sectionTitle}>Wash photos</h2>
+            <p className={sectionSub}>
               {isDemo
                 ? 'Demo job — tap to simulate before & after captures.'
-                : 'Before and after wash — saved for ops & customer.'}
+                : 'One before and one after — visible to customer and admin (no approval needed).'}
             </p>
           </div>
           {!isDemo ? (
@@ -295,7 +359,7 @@ export function WasherPhotoProofSection({
           </p>
         ) : null}
 
-        <div className="grid gap-3 sm:grid-cols-2">
+        <div className="grid gap-4 sm:grid-cols-2">
           {WASH_CARD_DEFS.map((def, i) => {
             const live = photos[def.kind];
             const done = isDemo ? demo[def.kind] : Boolean(live);
@@ -308,6 +372,7 @@ export function WasherPhotoProofSection({
           })}
         </div>
       </div>
+      ) : null}
     </div>
   );
 }

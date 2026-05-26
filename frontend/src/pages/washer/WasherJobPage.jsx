@@ -2,16 +2,15 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useOutletContext, useParams } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { m, AnimatePresence } from 'framer-motion';
-import { CheckSquare, PartyPopper, Phone, User } from 'lucide-react';
+import { CheckSquare, Phone, User } from 'lucide-react';
 
 import { WasherDashboardOpsBanner } from '../../features/washer/WasherDashboardOpsBanner';
-import { WasherEtaRouteCard } from '../../features/washer/WasherEtaRouteCard';
+import { WasherJobTimelineAside } from '../../features/washer/WasherJobTimelineAside';
+import { WasherJobVisualPanel } from '../../features/washer/WasherJobVisualPanel';
 import { useBookingTracking } from '../../hooks/useBookingTracking';
 import { useWasherGeolocation } from '../../hooks/useWasherGeolocation';
-import { WasherJobProgress } from '../../features/washer/WasherJobProgress';
 import { WasherJobSkeleton } from '../../features/washer/WasherJobSkeleton';
 import { WasherJobStickyDock } from '../../features/washer/WasherJobStickyDock';
-import { WasherPhotoProofSection } from '../../features/washer/WasherPhotoProofSection';
 import { WasherCustomerFeedbackCard } from '../../features/washer/WasherCustomerFeedbackCard';
 import { WasherJobServiceContext } from '../../features/washer/WasherJobServiceContext';
 import { DEMO_JOB } from '../../features/washer/mock/demoJob';
@@ -208,6 +207,12 @@ export function WasherJobPage() {
     }
   };
 
+  const onArrivalUploaded = useCallback(() => {
+    if (id) setStoredPhase(id, 'awaiting_approval');
+    reloadPhase();
+    void load(true);
+  }, [id, load, reloadPhase]);
+
   if (loading) {
     return <WasherJobSkeleton />;
   }
@@ -224,184 +229,173 @@ export function WasherJobPage() {
 
   const doneCount = checklist.filter((c) => c.done).length;
   const progressPct = Math.round((doneCount / checklist.length) * 100);
+  const phaseLabel = phase.replace(/_/g, ' ');
 
   return (
-    <div className="space-y-5 pb-10">
-      <Link to="/partner" className="inline-flex items-center gap-1 text-xs font-bold text-cyan-700 transition active:opacity-70 dark:text-cyan-300">
-        ← Operations
-      </Link>
-
-      <WasherDashboardOpsBanner online={Boolean(av?.online)} />
-
-      <m.div
-        initial={reduced ? false : { opacity: 0, y: 8 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ type: 'spring', stiffness: 360, damping: 32 }}
-        className="flex items-start justify-between gap-3"
-      >
-        <div>
-          <h1 className="text-2xl font-black tracking-tight text-wg-text">{isDemo ? 'Demo job' : 'Active job'}</h1>
-          <p className="mt-1 text-sm text-wg-muted">
-            {isDemo ? 'Full field workflow — premium driver UX (local phase state).' : 'Live booking — status syncs to customer in real time.'}
-          </p>
+    <div className="space-y-5 pb-44 md:pb-36 xl:space-y-6">
+      <header className="flex flex-wrap items-start justify-between gap-3 border-b border-wg-border/50 pb-4 dark:border-white/10">
+        <div className="min-w-0 space-y-2">
+          <Link
+            to="/partner"
+            className="inline-flex items-center gap-1 text-xs font-bold text-cyan-700 transition active:opacity-70 dark:text-cyan-300"
+          >
+            ← Operations
+          </Link>
+          <m.div
+            initial={reduced ? false : { opacity: 0, y: 6 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ type: 'spring', stiffness: 360, damping: 32 }}
+          >
+            <h1 className="text-2xl font-black tracking-tight text-wg-text">{isDemo ? 'Demo job' : 'Active job'}</h1>
+            <p className="mt-1 text-sm text-wg-muted">
+              {isDemo
+                ? 'Full field workflow — premium driver UX.'
+                : 'Live booking — status syncs to customer in real time.'}
+            </p>
+          </m.div>
         </div>
         <AnimatePresence>
-          {phase === 'completed' ? (
+          {phase !== 'completed' ? (
             <m.span
-              initial={reduced ? false : { scale: 0, rotate: -12 }}
-              animate={{ scale: 1, rotate: 0 }}
-              className="flex size-12 items-center justify-center rounded-2xl bg-gradient-to-br from-emerald-400 to-cyan-500 text-white shadow-lg"
+              key={phase}
+              initial={reduced ? false : { opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="shrink-0 rounded-full border border-cyan-500/25 bg-cyan-500/10 px-3 py-1 text-[11px] font-black uppercase tracking-wide text-cyan-800 dark:text-cyan-200"
             >
-              <PartyPopper className="size-6" strokeWidth={1.75} aria-hidden />
+              {phaseLabel}
             </m.span>
           ) : null}
         </AnimatePresence>
-      </m.div>
+      </header>
 
-      {trackingError && trackActive && !tracking ? (
-        <p className="rounded-xl border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs font-medium text-amber-900 dark:text-amber-100">
-          Map unavailable: {trackingError}
-        </p>
-      ) : null}
+      <WasherDashboardOpsBanner online={Boolean(av?.online)} />
 
-      <WasherEtaRouteCard
-        etaMinutes={displayJob.etaMinutes ?? tracking?.eta_minutes ?? 22}
-        address={displayJob.service_address}
-        phase={phase}
-        tracking={trackActive ? tracking : undefined}
-      />
-
-      <Card variant="glass" className="border-white/15 !p-5 dark:border-white/10">
-        <h2 className="wg-heading-section">Customer</h2>
-        <div className="mt-4 flex items-center gap-3">
-          <span className="flex size-14 items-center justify-center rounded-2xl bg-gradient-to-br from-cyan-500/25 to-indigo-500/20 ring-1 ring-white/15">
-            <User className="size-7 text-cyan-800 dark:text-cyan-100" strokeWidth={1.5} aria-hidden />
-          </span>
-          <div className="min-w-0">
-            <p className="truncate text-lg font-black text-wg-text">{displayJob.customerName ?? 'Customer'}</p>
-            {displayJob.customerPhone ? (
-              <a
-                href={`tel:${String(displayJob.customerPhone).replace(/\D/g, '')}`}
-                className="mt-1 inline-flex min-h-[44px] min-w-[44px] items-center gap-2 py-1 text-sm font-bold text-cyan-700 transition active:scale-[0.98] dark:text-cyan-300"
-              >
-                <Phone className="size-4" strokeWidth={1.75} aria-hidden />
-                {displayJob.customerPhone}
-              </a>
-            ) : (
-              <p className="mt-1 text-sm text-wg-muted">Customer phone via CRM</p>
-            )}
-          </div>
-        </div>
-        <dl className="mt-4 grid gap-2.5 text-sm">
-          <div className="flex justify-between gap-2 border-b border-wg-border/50 pb-2 dark:border-white/5">
-            <dt className="text-wg-muted">Vehicle</dt>
-            <dd className="font-semibold text-wg-text">{displayJob.vehicle ?? displayJob.car_label ?? '—'}</dd>
-          </div>
-          <div className="flex justify-between gap-2 border-b border-wg-border/50 pb-2 dark:border-white/5">
-            <dt className="text-wg-muted">Package</dt>
-            <dd className="font-semibold text-wg-text">{displayJob.packageLabel ?? '—'}</dd>
-          </div>
-          <div className="flex justify-between gap-2 border-b border-wg-border/50 pb-2 dark:border-white/5">
-            <dt className="text-wg-muted">Scheduled</dt>
-            <dd className="font-semibold text-wg-text">{formatDateTime(displayJob.scheduled_at)}</dd>
-          </div>
-          <div className="flex justify-between gap-2">
-            <dt className="text-wg-muted">Payout</dt>
-            <dd className="font-black tabular-nums text-wg-text">{formatCents(displayJob.price_cents, displayJob.currency)}</dd>
-          </div>
-        </dl>
-      </Card>
-
-      <Card variant="glass" className="border-cyan-500/15 !p-5 shadow-[0_12px_40px_-24px_rgb(6_182_212/0.45)] ring-1 ring-cyan-500/10 dark:border-white/10">
-        <h2 className="wg-heading-section">Field briefing</h2>
-        <p className="mt-1 text-xs text-wg-muted">Dispatch intel + customer context — read before wheels roll.</p>
-        <div className="mt-4">
-          <WasherJobServiceContext field={displayJob.partnerFieldUx} notes={displayJob.notes} />
-        </div>
-      </Card>
-
-      <WasherPhotoProofSection
-        key={id || 'job'}
-        jobId={id}
-        isDemo={isDemo}
-        washerPhase={phase}
-        servicePhase={servicePhase}
-        onArrivalUploaded={() => {
-          if (isDemo) {
-            setStoredPhase(id, 'awaiting_approval');
-          } else {
-            setStoredPhase(id, 'awaiting_approval');
-          }
-          reloadPhase();
-          void load(true);
-        }}
-      />
-
-      {showFeedbackSection && !isDemo ? (
-        <WasherCustomerFeedbackCard
-          review={customerReview}
-          customerName={displayJob.customerName}
-          bookingId={id}
-        />
-      ) : null}
-
-      <Card variant="glass" className="border-white/15 !p-5 dark:border-white/10">
-        <div className="flex items-center justify-between gap-2">
-          <h2 className="wg-heading-section">Service checklist</h2>
-          <span className="rounded-full bg-cyan-500/15 px-2.5 py-0.5 text-xs font-black tabular-nums text-cyan-800 dark:text-cyan-200">
-            {progressPct}%
-          </span>
-        </div>
-        <div className="mt-3 h-2 overflow-hidden rounded-full bg-wg-border/80 dark:bg-white/10">
-          <m.div
-            className="h-full rounded-full bg-gradient-to-r from-cyan-500 via-emerald-400 to-emerald-500"
-            initial={reduced ? false : { width: 0 }}
-            animate={{ width: `${progressPct}%` }}
-            transition={{ type: 'spring', stiffness: 220, damping: 26 }}
+      <div className="grid items-start gap-5 sm:gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(280px,320px)] xl:gap-10">
+        <div className="order-2 min-w-0 space-y-5 xl:order-1">
+          <WasherJobVisualPanel
+            displayJob={displayJob}
+            phase={phase}
+            jobStatus={apiStatus}
+            tracking={tracking}
+            trackActive={trackActive}
+            trackingError={trackingError}
+            jobId={id}
+            isDemo={isDemo}
+            servicePhase={servicePhase}
+            initialArrivalNotes={job?.arrival_condition_notes ?? ''}
+            onArrivalUploaded={onArrivalUploaded}
           />
-        </div>
-        <ul className="mt-4 space-y-2.5">
-          {checklist.map((c, idx) => (
-            <li key={c.id}>
-              <m.button
-                type="button"
-                onClick={() => toggleCheck(c.id)}
-                initial={reduced ? false : { opacity: 0, y: 6 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: reduced ? 0 : idx * 0.04 }}
-                whileTap={reduced ? undefined : { scale: 0.98 }}
-                whileHover={reduced ? undefined : { scale: 1.005 }}
-                className={cn(
-                  'flex min-h-[48px] w-full items-center gap-3 rounded-2xl border px-3.5 py-3 text-left text-sm font-semibold transition-colors',
-                  c.done
-                    ? 'border-emerald-500/30 bg-emerald-500/10 text-wg-muted line-through dark:border-emerald-500/20'
-                    : 'border-wg-border bg-wg-surface-elevated hover:border-cyan-500/40 dark:border-white/15 dark:bg-white/[0.06] dark:hover:border-cyan-500/35',
-                )}
-              >
-                <CheckSquare className={cn('size-5 shrink-0', c.done ? 'text-emerald-600' : 'text-wg-muted')} strokeWidth={1.75} aria-hidden />
-                <span className={c.done ? 'text-wg-muted' : 'text-wg-text'}>{c.label}</span>
-              </m.button>
-            </li>
-          ))}
-        </ul>
-      </Card>
 
-      <Card variant="glass" className="border-white/15 !p-5 dark:border-white/10">
-        <h2 className="wg-heading-section">Wash timeline</h2>
-        <p className="mt-1 text-xs text-wg-muted">Live lifecycle — synced with your dock actions (demo storage).</p>
-        <div className="mt-4">
-          <WasherJobProgress phase={phase} />
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Card variant="glass" className="border-white/15 !p-4 sm:!p-5 dark:border-white/10">
+              <h2 className="text-sm font-black text-wg-text">Customer</h2>
+              <div className="mt-3 flex items-center gap-3">
+                <span className="flex size-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-cyan-500/25 to-indigo-500/20 ring-1 ring-white/15">
+                  <User className="size-6 text-cyan-800 dark:text-cyan-100" strokeWidth={1.5} aria-hidden />
+                </span>
+                <div className="min-w-0">
+                  <p className="truncate text-base font-black text-wg-text">{displayJob.customerName ?? 'Customer'}</p>
+                  {displayJob.customerPhone ? (
+                    <a
+                      href={`tel:${String(displayJob.customerPhone).replace(/\D/g, '')}`}
+                      className="mt-0.5 inline-flex items-center gap-1.5 text-sm font-bold text-cyan-700 dark:text-cyan-300"
+                    >
+                      <Phone className="size-3.5" strokeWidth={1.75} aria-hidden />
+                      {displayJob.customerPhone}
+                    </a>
+                  ) : (
+                    <p className="mt-0.5 text-xs text-wg-muted">Phone via dispatch</p>
+                  )}
+                </div>
+              </div>
+              <dl className="mt-4 space-y-2 text-sm">
+                <div className="flex justify-between gap-2 border-b border-wg-border/50 pb-2 dark:border-white/5">
+                  <dt className="text-wg-muted">Vehicle</dt>
+                  <dd className="font-semibold text-wg-text">{displayJob.vehicle ?? displayJob.car_label ?? '—'}</dd>
+                </div>
+                <div className="flex justify-between gap-2 border-b border-wg-border/50 pb-2 dark:border-white/5">
+                  <dt className="text-wg-muted">Package</dt>
+                  <dd className="font-semibold text-wg-text">{displayJob.packageLabel ?? '—'}</dd>
+                </div>
+                <div className="flex justify-between gap-2 border-b border-wg-border/50 pb-2 dark:border-white/5">
+                  <dt className="text-wg-muted">Scheduled</dt>
+                  <dd className="text-right font-semibold text-wg-text">{formatDateTime(displayJob.scheduled_at)}</dd>
+                </div>
+                <div className="flex justify-between gap-2">
+                  <dt className="text-wg-muted">Payout</dt>
+                  <dd className="font-black tabular-nums text-wg-text">
+                    {formatCents(displayJob.price_cents, displayJob.currency)}
+                  </dd>
+                </div>
+              </dl>
+            </Card>
+
+            <Card variant="glass" className="border-cyan-500/15 !p-4 shadow-wg-card sm:!p-5 dark:border-white/10">
+              <h2 className="text-sm font-black text-wg-text">Field briefing</h2>
+              <p className="mt-0.5 text-[11px] text-wg-muted">Dispatch intel before wheels roll</p>
+              <div className="mt-3">
+                <WasherJobServiceContext field={displayJob.partnerFieldUx} notes={displayJob.notes} />
+              </div>
+            </Card>
+          </div>
+
+          {showFeedbackSection && !isDemo ? (
+            <WasherCustomerFeedbackCard
+              review={customerReview}
+              customerName={displayJob.customerName}
+              bookingId={id}
+            />
+          ) : null}
+
+          <Card variant="glass" className="border-white/15 !p-4 sm:!p-5 dark:border-white/10">
+            <div className="flex items-center justify-between gap-2">
+              <h2 className="text-sm font-black text-wg-text">Service checklist</h2>
+              <span className="rounded-full bg-cyan-500/15 px-2.5 py-0.5 text-xs font-black tabular-nums text-cyan-800 dark:text-cyan-200">
+                {progressPct}%
+              </span>
+            </div>
+            <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-wg-border/80 dark:bg-white/10">
+              <m.div
+                className="h-full rounded-full bg-gradient-to-r from-cyan-500 via-emerald-400 to-emerald-500"
+                initial={reduced ? false : { width: 0 }}
+                animate={{ width: `${progressPct}%` }}
+                transition={{ type: 'spring', stiffness: 220, damping: 26 }}
+              />
+            </div>
+            <ul className="mt-3 space-y-2">
+              {checklist.map((c, idx) => (
+                <li key={c.id}>
+                  <m.button
+                    type="button"
+                    onClick={() => toggleCheck(c.id)}
+                    initial={reduced ? false : { opacity: 0, y: 4 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: reduced ? 0 : idx * 0.03 }}
+                    whileTap={reduced ? undefined : { scale: 0.99 }}
+                    className={cn(
+                      'flex min-h-[44px] w-full items-center gap-3 rounded-xl border px-3 py-2.5 text-left text-sm font-semibold transition-colors',
+                      c.done
+                        ? 'border-emerald-500/30 bg-emerald-500/10 text-wg-muted line-through dark:border-emerald-500/20'
+                        : 'border-wg-border bg-wg-surface-elevated hover:border-cyan-500/40 dark:border-white/15 dark:bg-white/[0.06]',
+                    )}
+                  >
+                    <CheckSquare
+                      className={cn('size-4 shrink-0', c.done ? 'text-emerald-600' : 'text-wg-muted')}
+                      strokeWidth={1.75}
+                      aria-hidden
+                    />
+                    <span className={c.done ? 'text-wg-muted' : 'text-wg-text'}>{c.label}</span>
+                  </m.button>
+                </li>
+              ))}
+            </ul>
+          </Card>
         </div>
-        {phase === 'completed' ? (
-          <m.p
-            initial={reduced ? false : { opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="mt-4 text-center text-sm font-bold text-emerald-700 dark:text-emerald-300"
-          >
-            All milestones cleared — customer sees “completed”.
-          </m.p>
-        ) : null}
-      </Card>
+
+        <aside className="order-1 xl:sticky xl:top-20 xl:order-2 xl:self-start">
+          <WasherJobTimelineAside phase={phase} hasArrivalPhoto={hasArrivalPhoto} />
+        </aside>
+      </div>
 
       <WasherJobStickyDock
         phase={phase}

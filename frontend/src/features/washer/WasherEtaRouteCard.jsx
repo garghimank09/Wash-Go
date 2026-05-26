@@ -9,7 +9,7 @@ import { cn } from '../../lib/cn';
 const ROUTE_D = 'M -20 118 C 52 118 68 36 148 52 S 268 22 340 8';
 
 /** Premium navigation + ETA — live Leaflet map or animated SVG fallback (demo job). */
-export function WasherEtaRouteCard({ etaMinutes, address, phase, tracking }) {
+export function WasherEtaRouteCard({ etaMinutes, address, phase, tracking, embedded = false }) {
   const reduced = useReducedMotion();
   const uid = useId().replace(/:/g, '');
   const liveNav = phase === 'on_the_way' || phase === 'accepted';
@@ -23,7 +23,14 @@ export function WasherEtaRouteCard({ etaMinutes, address, phase, tracking }) {
   const gpsWarning = tracking?.gps_warning;
 
   return (
-    <div className="relative overflow-hidden rounded-2xl border border-white/20 bg-slate-950 shadow-[0_24px_55px_-22px_rgb(6_182_212/0.5)] ring-1 ring-cyan-500/15 dark:border-white/10 dark:shadow-[0_28px_70px_-18px_rgb(0_0_0/0.88)]">
+    <div
+      className={cn(
+        'relative overflow-hidden bg-slate-950',
+        embedded
+          ? 'rounded-none border-0 shadow-none ring-0'
+          : 'rounded-2xl border border-white/20 shadow-[0_24px_55px_-22px_rgb(6_182_212/0.5)] ring-1 ring-cyan-500/15 dark:border-white/10 dark:shadow-[0_28px_70px_-18px_rgb(0_0_0/0.88)]',
+      )}
+    >
       {!useLiveMap ? (
         <div
           className="pointer-events-none absolute inset-0 opacity-95"
@@ -43,7 +50,18 @@ export function WasherEtaRouteCard({ etaMinutes, address, phase, tracking }) {
         />
       ) : null}
 
-      <div className={cn('relative w-full', useLiveMap ? 'h-52 sm:h-56' : 'h-[10rem] sm:h-44')}>
+      <div
+        className={cn(
+          'relative w-full',
+          embedded
+            ? useLiveMap
+              ? 'h-56 sm:h-64 lg:h-[17rem]'
+              : 'h-48 sm:h-56 lg:h-64'
+            : useLiveMap
+              ? 'h-52 sm:h-56'
+              : 'h-[10rem] sm:h-44',
+        )}
+      >
         {useLiveMap ? (
           <LiveTrackingMap tracking={tracking} className="absolute inset-0" perspective="washer" embedded />
         ) : (

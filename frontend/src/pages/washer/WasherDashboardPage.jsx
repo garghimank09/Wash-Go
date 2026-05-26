@@ -17,6 +17,7 @@ import { CustomerBookingStatusPill } from '../../features/bookings/CustomerBooki
 import { WasherAvailabilityControls } from '../../features/washer/WasherAvailabilityControls';
 import { WasherDashboardOpsBanner } from '../../features/washer/WasherDashboardOpsBanner';
 import { WasherRecentFeedback } from '../../features/washer/WasherRecentFeedback';
+import { WasherWashHistorySection } from '../../features/washer/WasherWashHistorySection';
 
 const ACTIVE = ['pending', 'confirmed', 'in_progress'];
 
@@ -158,6 +159,8 @@ export function WasherDashboardPage() {
       {error ? <p className="text-sm text-rose-600">{error}</p> : null}
 
       <WasherRecentFeedback limit={5} />
+
+      <WasherWashHistorySection bookings={items} loading={loading} />
 
       <div className="flex items-center justify-between">
         <h2 className="text-sm font-black uppercase tracking-[0.14em] text-wg-muted">Today&apos;s line</h2>

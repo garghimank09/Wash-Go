@@ -516,7 +516,7 @@ async def update_booking_status_for_washer(
         phase = booking.service_phase or ""
         if phase not in ("arrival_approved", "wash_in_progress"):
             raise ValidationError(
-                "Customer must approve the arrival check-in photo before you can start the wash"
+                "Customer must approve the vehicle condition before you can start the wash"
             )
 
     booking.status = target
@@ -546,7 +546,7 @@ async def update_booking_milestone_for_washer(
         "wash_in_progress",
     ):
         raise ValidationError(
-            "Customer must approve the arrival check-in photo before starting the wash"
+            "Customer must approve the vehicle condition before starting the wash"
         )
 
     await _apply_service_phase(db, booking, new_phase)
@@ -573,14 +573,48 @@ async def approve_arrival_for_customer(
 
     has_arrival = any(p.kind == BookingPhotoKind.arrival for p in booking.photos)
     if not has_arrival:
-        raise ValidationError("No arrival check-in photo to approve yet")
+        raise ValidationError("No vehicle condition photo to approve yet")
 
     if booking.service_phase != "awaiting_arrival_approval":
         if booking.service_phase in ("arrival_approved", "wash_in_progress", "completed"):
             return booking
-        raise ValidationError("Arrival photo is not waiting for your approval")
+        raise ValidationError("Vehicle condition is not waiting for your approval")
 
     await _apply_service_phase(db, booking, "arrival_approved", notify=True)
+    await db.commit()
+    await db.refresh(booking)
+    return booking
+
+
+async def update_arrival_condition_notes_for_washer(
+    db: AsyncSession, user: User, booking_id: UUID, notes: str | None
+) -> Booking:
+    washer = await _get_washer_for_user(db, user)
+    result = await db.execute(
+        select(Booking)
+        .where(Booking.id == booking_id)
+        .options(selectinload(Booking.photos))
+    )
+    booking = result.scalar_one_or_none()
+    if booking is None:
+        raise NotFoundError("Booking not found")
+    if booking.washer_id != washer.id:
+        raise ForbiddenError("Not assigned to this booking")
+
+    from app.models.booking_photo import BookingPhotoKind
+
+    has_arrival = any(p.kind == BookingPhotoKind.arrival for p in booking.photos)
+    if not has_arrival:
+        raise ValidationError("Upload the vehicle condition photo before adding notes")
+
+    if booking.service_phase not in ("arrived_onsite", "awaiting_arrival_approval"):
+        raise ValidationError("Condition notes can only be edited while waiting for customer approval")
+
+    trimmed = (notes or "").strip()
+    booking.arrival_condition_notes = trimmed or None
+    from datetime import datetime, timezone
+
+    booking.updated_at = datetime.now(timezone.utc)
     await db.commit()
     await db.refresh(booking)
     return booking
@@ -659,6 +693,7 @@ async def get_booking_detail(db: AsyncSession, user: User, booking_id: UUID) -> 
             )
             for p in sorted(booking.photos, key=lambda x: x.kind.value)
         ],
+        arrival_condition_notes=booking.arrival_condition_notes,
         review=(
             BookingReviewSummary(
                 id=booking.reviews[0].id,

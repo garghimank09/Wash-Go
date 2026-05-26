@@ -1,6 +1,8 @@
 /**
- * Client-side session storage for JWT access tokens with expiry.
+ * Client-side session: localStorage + cookie mirror, 1-week JWT lifetime from API.
  */
+
+const SESSION_MAX_AGE_SEC = 60 * 60 * 24 * 7;
 
 function decodeJwtPayload(token) {
   try {
@@ -26,13 +28,37 @@ export function isTokenExpired(token, expiresAtMs = null) {
   return Date.now() >= exp - 5000;
 }
 
-export function createAuthSessionStorage(tokenKey, expiresKey) {
+function setCookie(name, value, maxAgeSec = SESSION_MAX_AGE_SEC) {
+  if (typeof document === 'undefined') return;
+  const secure = window.location.protocol === 'https:' ? '; Secure' : '';
+  document.cookie = `${name}=${encodeURIComponent(value)}; path=/; max-age=${maxAgeSec}; SameSite=Lax${secure}`;
+}
+
+function clearCookie(name) {
+  if (typeof document === 'undefined') return;
+  document.cookie = `${name}=; path=/; max-age=0; SameSite=Lax`;
+}
+
+function getCookie(name) {
+  if (typeof document === 'undefined') return null;
+  const prefix = `${name}=`;
+  for (const part of document.cookie.split(';')) {
+    const trimmed = part.trim();
+    if (trimmed.startsWith(prefix)) {
+      return decodeURIComponent(trimmed.slice(prefix.length));
+    }
+  }
+  return null;
+}
+
+export function createAuthSessionStorage(tokenKey, expiresKey, cookieName = tokenKey) {
   return {
     saveAuthResponse(data) {
       const token = data?.access_token;
       if (!token) {
         localStorage.removeItem(tokenKey);
         localStorage.removeItem(expiresKey);
+        clearCookie(cookieName);
         return;
       }
       localStorage.setItem(tokenKey, token);
@@ -46,17 +72,23 @@ export function createAuthSessionStorage(tokenKey, expiresKey) {
       }
       if (expMs) localStorage.setItem(expiresKey, String(expMs));
       else localStorage.removeItem(expiresKey);
+
+      const maxAge = data.expires_in ?? SESSION_MAX_AGE_SEC;
+      setCookie(cookieName, token, maxAge);
     },
 
     getToken() {
-      const token = localStorage.getItem(tokenKey);
+      let token = localStorage.getItem(tokenKey);
+      if (!token) token = getCookie(cookieName);
       if (!token) return null;
       const expRaw = localStorage.getItem(expiresKey);
       const expMs = expRaw ? Number(expRaw) : getTokenExpiryMs(token);
       if (isTokenExpired(token, expMs)) {
-        localStorage.removeItem(tokenKey);
-        localStorage.removeItem(expiresKey);
+        this.clear();
         return null;
+      }
+      if (!localStorage.getItem(tokenKey)) {
+        localStorage.setItem(tokenKey, token);
       }
       return token;
     },
@@ -64,12 +96,13 @@ export function createAuthSessionStorage(tokenKey, expiresKey) {
     clear() {
       localStorage.removeItem(tokenKey);
       localStorage.removeItem(expiresKey);
+      clearCookie(cookieName);
     },
 
     getExpiresAtMs() {
       const expRaw = localStorage.getItem(expiresKey);
       if (expRaw) return Number(expRaw);
-      const token = localStorage.getItem(tokenKey);
+      const token = localStorage.getItem(tokenKey) || getCookie(cookieName);
       return getTokenExpiryMs(token);
     },
 
@@ -81,7 +114,7 @@ export function createAuthSessionStorage(tokenKey, expiresKey) {
   };
 }
 
-/** Schedule logout when the access token expires. Returns clear function. */
+/** Schedule logout when the access token expires (after 1 week). Returns clear function. */
 export function scheduleTokenExpiryLogout(storage, onExpire) {
   const ms = storage.msUntilExpiry();
   if (!ms || ms <= 0) {

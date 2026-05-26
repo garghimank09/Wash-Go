@@ -19,8 +19,8 @@ function usePartnerAuthState() {
   const [user, setUser] = useState(null);
   const [initializing, setInitializing] = useState(true);
 
-  const logoutPartner = useCallback(() => {
-    partnerAuthService.clearSession();
+  const logoutPartner = useCallback(async () => {
+    await partnerAuthService.logout();
     setUser(null);
     redirectToMarketingHome();
   }, []);

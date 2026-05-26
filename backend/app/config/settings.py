@@ -17,7 +17,10 @@ class Settings(BaseSettings):
     )
     SECRET_KEY: str = Field(..., min_length=32)
     ALGORITHM: str = "HS256"
-    ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24
+    # JWT + session cookie lifetime (default 7 days — stay signed in until logout or expiry).
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 7
+    AUTH_COOKIE_SECURE: bool = False
+    AUTH_COOKIE_SAMESITE: str = "lax"
     ENVIRONMENT: str = "development"
     # Allow any authenticated user to call admin console APIs in non-production (matches VITE_ADMIN_UI_DEMO).
     ADMIN_UI_DEMO_ALLOW: bool = True
