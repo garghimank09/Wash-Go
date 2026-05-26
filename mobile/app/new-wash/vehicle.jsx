@@ -73,7 +73,7 @@ export default function NewWashVehicle() {
 
   return (
     <SafeAreaView style={s.safe} edges={['top']}>
-      <StepHeader title="Choose your vehicle" step="Step 1 of 4" onBack={handleBack} />
+      <StepHeader title="Choose your vehicle" step="Step 1 of 5" onBack={handleBack} />
       <CustomerStepProgress currentStep="vehicle" />
       <ScrollView
         contentContainerStyle={[s.scroll, { paddingBottom: insets.bottom + 140 }]}

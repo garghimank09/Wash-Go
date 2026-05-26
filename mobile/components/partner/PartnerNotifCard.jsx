@@ -1,5 +1,7 @@
 import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { Swipeable } from 'react-native-gesture-handler';
+import { useRouter } from 'expo-router';
+import * as Haptics from 'expo-haptics';
 import {
   Sparkles,
   CircleX,
@@ -11,8 +13,10 @@ import {
   Star,
   Trash2,
   X,
+  ChevronRight,
 } from 'lucide-react-native';
 import { useTheme } from '../../context/ThemeContext';
+import { usePartnerNotifications } from '../../context/PartnerNotificationContext';
 import { getPartnerNotifStyle } from '../../constants/partnerTheme';
 import { formatRelativeTime } from '../../lib/partnerFormatters';
 
@@ -27,10 +31,29 @@ const ICONS = {
   Star,
 };
 
-export default function PartnerNotifCard({ item, isUnread, onDismiss, onPress }) {
+export default function PartnerNotifCard({ item, isUnread, onDismiss, onNavigate }) {
   const { theme, isDark } = useTheme();
+  const router = useRouter();
+  const { markAsRead } = usePartnerNotifications();
   const tokens = getPartnerNotifStyle(item.type, isDark);
   const Icon = ICONS[tokens.icon] || Sparkles;
+
+  const handlePress = async () => {
+    try {
+      await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    } catch {
+      /* ignore */
+    }
+    await markAsRead(item.id);
+    onNavigate?.();
+    if (item.path) {
+      router.push(item.path);
+      return;
+    }
+    if (item.bookingId) {
+      router.push(`/(partner)/job/${item.bookingId}`);
+    }
+  };
 
   const renderRightActions = () => (
     <View style={styles.deleteAction}>
@@ -46,7 +69,7 @@ export default function PartnerNotifCard({ item, isUnread, onDismiss, onPress })
       friction={2}
     >
       <Pressable
-        onPress={() => onPress?.(item)}
+        onPress={handlePress}
         style={({ pressed }) => [
           styles.card,
           {
@@ -56,6 +79,10 @@ export default function PartnerNotifCard({ item, isUnread, onDismiss, onPress })
             borderColor: isUnread
               ? theme.accent.primary + '40'
               : theme.customer.outlineVariant,
+          },
+          isUnread && {
+            borderLeftWidth: 3,
+            borderLeftColor: theme.accent.primary,
           },
           pressed && { opacity: 0.94 },
         ]}
@@ -67,9 +94,14 @@ export default function PartnerNotifCard({ item, isUnread, onDismiss, onPress })
           <Icon size={18} color={tokens.fg} strokeWidth={2.4} />
         </View>
         <View style={styles.body}>
-          <Text style={[styles.title, { color: theme.text.primary }]} numberOfLines={1}>
-            {item.title}
-          </Text>
+          <View style={styles.titleRow}>
+            <Text style={[styles.title, { color: theme.text.primary }]} numberOfLines={1}>
+              {item.title}
+            </Text>
+            {item.bookingRef ? (
+              <Text style={[styles.ref, { color: theme.text.muted }]}>{item.bookingRef}</Text>
+            ) : null}
+          </View>
           <Text style={[styles.message, { color: theme.text.secondary }]} numberOfLines={2}>
             {item.message}
           </Text>
@@ -77,6 +109,7 @@ export default function PartnerNotifCard({ item, isUnread, onDismiss, onPress })
             {formatRelativeTime(item.createdAt)}
           </Text>
         </View>
+        <ChevronRight size={16} color={theme.text.muted} strokeWidth={2.2} />
         <Pressable
           onPress={() => onDismiss?.(item.id)}
           hitSlop={10}
@@ -93,7 +126,7 @@ const styles = StyleSheet.create({
   card: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    gap: 12,
+    gap: 10,
     padding: 14,
     borderRadius: 16,
     borderWidth: 1,
@@ -116,10 +149,12 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   body: { flex: 1, gap: 2 },
-  title: { fontSize: 14, fontWeight: '700', letterSpacing: -0.1 },
+  titleRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  title: { fontSize: 14, fontWeight: '700', letterSpacing: -0.1, flex: 1 },
+  ref: { fontSize: 10, fontWeight: '700', letterSpacing: 0.3 },
   message: { fontSize: 12, lineHeight: 17 },
   time: { fontSize: 11, marginTop: 4, fontWeight: '500' },
-  closeBtn: { padding: 4 },
+  closeBtn: { padding: 4, marginLeft: -4 },
   deleteAction: {
     width: 72,
     justifyContent: 'center',

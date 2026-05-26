@@ -3,6 +3,8 @@ import { Tabs } from 'expo-router';
 import { useTheme } from '../../context/ThemeContext';
 import CustomerTabBar from '../../components/customer/CustomerTabBar';
 import AuthGate from '../../components/auth/AuthGate';
+import CustomerBookingSyncBridge from '../../components/customer/CustomerBookingSyncBridge';
+import RealtimeBanner from '../../components/notifications/RealtimeBanner';
 import { useCustomerTabBarInset } from '../../hooks/useCustomerContentPadding';
 
 export default function CustomerLayout() {
@@ -11,6 +13,8 @@ export default function CustomerLayout() {
 
   return (
     <AuthGate>
+      <CustomerBookingSyncBridge />
+      <RealtimeBanner />
       <View style={{ flex: 1, backgroundColor: theme.customer.surface }}>
         <View style={{ flex: 1, paddingBottom: tabBarInset }}>
           <Tabs

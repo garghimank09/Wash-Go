@@ -2,11 +2,13 @@ from uuid import UUID
 
 from sqlalchemy import func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
 from app.models.booking import Booking
 from app.models.membership import MembershipPlan
 from app.models.notification import Notification
 from app.models.user import User, UserRole
+from app.models.washer import Washer
 from app.utils.exceptions import NotFoundError
 
 
@@ -137,6 +139,77 @@ async def notify_membership_subscribed(
         body=f"You're on {plan_name} with {washes} washes this month. View credits in Profile.",
         notification_type="membership_active",
         data={"plan_slug": plan.slug, "path": "/profile"},
+    )
+
+
+async def notify_handoff_requested(db: AsyncSession, booking: Booking) -> None:
+    """Alert the customer that their wash is ready for review."""
+    await create_notification(
+        db,
+        user_id=booking.customer_id,
+        title="Your wash is ready for review",
+        body="Your washer finished the service. Confirm completion or report an issue in the app.",
+        notification_type="wash_ready_for_review",
+        data={
+            "booking_id": str(booking.id),
+            "path": f"/booking/{booking.id}",
+        },
+    )
+
+
+async def notify_handoff_confirmed(db: AsyncSession, booking: Booking) -> None:
+    """Alert the assigned washer that the customer confirmed completion."""
+    if not booking.washer_id:
+        return
+    result = await db.execute(
+        select(Washer).where(Washer.id == booking.washer_id).options(selectinload(Washer.user))
+    )
+    washer = result.scalar_one_or_none()
+    if washer is None or washer.user is None:
+        return
+    await create_notification(
+        db,
+        user_id=washer.user_id,
+        title="Customer confirmed completion",
+        body="The customer approved the wash. Job marked complete — payout will settle.",
+        notification_type="wash_customer_confirmed",
+        data={
+            "booking_id": str(booking.id),
+            "path": f"/(partner)/job/{booking.id}",
+        },
+    )
+
+
+async def notify_handoff_issue_reported(
+    db: AsyncSession, booking: Booking, reason_key: str
+) -> None:
+    """Alert washer and admins when a customer reports a handoff issue."""
+    data_base = {
+        "booking_id": str(booking.id),
+        "reason_key": reason_key,
+    }
+    if booking.washer_id:
+        wr = await db.execute(
+            select(Washer).where(Washer.id == booking.washer_id)
+        )
+        washer = wr.scalar_one_or_none()
+        if washer is not None:
+            await create_notification(
+                db,
+                user_id=washer.user_id,
+                title="Customer reported an issue",
+                body="The customer flagged a concern with the wash. Support may follow up.",
+                notification_type="wash_issue_reported",
+                data={**data_base, "path": f"/(partner)/job/{booking.id}"},
+            )
+    admin_ids = await _user_ids_by_roles(db, UserRole.admin)
+    await _notify_users(
+        db,
+        admin_ids,
+        title="Wash handoff issue reported",
+        body=f"A customer reported an issue ({reason_key.replace('_', ' ')}) on booking {str(booking.id)[:8]}.",
+        notification_type="wash_issue_reported",
+        data={**data_base, "path": "/admin/bookings"},
     )
 
 

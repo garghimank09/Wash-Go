@@ -134,7 +134,7 @@ export default function NewWashPackage() {
 
   return (
     <SafeAreaView style={s.safe} edges={['top']}>
-      <StepHeader title="Package & price" step="Step 2 of 4" onBack={handleBack} />
+      <StepHeader title="Package & price" step="Step 2 of 5" onBack={handleBack} />
       <CustomerStepProgress currentStep="package" />
       <ScrollView
         contentContainerStyle={[s.scroll, { paddingBottom: insets.bottom + 200 }]}

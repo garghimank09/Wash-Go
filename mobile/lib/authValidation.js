@@ -1,3 +1,8 @@
+import {
+  formatPhoneInput,
+  validateIndianPhone10,
+} from './phoneValidation';
+
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export function validateEmail(email) {
@@ -27,7 +32,7 @@ export function validateLogin({ email, password }) {
   return { ok: Object.keys(errors).length === 0, errors };
 }
 
-export function validateSignup({ full_name, email, password }) {
+export function validateSignup({ full_name, email, password, phone, phoneRequired = false }) {
   const errors = {};
   if (!full_name?.trim()) errors.full_name = 'Full name is required';
   else if (full_name.trim().length > 200) errors.full_name = 'Name is too long';
@@ -35,8 +40,20 @@ export function validateSignup({ full_name, email, password }) {
   const emailErr = validateEmail(email);
   if (emailErr) errors.email = emailErr;
 
+  const phoneErr = validateIndianPhone10(phone, { required: phoneRequired });
+  if (phoneErr) errors.phone = phoneErr;
+
   const passErr = validatePassword(password, { forSignup: true });
   if (passErr) errors.password = passErr;
 
   return { ok: Object.keys(errors).length === 0, errors };
+}
+
+export { formatPhoneInput, validateIndianPhone10 };
+
+export function validateOtpCode(value) {
+  const trimmed = String(value || '').trim();
+  if (!trimmed) return 'Verification code is required';
+  if (!/^\d{6}$/.test(trimmed)) return 'Enter the 6-digit code from your email';
+  return null;
 }

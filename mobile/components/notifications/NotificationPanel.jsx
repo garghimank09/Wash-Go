@@ -5,7 +5,6 @@ import {
   Modal,
   Pressable,
   StyleSheet,
-  FlatList,
   useWindowDimensions,
 } from 'react-native';
 import Animated, {
@@ -20,6 +19,8 @@ import { BlurView } from 'expo-blur';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../../context/ThemeContext';
 import { useNotifications } from '../../context/NotificationContext';
+import { isNotificationUnread } from '../../lib/notificationModel';
+import ActivityNotificationList from './ActivityNotificationList';
 import NotificationCard from './NotificationCard';
 import AppIcon from '../customer/AppIcon';
 
@@ -36,64 +37,77 @@ export default function NotificationPanel() {
     unreadCount,
     panelOpen,
     closePanel,
-    clearAll,
+    markAllRead,
     lastReadAt,
+    loading,
+    refreshing,
+    refresh,
   } = useNotifications();
 
   const translateX = useSharedValue(panelWidth);
+  const backdropOpacity = useSharedValue(0);
 
   const panelTiming = { duration: CUSTOMER_MOTION.duration.panel, easing: CUSTOMER_EASE };
+  const backdropTiming = { duration: CUSTOMER_MOTION.duration.panel * 0.85, easing: CUSTOMER_EASE };
 
   useEffect(() => {
-    translateX.value = panelOpen
-      ? withTiming(0, panelTiming)
-      : withTiming(panelWidth, panelTiming);
-  }, [panelOpen, panelWidth, translateX]);
+    if (panelOpen) {
+      backdropOpacity.value = withTiming(1, backdropTiming);
+      translateX.value = withTiming(0, panelTiming);
+    } else {
+      backdropOpacity.value = withTiming(0, backdropTiming);
+      translateX.value = withTiming(panelWidth, panelTiming);
+    }
+  }, [panelOpen, panelWidth, translateX, backdropOpacity, panelTiming, backdropTiming]);
 
   const panelStyle = useAnimatedStyle(() => ({
     transform: [{ translateX: translateX.value }],
   }));
+
+  const backdropStyle = useAnimatedStyle(() => ({
+    opacity: backdropOpacity.value,
+  }));
+
+  const dismissPanel = () => {
+    translateX.value = withTiming(panelWidth, panelTiming, () => {
+      runOnJS(closePanel)();
+    });
+    backdropOpacity.value = withTiming(0, backdropTiming);
+  };
 
   const pan = Gesture.Pan()
     .activeOffsetX(20)
     .onUpdate((e) => {
       if (e.translationX > 0) {
         translateX.value = Math.min(e.translationX, panelWidth);
+        backdropOpacity.value = Math.max(0, 1 - e.translationX / panelWidth);
       }
     })
     .onEnd((e) => {
       if (e.translationX > panelWidth * 0.25 || e.velocityX > 400) {
-        translateX.value = withTiming(panelWidth, panelTiming, () => {
-          runOnJS(closePanel)();
-        });
+        dismissPanel();
       } else {
         translateX.value = withTiming(0, panelTiming);
+        backdropOpacity.value = withTiming(1, backdropTiming);
       }
     });
-
-  const grouped = [
-    { key: 'today', title: 'Today', data: notifications.filter((n) => n.group === 'today') },
-    {
-      key: 'earlier',
-      title: 'Earlier',
-      data: notifications.filter((n) => n.group === 'earlier'),
-    },
-  ].filter((s) => s.data.length > 0);
 
   const readCutoff = lastReadAt ?? 0;
 
   if (!panelOpen) return null;
 
   return (
-    <Modal visible transparent animationType="none" onRequestClose={closePanel}>
+    <Modal visible transparent animationType="none" onRequestClose={dismissPanel}>
       <View style={styles.root}>
-        <Pressable style={StyleSheet.absoluteFill} onPress={closePanel}>
-          <BlurView
-            intensity={40}
-            tint={isDark ? 'dark' : 'light'}
-            style={StyleSheet.absoluteFill}
-          />
-          <View style={styles.dim} />
+        <Pressable style={StyleSheet.absoluteFill} onPress={dismissPanel}>
+          <Animated.View style={[StyleSheet.absoluteFill, backdropStyle]}>
+            <BlurView
+              intensity={40}
+              tint={isDark ? 'dark' : 'light'}
+              style={StyleSheet.absoluteFill}
+            />
+            <View style={styles.dim} />
+          </Animated.View>
         </Pressable>
 
         <GestureDetector gesture={pan}>
@@ -112,7 +126,7 @@ export default function NotificationPanel() {
             <View style={styles.header}>
               <View style={styles.headerLeft}>
                 <Text style={[styles.headerTitle, { color: theme.text.primary }]}>
-                  Notifications
+                  Activity
                 </Text>
                 {unreadCount > 0 ? (
                   <View style={[styles.badge, { backgroundColor: theme.accent.primary }]}>
@@ -123,53 +137,33 @@ export default function NotificationPanel() {
                 ) : null}
               </View>
               {notifications.length > 0 ? (
-                <Pressable onPress={clearAll} hitSlop={8}>
-                  <Text style={[styles.clearAll, { color: theme.accent.primary }]}>
-                    Clear all
+                <Pressable onPress={markAllRead} hitSlop={8}>
+                  <Text style={[styles.markRead, { color: theme.accent.primary }]}>
+                    Mark all read
                   </Text>
                 </Pressable>
               ) : null}
             </View>
 
-            {notifications.length === 0 ? (
-              <View style={styles.empty}>
-                <View
-                  style={[
-                    styles.emptyIcon,
-                    { backgroundColor: theme.customer.primaryBg },
-                  ]}
-                >
-                  <AppIcon name="notifications-none" size={36} color={theme.text.muted} />
-                </View>
-                <Text style={[styles.emptyTitle, { color: theme.text.primary }]}>
-                  All caught up
-                </Text>
-                <Text style={[styles.emptySub, { color: theme.text.secondary }]}>
-                  Booking updates will appear here.
-                </Text>
-              </View>
-            ) : (
-              <FlatList
-                data={grouped}
-                keyExtractor={(item) => item.key}
-                showsVerticalScrollIndicator={false}
-                contentContainerStyle={styles.list}
-                renderItem={({ item: section }) => (
-                  <View>
-                    <Text style={[styles.sectionTitle, { color: theme.text.muted }]}>
-                      {section.title}
-                    </Text>
-                    {section.data.map((n) => (
-                      <NotificationCard
-                        key={n.id}
-                        item={n}
-                        isUnread={n.createdAt > readCutoff}
-                      />
-                    ))}
-                  </View>
-                )}
-              />
-            )}
+            <ActivityNotificationList
+              items={notifications}
+              readCutoff={readCutoff}
+              loading={loading}
+              refreshing={refreshing}
+              onRefresh={refresh}
+              theme={theme}
+              emptyIcon={({ size, color }) => (
+                <AppIcon name="notifications-none" size={size} color={color} />
+              )}
+              emptyTitle="All caught up"
+              emptySubtitle="Live booking updates will appear here as your wash progresses."
+              renderCard={(item) => (
+                <NotificationCard
+                  item={item}
+                  isUnread={isNotificationUnread(item, readCutoff)}
+                />
+              )}
+            />
           </Animated.View>
         </GestureDetector>
       </View>
@@ -191,19 +185,17 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 24,
     borderBottomLeftRadius: 24,
     paddingHorizontal: 16,
-    ...StyleSheet.flatten({
-      shadowColor: '#000',
-      shadowOffset: { width: -4, height: 0 },
-      shadowOpacity: 0.15,
-      shadowRadius: 16,
-      elevation: 12,
-    }),
+    shadowColor: '#000',
+    shadowOffset: { width: -4, height: 0 },
+    shadowOpacity: 0.15,
+    shadowRadius: 16,
+    elevation: 12,
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 16,
+    marginBottom: 12,
   },
   headerLeft: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   headerTitle: { fontSize: 22, fontWeight: '800', letterSpacing: -0.4 },
@@ -216,30 +208,5 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   badgeText: { fontSize: 11, fontWeight: '800' },
-  clearAll: { fontSize: 14, fontWeight: '700' },
-  list: { paddingBottom: 24 },
-  sectionTitle: {
-    fontSize: 12,
-    fontWeight: '700',
-    textTransform: 'uppercase',
-    letterSpacing: 0.8,
-    marginBottom: 8,
-    marginTop: 4,
-  },
-  empty: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 24,
-  },
-  emptyIcon: {
-    width: 72,
-    height: 72,
-    borderRadius: 36,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 16,
-  },
-  emptyTitle: { fontSize: 18, fontWeight: '700', marginBottom: 6 },
-  emptySub: { fontSize: 14, textAlign: 'center', lineHeight: 20 },
+  markRead: { fontSize: 14, fontWeight: '700' },
 });

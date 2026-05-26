@@ -114,7 +114,7 @@ export default function NewWashSchedule() {
 
   return (
     <SafeAreaView style={s.safe} edges={['top']}>
-      <StepHeader title="Where & when" step="Step 3 of 4" onBack={handleBack} />
+      <StepHeader title="Where & when" step="Step 3 of 5" onBack={handleBack} />
       <CustomerStepProgress currentStep="schedule" />
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}

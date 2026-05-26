@@ -29,7 +29,7 @@ async function authHeader(auth) {
   return { Authorization: `Bearer ${token}` };
 }
 
-async function handleResponse(response, { auth, skipUnauthorized }) {
+async function handleResponse(response, path, { auth, skipUnauthorized }) {
   const isJson = (response.headers.get('content-type') || '').includes(
     'application/json',
   );
@@ -121,7 +121,7 @@ export async function partnerApiFetch(path, options = {}) {
     clearTimeout(timer);
   }
 
-  return handleResponse(response, { auth, skipUnauthorized });
+  return handleResponse(response, path, { auth, skipUnauthorized });
 }
 
 /**

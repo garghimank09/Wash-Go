@@ -7,25 +7,42 @@ import {
   useState,
 } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { usePartnerAuth } from './PartnerAuthContext';
+import { derivePartnerNotificationsFromBookings } from '../lib/partnerNotificationDerivation';
+import { computeFeedUnread, useNotificationFeed } from '../hooks/useNotificationFeed';
+import { partnerNotificationsApi } from '../services/notificationsApiService';
+import { partnerBookingsService } from '../services/partnerBookingsService';
 
 const DISMISSED_KEY = '@washgo_partner_notif_dismissed';
 const LAST_READ_KEY = '@washgo_partner_notif_last_read';
 
 const PartnerNotificationContext = createContext(null);
 
-/**
- * Partner notification surface. The backend has no `/notifications` endpoint
- * for washers yet, so we start empty and let other parts of the app (offer
- * polling, booking sync, etc.) push notifications in via `addLocal` when
- * something noteworthy happens. The dismissal + last-read state is still
- * persisted so the UX behaves identically once a real feed lands.
- */
 export function PartnerNotificationProvider({ children }) {
-  const [notifications, setNotifications] = useState([]);
+  const { isPartnerAuthenticated } = usePartnerAuth();
   const [dismissedIds, setDismissedIds] = useState(new Set());
   const [lastReadAt, setLastReadAt] = useState(null);
   const [panelOpen, setPanelOpen] = useState(false);
   const [hydrated, setHydrated] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+
+  const loadBookings = useCallback(async () => {
+    const [assignedRaw, offersRaw] = await Promise.all([
+      partnerBookingsService.list(),
+      partnerBookingsService.listOffers().catch(() => []),
+    ]);
+    const assigned = Array.isArray(assignedRaw) ? assignedRaw : assignedRaw?.items ?? [];
+    const offers = Array.isArray(offersRaw) ? offersRaw : offersRaw?.items ?? [];
+    return { assigned, offers };
+  }, []);
+
+  const { items, loading, reload } = useNotificationFeed({
+    enabled: isPartnerAuthenticated,
+    apiService: partnerNotificationsApi,
+    deriveFromBookings: derivePartnerNotificationsFromBookings,
+    loadBookings,
+    portal: 'partner',
+  });
 
   useEffect(() => {
     let cancelled = false;
@@ -41,7 +58,7 @@ export function PartnerNotificationProvider({ children }) {
             const parsed = JSON.parse(dismissedRaw);
             if (Array.isArray(parsed)) setDismissedIds(new Set(parsed));
           } catch {
-            /* ignore corrupt cache */
+            /* ignore */
           }
         }
         if (lastReadRaw) {
@@ -56,6 +73,16 @@ export function PartnerNotificationProvider({ children }) {
       cancelled = true;
     };
   }, []);
+
+  const visible = useMemo(
+    () => items.filter((n) => !dismissedIds.has(n.id)),
+    [items, dismissedIds],
+  );
+
+  const unreadCount = useMemo(() => {
+    if (!hydrated) return 0;
+    return computeFeedUnread(visible, { lastReadAt });
+  }, [visible, lastReadAt, hydrated]);
 
   const persistDismissed = useCallback(async (nextSet) => {
     setDismissedIds(nextSet);
@@ -75,21 +102,9 @@ export function PartnerNotificationProvider({ children }) {
     }
   }, []);
 
-  const visible = useMemo(
-    () => notifications.filter((n) => !dismissedIds.has(n.id)),
-    [notifications, dismissedIds]
-  );
-
-  const unreadCount = useMemo(() => {
-    if (!hydrated) return 0;
-    const cutoff = lastReadAt ?? 0;
-    return visible.filter((n) => n.createdAt > cutoff).length;
-  }, [visible, lastReadAt, hydrated]);
-
   const openPanel = useCallback(() => {
     setPanelOpen(true);
-    persistLastRead(Date.now());
-  }, [persistLastRead]);
+  }, []);
 
   const closePanel = useCallback(() => {
     setPanelOpen(false);
@@ -101,54 +116,84 @@ export function PartnerNotificationProvider({ children }) {
       next.add(id);
       await persistDismissed(next);
     },
-    [dismissedIds, persistDismissed]
+    [dismissedIds, persistDismissed],
   );
 
   const clearAll = useCallback(async () => {
     const next = new Set(dismissedIds);
-    notifications.forEach((n) => next.add(n.id));
+    items.forEach((n) => next.add(n.id));
     await persistDismissed(next);
-  }, [dismissedIds, notifications, persistDismissed]);
+  }, [dismissedIds, items, persistDismissed]);
+
+  const markAsRead = useCallback(
+    async (id) => {
+      const row = items.find((n) => n.id === id);
+      if (row?.fromApi) {
+        try {
+          await partnerNotificationsApi.markRead(id);
+          await reload(true);
+        } catch {
+          /* ignore */
+        }
+      }
+      const ts = Math.max(lastReadAt ?? 0, row?.createdAt ?? Date.now());
+      await persistLastRead(ts);
+    },
+    [items, lastReadAt, persistLastRead, reload],
+  );
 
   const markAllRead = useCallback(async () => {
+    try {
+      await partnerNotificationsApi.markAllRead();
+    } catch {
+      /* ignore */
+    }
     await persistLastRead(Date.now());
-  }, [persistLastRead]);
+    await reload(true);
+  }, [persistLastRead, reload]);
 
-  const addLocal = useCallback((notif) => {
-    if (!notif?.id) return;
-    setNotifications((prev) => {
-      if (prev.some((n) => n.id === notif.id)) return prev;
-      return [notif, ...prev];
-    });
-  }, []);
+  const handleRefresh = useCallback(async () => {
+    setRefreshing(true);
+    try {
+      await reload(true);
+    } finally {
+      setRefreshing(false);
+    }
+  }, [reload]);
 
   const value = useMemo(
     () => ({
       notifications: visible,
-      allNotifications: notifications,
+      allNotifications: items,
       unreadCount,
       lastReadAt,
       panelOpen,
+      loading,
+      refreshing,
       openPanel,
       closePanel,
       dismiss,
       clearAll,
       markAllRead,
-      addLocal,
+      markAsRead,
+      refresh: handleRefresh,
     }),
     [
       visible,
-      notifications,
+      items,
       unreadCount,
       lastReadAt,
       panelOpen,
+      loading,
+      refreshing,
       openPanel,
       closePanel,
       dismiss,
       clearAll,
       markAllRead,
-      addLocal,
-    ]
+      markAsRead,
+      handleRefresh,
+    ],
   );
 
   return (

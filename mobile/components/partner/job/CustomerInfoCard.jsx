@@ -42,7 +42,7 @@ function joinParts(parts, sep = ' · ') {
  * (when applicable). Body packs the operational data (vehicle, package,
  * scheduled time, payout) and field actions (message when available, maps, address).
  */
-export default function CustomerInfoCard({ job }) {
+export default function CustomerInfoCard({ job, onOpenDetails }) {
   const { theme, isDark } = useTheme();
   const shadows = getPartnerShadow(isDark);
   const tokens = getJobTokens(isDark);
@@ -50,10 +50,10 @@ export default function CustomerInfoCard({ job }) {
 
   if (!job) return null;
   const {
-    customer,
-    address,
-    vehicle,
-    package: pkg,
+    customer = {},
+    address = {},
+    vehicle = {},
+    package: pkg = {},
     scheduledAt,
     payoutCents,
     surgeBonusCents,
@@ -121,19 +121,28 @@ export default function CustomerInfoCard({ job }) {
         shadows.soft,
       ]}
     >
-      <View style={styles.headerRow}>
+      <Pressable
+        onPress={() => {
+          Haptics.selectionAsync().catch(() => {});
+          onOpenDetails?.();
+        }}
+        disabled={!onOpenDetails}
+        style={({ pressed }) => [styles.headerRow, pressed && onOpenDetails && { opacity: 0.94 }]}
+        accessibilityRole="button"
+        accessibilityLabel="View customer and job details"
+      >
         <LinearGradient
           colors={isDark ? ['#1e3a8a', '#4338ca'] : ['#0ea5e9', '#6366f1']}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
           style={[styles.avatar, shadows.rim]}
         >
-          <Text style={styles.avatarText}>{customer.initial}</Text>
+          <Text style={styles.avatarText}>{customer.initial || '?'}</Text>
         </LinearGradient>
         <View style={styles.headerCol}>
           <View style={styles.nameRow}>
             <Text style={[styles.name, { color: theme.text.primary }]} numberOfLines={1}>
-              {customer.name}
+              {customer.name || 'Customer'}
             </Text>
             {customer.premium ? (
               <View
@@ -156,6 +165,10 @@ export default function CustomerInfoCard({ job }) {
                 {trustLine}
               </Text>
             </View>
+          ) : onOpenDetails ? (
+            <Text style={[styles.tapHint, { color: theme.accent.primary }]}>
+              Tap for full details
+            </Text>
           ) : null}
         </View>
         <View style={styles.payoutCol}>
@@ -169,7 +182,7 @@ export default function CustomerInfoCard({ job }) {
             </Text>
           ) : null}
         </View>
-      </View>
+      </Pressable>
 
       <View style={[styles.divider, { backgroundColor: theme.customer.outlineVariant }]} />
 
@@ -341,6 +354,11 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     letterSpacing: 0.1,
     flex: 1,
+  },
+  tapHint: {
+    fontSize: 11,
+    fontWeight: '700',
+    marginTop: 2,
   },
   payoutCol: { alignItems: 'flex-end' },
   payoutLabel: {

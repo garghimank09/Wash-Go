@@ -38,8 +38,8 @@ export function PartnerAuthProvider({ children }) {
     bootstrap();
   }, [bootstrap]);
 
-  const loginPartner = useCallback(async (email, password) => {
-    const result = await partnerAuthService.login(email, password);
+  const loginPartner = useCallback(async (email, password, otpCode) => {
+    const result = await partnerAuthService.login(email, password, otpCode);
     setUser(result.user);
     await setLastActiveRole('partner');
     return result.user;

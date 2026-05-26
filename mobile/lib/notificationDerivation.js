@@ -5,7 +5,7 @@ import {
   isPhaseActive,
 } from './customerBookingPhase';
 
-const NOTIF_COPY = {
+export const NOTIF_COPY = {
   searching: {
     title: 'Finding a washer',
     message: 'We are matching you with a nearby washer.',
@@ -26,6 +26,14 @@ const NOTIF_COPY = {
     title: 'Wash in progress',
     message: 'Your vehicle is being cleaned right now.',
   },
+  awaiting_review: {
+    title: 'Ready for your review',
+    message: 'Your washer finished — confirm completion or report an issue.',
+  },
+  issue_reported: {
+    title: 'Issue reported',
+    message: 'We received your report and will follow up shortly.',
+  },
   completed: {
     title: 'Wash complete',
     message: 'Your booking has been completed.',
@@ -36,11 +44,7 @@ const NOTIF_COPY = {
   },
 };
 
-function startOfToday() {
-  const d = new Date();
-  d.setHours(0, 0, 0, 0);
-  return d.getTime();
-}
+import { resolveNotificationGroup } from './notificationModel';
 
 function resolveCreatedAt(booking) {
   const candidates = [
@@ -57,10 +61,6 @@ function resolveCreatedAt(booking) {
     if (Number.isFinite(ts)) return ts;
   }
   return Date.now();
-}
-
-function resolveGroup(createdAt) {
-  return createdAt >= startOfToday() ? 'today' : 'earlier';
 }
 
 export function deriveNotificationsFromBookings(bookings = []) {
@@ -81,9 +81,13 @@ export function deriveNotificationsFromBookings(bookings = []) {
       title: copy.title,
       message: copy.message,
       bookingId: booking.id,
+      path: `/booking/${booking.id}`,
       createdAt,
-      group: resolveGroup(createdAt),
+      group: resolveNotificationGroup(createdAt),
+      read: false,
+      fromApi: false,
       isActive: isPhaseActive(phase),
+      bookingRef: `#${String(booking.id).slice(0, 8)}`,
     });
   }
 

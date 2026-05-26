@@ -19,7 +19,13 @@ export default function NotificationCard({ item, isUnread }) {
 
   const onPress = () => {
     markAsRead(item.id);
-    router.push(`/booking/${item.bookingId}`);
+    if (item.path && typeof item.path === 'string') {
+      router.push(item.path);
+      return;
+    }
+    if (item.bookingId) {
+      router.push(`/booking/${item.bookingId}`);
+    }
   };
 
   const renderRightActions = () => (
@@ -62,9 +68,14 @@ export default function NotificationCard({ item, isUnread }) {
           />
         </View>
         <View style={styles.body}>
-          <Text style={[styles.title, { color: theme.text.primary }]} numberOfLines={1}>
-            {item.title}
-          </Text>
+          <View style={styles.titleRow}>
+            <Text style={[styles.title, { color: theme.text.primary }]} numberOfLines={1}>
+              {item.title}
+            </Text>
+            {item.bookingRef ? (
+              <Text style={[styles.ref, { color: theme.text.muted }]}>{item.bookingRef}</Text>
+            ) : null}
+          </View>
           <Text style={[styles.message, { color: theme.text.secondary }]} numberOfLines={2}>
             {item.message}
           </Text>
@@ -115,7 +126,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   body: { flex: 1, gap: 2 },
-  title: { fontSize: 14, fontWeight: '700' },
+  titleRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  title: { fontSize: 14, fontWeight: '700', flex: 1 },
+  ref: { fontSize: 10, fontWeight: '700', letterSpacing: 0.3 },
   message: { fontSize: 12, lineHeight: 17 },
   time: { fontSize: 11, marginTop: 4 },
   closeBtn: { padding: 4 },

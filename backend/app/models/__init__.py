@@ -1,5 +1,5 @@
 from app.models.auth_otp import AuthOtp, OtpPurpose
-from app.models.booking import Booking, BookingStatus
+from app.models.booking import Booking, BookingStatus, HandoffStatus
 from app.models.booking_photo import BookingPhoto, BookingPhotoKind
 from app.models.car import Car
 from app.models.membership import MembershipPlan, UserMembership, UserMembershipStatus
@@ -19,6 +19,7 @@ __all__ = [
     "BookingPhoto",
     "BookingPhotoKind",
     "BookingStatus",
+    "HandoffStatus",
     "Car",
     "MembershipPlan",
     "UserMembership",

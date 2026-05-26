@@ -3,6 +3,7 @@ import { AppState } from 'react-native';
 import { partnerBookingsService } from '../services/partnerBookingsService';
 import { usePartnerAuth } from '../context/PartnerAuthContext';
 import { emitPartnerBookingsSync } from '../lib/partnerSyncEvents';
+import { emitNotificationsSync } from '../lib/notificationSyncEvents';
 
 /**
  * Polls `GET /bookings/sync` every {@link POLL_MS} milliseconds while the
@@ -45,6 +46,7 @@ export function usePartnerBookingSync() {
           lastVersionRef.current = state.version;
           lastEmitAtRef.current = Date.now();
           emitPartnerBookingsSync(state);
+          emitNotificationsSync({ source: 'booking_sync' });
         }
       } catch {
         /* swallow — next tick will retry */

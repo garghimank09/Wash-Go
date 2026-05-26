@@ -7,6 +7,15 @@ import { onPartnerBookingsSync } from '../lib/partnerSyncEvents';
 
 const TRACKING_POLL_MS = 8_000;
 
+function normalizeJobError(err) {
+  const raw = err?.message || 'Could not load job';
+  if (raw.includes('status code')) {
+    const match = raw.match(/status code (\d+)/i);
+    if (match) return `Request failed (${match[1]}). Check the backend logs and try again.`;
+  }
+  return raw;
+}
+
 /**
  * Single-job realtime adapter.
  *
@@ -21,6 +30,7 @@ export default function usePartnerJob(bookingId) {
   const [tracking, setTracking] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [trackingError, setTrackingError] = useState(null);
   const aliveRef = useRef(true);
   const stateRef = useRef({ status: null });
 
@@ -30,12 +40,19 @@ export default function usePartnerJob(bookingId) {
       const data = await partnerBookingsService.getById(bookingId);
       if (!aliveRef.current) return;
       const mapped = mapBookingDetail(data);
+      if (!mapped) {
+        setError('Invalid job data from server.');
+        setDetail(null);
+        return;
+      }
       setDetail(mapped);
       stateRef.current.status = mapped?.status || null;
       setError(null);
     } catch (e) {
       if (!aliveRef.current) return;
-      setError(e?.message || 'Could not load job');
+      setError(normalizeJobError(e));
+      setDetail(null);
+      throw e;
     }
   }, [bookingId]);
 
@@ -45,25 +62,41 @@ export default function usePartnerJob(bookingId) {
       const data = await partnerTrackingService.getBookingTracking(bookingId);
       if (!aliveRef.current) return;
       setTracking(mapTracking(data));
-    } catch {
-      /* tracking is best-effort; swallow */
+      setTrackingError(null);
+    } catch (e) {
+      if (!aliveRef.current) return;
+      setTrackingError(normalizeJobError(e));
     }
   }, [bookingId]);
 
   useEffect(() => {
     aliveRef.current = true;
+    if (!bookingId) {
+      setLoading(false);
+      setError('Missing booking id.');
+      return () => {
+        aliveRef.current = false;
+      };
+    }
+
     setLoading(true);
+    setError(null);
     (async () => {
-      await fetchDetail();
-      await fetchTracking();
-      if (aliveRef.current) setLoading(false);
+      try {
+        await fetchDetail();
+        await fetchTracking();
+      } catch {
+        /* error state set in fetchDetail */
+      } finally {
+        if (aliveRef.current) setLoading(false);
+      }
     })();
+
     return () => {
       aliveRef.current = false;
     };
-  }, [fetchDetail, fetchTracking]);
+  }, [bookingId, fetchDetail, fetchTracking]);
 
-  // Poll tracking while job is open. Stop when complete/cancelled.
   useEffect(() => {
     if (!bookingId) return undefined;
     const id = setInterval(() => {
@@ -74,14 +107,12 @@ export default function usePartnerJob(bookingId) {
     return () => clearInterval(id);
   }, [bookingId, fetchTracking]);
 
-  // Booking-level updates piggy-back on the global sync poller.
   useEffect(() => onPartnerBookingsSync(() => fetchDetail()), [fetchDetail]);
 
-  // Refresh when the app returns to the foreground.
   useEffect(() => {
     const sub = AppState.addEventListener('change', (s) => {
       if (s === 'active') {
-        fetchDetail();
+        fetchDetail().catch(() => {});
         fetchTracking();
       }
     });
@@ -98,6 +129,7 @@ export default function usePartnerJob(bookingId) {
     tracking,
     loading,
     error,
+    trackingError,
     refresh,
     refetchDetail: fetchDetail,
   };

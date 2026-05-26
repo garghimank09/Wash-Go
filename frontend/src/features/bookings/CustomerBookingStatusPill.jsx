@@ -15,13 +15,24 @@ const PHASE_STYLES = {
     'bg-cyan-100 text-cyan-950 ring-1 ring-cyan-400/45 dark:bg-cyan-950/50 dark:text-cyan-50 dark:ring-cyan-400/35',
   in_progress:
     'bg-teal-100 text-teal-950 ring-1 ring-teal-400/40 dark:bg-teal-950/50 dark:text-teal-50 dark:ring-teal-400/30',
+  awaiting_review:
+    'bg-amber-100 text-amber-950 ring-1 ring-amber-400/40 dark:bg-amber-950/45 dark:text-amber-100 dark:ring-amber-500/30',
+  issue_reported:
+    'bg-rose-100 text-rose-950 ring-1 ring-rose-400/35 dark:bg-rose-950/45 dark:text-rose-100 dark:ring-rose-500/25',
   completed:
     'bg-emerald-100 text-emerald-950 ring-1 ring-emerald-400/35 dark:bg-emerald-950/45 dark:text-emerald-100 dark:ring-emerald-500/25',
   cancelled:
     'bg-slate-200 text-slate-800 ring-1 ring-slate-400/30 dark:bg-slate-800 dark:text-slate-200 dark:ring-slate-600/40',
 };
 
-const ACTIVE_PULSE = new Set(['searching', 'awaiting_acceptance', 'accepted', 'on_the_way', 'in_progress']);
+const ACTIVE_PULSE = new Set([
+  'searching',
+  'awaiting_acceptance',
+  'accepted',
+  'on_the_way',
+  'in_progress',
+  'awaiting_review',
+]);
 
 export function CustomerBookingStatusPill({ booking, className }) {
   const reduced = useReducedMotion();

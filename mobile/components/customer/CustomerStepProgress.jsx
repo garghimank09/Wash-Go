@@ -1,8 +1,8 @@
 import { View, Text, StyleSheet } from 'react-native';
 import { useTheme } from '../../context/ThemeContext';
 
-const STEPS = ['vehicle', 'package', 'schedule', 'review'];
-const STEP_LABELS = ['Vehicle', 'Package', 'Where & when', 'Review'];
+const STEPS = ['vehicle', 'package', 'schedule', 'review', 'payment'];
+const STEP_LABELS = ['Vehicle', 'Package', 'Where & when', 'Review', 'Payment'];
 
 /**
  * Visual step indicator for the new-wash flow (presentation only).

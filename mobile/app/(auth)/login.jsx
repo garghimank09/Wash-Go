@@ -16,6 +16,10 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../../context/ThemeContext';
 import { useAuth } from '../../context/AuthContext';
 import { validateLogin } from '../../lib/authValidation';
+import { isDemoEmail } from '../../lib/demoAccounts';
+import { OTP_RESEND_COOLDOWN_SECONDS } from '../../lib/otpConstants';
+import { setPendingAuthFlow } from '../../lib/pendingAuthFlow';
+import { authService } from '../../services/authService';
 import AppIcon from '../../components/customer/AppIcon';
 import CustomerPrimaryButton from '../../components/customer/ui/CustomerPrimaryButton';
 import CustomerGhostButton from '../../components/customer/ui/CustomerGhostButton';
@@ -43,11 +47,24 @@ export default function Login() {
     setFieldErrors(errors);
     if (!ok) return;
 
+    const normalizedEmail = email.trim().toLowerCase();
     setError('');
     setLoading(true);
     try {
-      await login(email, password);
-      router.replace('/(customer)/dashboard');
+      if (isDemoEmail(normalizedEmail)) {
+        await login(normalizedEmail, password);
+        router.replace('/(customer)/dashboard');
+        return;
+      }
+      const res = await authService.sendOtp(normalizedEmail, 'login', 'customer');
+      setPendingAuthFlow({
+        flow: 'customer-login',
+        email: normalizedEmail,
+        password,
+        otpInfo: res.message || 'Check your email for the code.',
+        resendCooldownSeconds: OTP_RESEND_COOLDOWN_SECONDS,
+      });
+      router.push('/(auth)/verify-otp');
     } catch (err) {
       setError(err.message || 'Sign in failed');
     } finally {
@@ -147,7 +164,7 @@ export default function Login() {
             </View>
 
             <CustomerPrimaryButton
-              label="Sign in"
+              label="Continue"
               onPress={handleLogin}
               loading={loading}
               disabled={loading}

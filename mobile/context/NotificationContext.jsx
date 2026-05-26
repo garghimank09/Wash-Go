@@ -6,7 +6,11 @@ import {
   useMemo,
   useState,
 } from 'react';
+import { useAuth } from './AuthContext';
 import { deriveNotificationsFromBookings } from '../lib/notificationDerivation';
+import { computeFeedUnread, useNotificationFeed } from '../hooks/useNotificationFeed';
+import { customerNotificationsApi } from '../services/notificationsApiService';
+import { bookingService } from '../services/bookingService';
 import {
   loadDismissedIds,
   loadLastReadAt,
@@ -17,11 +21,24 @@ import {
 const NotificationContext = createContext(null);
 
 export function NotificationProvider({ children }) {
-  const [notifications, setNotifications] = useState([]);
+  const { isAuthenticated } = useAuth();
   const [dismissedIds, setDismissedIds] = useState(new Set());
   const [lastReadAt, setLastReadAt] = useState(null);
   const [panelOpen, setPanelOpen] = useState(false);
   const [hydrated, setHydrated] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+
+  const loadBookings = useCallback(async () => {
+    return bookingService.getBookings();
+  }, []);
+
+  const { items, loading, reload } = useNotificationFeed({
+    enabled: isAuthenticated,
+    apiService: customerNotificationsApi,
+    deriveFromBookings: deriveNotificationsFromBookings,
+    loadBookings,
+    portal: 'customer',
+  });
 
   useEffect(() => {
     let cancelled = false;
@@ -41,20 +58,14 @@ export function NotificationProvider({ children }) {
   }, []);
 
   const visibleNotifications = useMemo(
-    () => notifications.filter((n) => !dismissedIds.has(n.id)),
-    [notifications, dismissedIds]
+    () => items.filter((n) => !dismissedIds.has(n.id)),
+    [items, dismissedIds],
   );
 
   const unreadCount = useMemo(() => {
     if (!hydrated) return 0;
-    const readCutoff = lastReadAt ?? 0;
-    return visibleNotifications.filter((n) => n.createdAt > readCutoff).length;
+    return computeFeedUnread(visibleNotifications, { lastReadAt });
   }, [visibleNotifications, lastReadAt, hydrated]);
-
-  const refreshFromBookings = useCallback((bookings) => {
-    const derived = deriveNotificationsFromBookings(bookings || []);
-    setNotifications(derived);
-  }, []);
 
   const persistDismissed = useCallback(async (nextSet) => {
     setDismissedIds(nextSet);
@@ -63,9 +74,6 @@ export function NotificationProvider({ children }) {
 
   const openPanel = useCallback(() => {
     setPanelOpen(true);
-    const now = Date.now();
-    setLastReadAt(now);
-    saveLastReadAt(now);
   }, []);
 
   const closePanel = useCallback(() => {
@@ -78,36 +86,70 @@ export function NotificationProvider({ children }) {
       next.add(id);
       await persistDismissed(next);
     },
-    [dismissedIds, persistDismissed]
+    [dismissedIds, persistDismissed],
   );
 
-  const markAsRead = useCallback(async (id) => {
-    const item = notifications.find((n) => n.id === id);
-    if (!item) return;
-    const ts = Math.max(lastReadAt ?? 0, item.createdAt);
-    setLastReadAt(ts);
-    await saveLastReadAt(ts);
-  }, [notifications, lastReadAt]);
+  const markAsRead = useCallback(
+    async (id) => {
+      const row = items.find((n) => n.id === id);
+      if (row?.fromApi) {
+        try {
+          await customerNotificationsApi.markRead(id);
+          await reload(true);
+        } catch {
+          /* ignore */
+        }
+      }
+      const ts = Math.max(lastReadAt ?? 0, row?.createdAt ?? Date.now());
+      setLastReadAt(ts);
+      await saveLastReadAt(ts);
+    },
+    [items, lastReadAt, reload],
+  );
 
   const markAllRead = useCallback(async () => {
+    try {
+      await customerNotificationsApi.markAllRead();
+    } catch {
+      /* ignore */
+    }
     const now = Date.now();
     setLastReadAt(now);
     await saveLastReadAt(now);
-  }, []);
+    await reload(true);
+  }, [reload]);
 
   const clearAll = useCallback(async () => {
     const next = new Set(dismissedIds);
-    notifications.forEach((n) => next.add(n.id));
+    items.forEach((n) => next.add(n.id));
     await persistDismissed(next);
-  }, [dismissedIds, notifications, persistDismissed]);
+  }, [dismissedIds, items, persistDismissed]);
+
+  const refreshFromBookings = useCallback(
+    (bookings) => {
+      void reload(true);
+    },
+    [reload],
+  );
+
+  const handleRefresh = useCallback(async () => {
+    setRefreshing(true);
+    try {
+      await reload(true);
+    } finally {
+      setRefreshing(false);
+    }
+  }, [reload]);
 
   const value = useMemo(
     () => ({
       notifications: visibleNotifications,
-      allNotifications: notifications,
+      allNotifications: items,
       unreadCount,
       lastReadAt,
       panelOpen,
+      loading,
+      refreshing,
       openPanel,
       closePanel,
       dismiss,
@@ -115,13 +157,16 @@ export function NotificationProvider({ children }) {
       markAllRead,
       markAsRead,
       refreshFromBookings,
+      refresh: handleRefresh,
     }),
     [
       visibleNotifications,
-      notifications,
+      items,
       unreadCount,
       lastReadAt,
       panelOpen,
+      loading,
+      refreshing,
       openPanel,
       closePanel,
       dismiss,
@@ -129,7 +174,8 @@ export function NotificationProvider({ children }) {
       markAllRead,
       markAsRead,
       refreshFromBookings,
-    ]
+      handleRefresh,
+    ],
   );
 
   return (

@@ -20,6 +20,7 @@ import { CUSTOMER_LAYOUT } from '../../constants/customerTheme';
 import { useNewBooking } from '../../context/NewBookingContext';
 import { authService } from '../../services/authService';
 import { bookingService, decodeBookingMeta } from '../../services/bookingService';
+import { onBookingsSync } from '../../lib/bookingSyncEvents';
 import { garageService } from '../../services/garageService';
 import { getPackage } from '../../services/pricingService';
 import {
@@ -102,6 +103,11 @@ export default function Dashboard() {
 
   useEffect(() => {
     loadData();
+  }, [loadData]);
+
+  useEffect(() => {
+    const off = onBookingsSync(() => loadData());
+    return off;
   }, [loadData]);
 
   const onRefresh = useCallback(() => {
@@ -243,11 +249,24 @@ export default function Dashboard() {
           <View style={s.section}>
             <Text style={s.sectionTitle}>Active Booking</Text>
             <Pressable
-              style={({ pressed }) => [s.card, s.activeCard, pressed && { opacity: 0.94 }]}
+              style={({ pressed }) => [
+                s.card,
+                s.activeCard,
+                deriveCustomerPhase(activeBooking) === 'awaiting_review' && s.activeCardReview,
+                pressed && { opacity: 0.94 },
+              ]}
               onPress={() => router.push(`/booking/${activeBooking.id}`)}
             >
               <View style={s.activeIconWrap}>
-                <AppIcon name="local-car-wash" size={22} color={theme.accent.primary} />
+                <AppIcon
+                  name={
+                    deriveCustomerPhase(activeBooking) === 'awaiting_review'
+                      ? 'rate-review'
+                      : 'local-car-wash'
+                  }
+                  size={22}
+                  color={theme.accent.primary}
+                />
               </View>
               <View style={s.activeBody}>
                 <PhasePill phase={deriveCustomerPhase(activeBooking)} size="sm" />
@@ -259,7 +278,9 @@ export default function Dashboard() {
                 </Text>
               </View>
               <View style={s.trackChip}>
-                <Text style={s.trackChipText}>Track</Text>
+                <Text style={s.trackChipText}>
+                  {deriveCustomerPhase(activeBooking) === 'awaiting_review' ? 'Review' : 'Track'}
+                </Text>
                 <AppIcon name="chevron-right" size={14} color={theme.accent.primary} />
               </View>
             </Pressable>
@@ -621,6 +642,11 @@ const styles = (theme) => {
       gap: 16,
       padding: 16,
       backgroundColor: c.surfaceContainerLow,
+    },
+    activeCardReview: {
+      borderWidth: 1,
+      borderColor: 'rgba(245,158,11,0.35)',
+      backgroundColor: 'rgba(245,158,11,0.08)',
     },
     activeIconWrap: {
       width: 48,

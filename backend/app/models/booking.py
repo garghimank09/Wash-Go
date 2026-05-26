@@ -27,6 +27,13 @@ class BookingStatus(str, enum.Enum):
     cancelled = "cancelled"
 
 
+class HandoffStatus(str, enum.Enum):
+    none = "none"
+    awaiting_customer = "awaiting_customer"
+    customer_confirmed = "customer_confirmed"
+    issue_reported = "issue_reported"
+
+
 class Booking(Base):
     __tablename__ = "bookings"
     __table_args__ = (
@@ -60,6 +67,18 @@ class Booking(Base):
     price_cents: Mapped[int] = mapped_column(nullable=False, default=0)
     currency: Mapped[str] = mapped_column(String(3), nullable=False, default="INR")
     notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+    handoff_status: Mapped[HandoffStatus] = mapped_column(
+        Enum(HandoffStatus, name="handoff_status", native_enum=False, length=32),
+        nullable=False,
+        default=HandoffStatus.none,
+        index=True,
+    )
+    handoff_requested_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    handoff_resolved_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )

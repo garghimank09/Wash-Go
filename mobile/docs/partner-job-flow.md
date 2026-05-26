@@ -22,6 +22,29 @@ The job workspace is one scrollable screen (map, customer, briefing, uploads, ch
 
 Phase labels come from `lib/jobPhases.js` (e.g. “Start heading to customer”, “I've arrived onsite”, “Start service”, …). When the job is **completed**, the primary CTA returns to the previous screen (`router.back()`).
 
+### Phase → API status (web parity)
+
+UI phases in `jobPhases.js` (`heading`, `service_started`, …) are mapped in `lib/washerJobPhase.js` before any `PATCH`:
+
+| UI phase(s) | `PATCH` body `status` | When PATCH runs |
+|-------------|----------------------|-----------------|
+| `accepted`, `heading`, `arrived` | `confirmed` | Only if booking is not already `confirmed` |
+| `service_started` and later wash steps | `in_progress` | When leaving `confirmed` for active wash |
+| `completed` | `completed` | Final step |
+
+**“Start heading to customer”** (`accepted` → `heading`) is **local-only** while the booking is already `confirmed` after accept — same as web. Never send `pending` from the washer app.
+
+### Customer handoff (server-backed)
+
+When the washer taps **Send to customer for approval** (`qc_complete` → `approval_pending`):
+
+1. `POST /bookings/{id}/handoff/request` sets `handoff_status=awaiting_customer`
+2. Customer app shows **Confirm & Complete** on booking detail
+3. Customer `POST /bookings/{id}/handoff/confirm` sets `status=completed`
+4. Washer job reconciles to **Service completed** via sync (no manual refresh)
+
+Washer **cannot** `PATCH` `completed` while `handoff_status=awaiting_customer`.
+
 ## Partner availability (account-wide)
 
 Online / busy / offline is **global** for the partner account:
@@ -30,6 +53,14 @@ Online / busy / offline is **global** for the partner account:
 - State: `PartnerStatusContext` + `GET/PATCH /partner/availability`.
 - Affects whether the washer receives offers system-wide; it is not tied to the selected schedule date.
 
+## Customer details (web parity)
+
+- All customer/job fields come from **`GET /bookings/{id}`** (`customer_name`, `customer_phone`, `car_label`, `notes`, address coords).
+- Tapping the customer header opens **`CustomerJobDetailSheet`** — no second API, no `/users/...` calls.
+- Live map uses **`GET /bookings/{id}/tracking`** (poll). Failures show a soft banner; the rest of the job screen still works.
+
 ## Defensive data
 
 Backend fields such as `customer.rating`, `completedWashes`, tracking `distance_km`, and `eta_minutes` may be null. UI formatters live in `lib/partnerFormatters.js` (`formatOptionalNumber`, `formatCustomerTrustLine`, etc.) so partial API payloads never crash the job screen.
+
+Failed detail loads show **`JobLoadError`** with retry (same contract as web `WasherJobPage` error state).

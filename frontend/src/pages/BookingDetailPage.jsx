@@ -9,6 +9,7 @@ import { BookingCancelModal } from '../features/bookings/BookingCancelModal';
 import { BookingRescheduleModal } from '../features/bookings/BookingRescheduleModal';
 import { CustomerBookingStatusPill } from '../features/bookings/CustomerBookingStatusPill';
 import { CustomerServiceTimeline } from '../features/bookings/CustomerServiceTimeline';
+import { WashCompletionReviewCard } from '../features/bookings/WashCompletionReviewCard';
 import { formatCustomerWashTiming } from '../features/dashboard/dashboardEta';
 import {
   canCustomerCancelFromApi,
@@ -186,6 +187,15 @@ export function BookingDetailPage() {
         <h1 className="wg-heading-display">Booking</h1>
         <p className="text-2xl font-black tabular-nums text-wg-text">{formatCents(b.price_cents, b.currency)}</p>
       </m.div>
+
+      {phase === 'awaiting_review' ? (
+        <WashCompletionReviewCard
+          booking={b}
+          packageLabel={b.car_label}
+          vehicleLabel={b.car_label}
+          onUpdated={() => load(true)}
+        />
+      ) : null}
 
       {!terminal && assisted ? (
         <Card

@@ -43,8 +43,8 @@ export function AuthProvider({ children }) {
     bootstrap();
   }, [bootstrap]);
 
-  const login = useCallback(async (email, password) => {
-    const result = await authService.customerLogin(email, password);
+  const login = useCallback(async (email, password, otpCode) => {
+    const result = await authService.customerLogin(email, password, otpCode);
     setUser(result.user);
     await setLastActiveRole('customer');
     return result.user;

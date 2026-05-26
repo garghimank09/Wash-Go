@@ -5,7 +5,7 @@ import { CUSTOMER_LAYOUT } from '../../constants/customerTheme';
 
 export default function BookingLiveSummary({
   stepIndex = 1,
-  totalSteps = 4,
+  totalSteps = 5,
   vehicleLabel = '—',
   packageLabel = '—',
   priceCents,

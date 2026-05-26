@@ -158,9 +158,16 @@ export const PARTNER_NOTIF_TYPES = {
   },
 };
 
+const PARTNER_NOTIF_ALIASES = {
+  booking_paid: 'new_booking_request',
+  membership_subscribed: 'surge_alert',
+  membership_active: 'rating',
+};
+
 export function getPartnerNotifStyle(type, isDark = false) {
   const palette = isDark ? PARTNER_NOTIF_TYPES.dark : PARTNER_NOTIF_TYPES.light;
-  return palette[type] || palette.new_booking_request;
+  const key = PARTNER_NOTIF_ALIASES[type] || type;
+  return palette[key] || palette.new_booking_request;
 }
 
 /**

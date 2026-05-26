@@ -18,6 +18,8 @@ import CustomerPrimaryButton from '../../components/customer/ui/CustomerPrimaryB
 import { CUSTOMER_LAYOUT } from '../../constants/customerTheme';
 import { useNewBooking } from '../../context/NewBookingContext';
 import { bookingService } from '../../services/bookingService';
+import { onBookingsSync } from '../../lib/bookingSyncEvents';
+import { useNotifications } from '../../context/NotificationContext';
 import {
   deriveCustomerPhase,
   isPhaseActive,
@@ -33,7 +35,8 @@ const STEP_LABEL = {
   vehicle: 'Pick vehicle',
   package: 'Pick package',
   schedule: 'Pick time',
-  review: 'Review & confirm',
+  review: 'Review',
+  payment: 'Pay & book',
 };
 
 export default function Bookings() {
@@ -41,6 +44,7 @@ export default function Bookings() {
   const router = useRouter();
   const scrollEndPadding = useCustomerScrollEndPadding();
   const { hasDraft, lastStep, reset: resetDraft } = useNewBooking();
+  const { refreshFromBookings } = useNotifications();
   const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -52,13 +56,19 @@ export default function Bookings() {
     try {
       const data = await bookingService.getBookings();
       setBookings(data);
+      refreshFromBookings(data);
     } catch (err) {
       console.error('Bookings load error:', err);
     } finally {
       setLoading(false);
       setRefreshing(false);
     }
-  }, []);
+  }, [refreshFromBookings]);
+
+  useEffect(() => {
+    const off = onBookingsSync(() => load());
+    return off;
+  }, [load]);
 
   useFocusEffect(
     useCallback(() => {

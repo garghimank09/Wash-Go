@@ -7,28 +7,28 @@ import {
   setStoredPhase,
 } from '../lib/washerJobPhase';
 import { getNextPhase, buildInitialTimelineEvents, findPhase } from '../lib/jobPhases';
+import { emitPartnerBookingsSync } from '../lib/partnerSyncEvents';
+import { emitNotificationsSync } from '../lib/notificationSyncEvents';
 
 /**
  * Drives the active-job screen.
  *
  * Bridges the local washer-side phase ladder (granular UX states) with the
- * backend booking status (5 coarse states). The hook exposes the same shape
- * the UI used to consume from the mock realtime stream, so the screen code
- * stays nearly identical, but now every advance results in a real
- * `PATCH /bookings/{id}/status` (with optimistic update + rollback).
+ * backend booking status (5 coarse states). Matches web `WasherJobPage.onAdvance`:
+ * only PATCH when `apiStatusForPhase(next)` differs from the current API status.
  */
 export default function useJobRealtime({
   bookingId,
   apiStatus,
   tracking,
   initialPhase,
+  onStatusSynced,
 }) {
   const [phase, setPhase] = useState(initialPhase || 'accepted');
   const [events, setEvents] = useState(() => buildInitialTimelineEvents(initialPhase || 'accepted'));
   const [connection, setConnection] = useState('connected');
   const advancingRef = useRef(false);
 
-  // Reconcile the local phase against the backend floor whenever the API status changes.
   useEffect(() => {
     let cancelled = false;
     (async () => {
@@ -46,7 +46,6 @@ export default function useJobRealtime({
     };
   }, [bookingId, apiStatus]);
 
-  // Foreground/background → simple connection indicator (no real socket today).
   useEffect(() => {
     const sub = AppState.addEventListener('change', (s) => {
       if (s === 'active') {
@@ -67,31 +66,41 @@ export default function useJobRealtime({
 
       const prevPhase = phase;
       advancingRef.current = true;
-      setPhase(next);
-      setEvents((evts) => [
-        ...evts,
-        { id: `evt-${next}-${Date.now()}`, phase: next, at: Date.now() },
-      ]);
-      await setStoredPhase(bookingId, next);
 
       const targetStatus = apiStatusForPhase(next);
-      if (targetStatus && targetStatus !== apiStatus) {
-        try {
+      const needsApiWrite =
+        Boolean(targetStatus) &&
+        Boolean(apiStatus) &&
+        targetStatus !== apiStatus;
+      const needsHandoffRequest = next === 'approval_pending';
+
+      try {
+        if (needsHandoffRequest) {
+          await partnerBookingsService.requestHandoff(bookingId);
+          emitPartnerBookingsSync({ source: 'handoff_request', bookingId });
+          emitNotificationsSync({ source: 'handoff_request', bookingId });
+        } else if (needsApiWrite) {
           await partnerBookingsService.updateStatus(bookingId, targetStatus);
-        } catch (err) {
-          // Roll back the local advance so the UI stays honest.
-          setPhase(prevPhase);
-          setEvents((evts) => evts.filter((e) => e.phase !== next));
-          await setStoredPhase(bookingId, prevPhase);
-          advancingRef.current = false;
-          throw err;
+          emitPartnerBookingsSync({ source: 'status_update', bookingId });
+          emitNotificationsSync({ source: 'status_update', bookingId });
+          await onStatusSynced?.();
         }
+
+        setPhase(next);
+        setEvents((evts) => [
+          ...evts,
+          { id: `evt-${next}-${Date.now()}`, phase: next, at: Date.now() },
+        ]);
+        await setStoredPhase(bookingId, next);
+      } catch (err) {
+        advancingRef.current = false;
+        throw err;
       }
 
       advancingRef.current = false;
       return next;
     },
-    [bookingId, phase, apiStatus],
+    [bookingId, phase, apiStatus, onStatusSynced],
   );
 
   const api = useMemo(

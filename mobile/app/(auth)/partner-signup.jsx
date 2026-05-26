@@ -14,6 +14,11 @@ import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../../context/ThemeContext';
 import { usePartnerAuth } from '../../context/PartnerAuthContext';
+import { formatPhoneInput } from '../../lib/authValidation';
+import { isDemoEmail } from '../../lib/demoAccounts';
+import { OTP_RESEND_COOLDOWN_SECONDS } from '../../lib/otpConstants';
+import { setPendingAuthFlow } from '../../lib/pendingAuthFlow';
+import { partnerAuthService } from '../../services/partnerAuthService';
 
 export default function PartnerSignup() {
   const { theme } = useTheme();
@@ -33,19 +38,34 @@ export default function PartnerSignup() {
       setError('Please fill in all required fields');
       return;
     }
+    const normalizedEmail = email.trim().toLowerCase();
+    const payload = {
+      full_name: fullName.trim(),
+      email: normalizedEmail,
+      password,
+        phone: phone.trim() ? formatPhoneInput(phone) : null,
+      service_area: serviceArea.trim() || null,
+    };
+
     setError('');
     setLoading(true);
     try {
-      await signupPartner({
-        full_name: fullName,
-        email,
-        password,
-        phone,
-        service_area: serviceArea,
+      if (isDemoEmail(normalizedEmail)) {
+        await signupPartner(payload);
+        router.replace('/(partner)/home');
+        return;
+      }
+      const res = await partnerAuthService.sendOtp(normalizedEmail, 'signup');
+      setPendingAuthFlow({
+        flow: 'partner-signup',
+        email: normalizedEmail,
+        signupPayload: payload,
+        otpInfo: res.message || 'Check your email for the code.',
+        resendCooldownSeconds: OTP_RESEND_COOLDOWN_SECONDS,
       });
-      router.replace('/(partner)/home');
+      router.push('/(auth)/verify-otp');
     } catch (err) {
-      setError(err.message);
+      setError(err.message || 'Registration failed');
     } finally {
       setLoading(false);
     }
@@ -123,11 +143,12 @@ export default function PartnerSignup() {
               </Text>
               <TextInput
                 style={s.input}
-                placeholder="+91 98765 43210"
+                placeholder="10-digit mobile"
                 placeholderTextColor={theme.text.muted}
                 value={phone}
-                onChangeText={setPhone}
-                keyboardType="phone-pad"
+                onChangeText={(v) => setPhone(formatPhoneInput(v))}
+                keyboardType="number-pad"
+                maxLength={10}
               />
             </View>
 
@@ -178,7 +199,7 @@ export default function PartnerSignup() {
               {loading ? (
                 <ActivityIndicator color={theme.button.primary.text} />
               ) : (
-                <Text style={s.primaryBtnText}>Register as partner</Text>
+                <Text style={s.primaryBtnText}>Send verification code</Text>
               )}
             </TouchableOpacity>
           </View>

@@ -7,9 +7,14 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from app.models.booking import Booking, BookingStatus
+from app.models.booking import Booking, BookingStatus, HandoffStatus
 from app.models.payment import Payment, PaymentStatus
-from app.services.notification_service import notify_new_paid_booking
+from app.services.notification_service import (
+    notify_handoff_confirmed,
+    notify_handoff_issue_reported,
+    notify_handoff_requested,
+    notify_new_paid_booking,
+)
 from app.services.partner_earning_service import record_earning_on_accept
 from app.services.user_membership_service import consume_wash_credit
 from app.models.car import Car
@@ -21,6 +26,7 @@ from app.schemas.booking_schema import (
     BookingCancelBody,
     BookingCreate,
     BookingDetailRead,
+    BookingHandoffReportBody,
     BookingPhotoSummary,
     BookingOfferRead,
     BookingRescheduleBody,
@@ -307,7 +313,15 @@ def _build_timeline(booking: Booking) -> list[BookingTimelineStep]:
         ]
 
     rank = _status_rank(booking.status)
-    return [
+    handoff = booking.handoff_status
+    handoff_review_done = handoff in (
+        HandoffStatus.awaiting_customer,
+        HandoffStatus.customer_confirmed,
+        HandoffStatus.issue_reported,
+    )
+    handoff_confirmed_done = handoff == HandoffStatus.customer_confirmed or rank >= 3
+
+    steps = [
         BookingTimelineStep(
             key="placed",
             label="Booking placed",
@@ -327,12 +341,25 @@ def _build_timeline(booking: Booking) -> list[BookingTimelineStep]:
             at=booking.updated_at if rank >= 2 else None,
         ),
         BookingTimelineStep(
+            key="awaiting_review",
+            label="Ready for your review",
+            done=handoff_review_done,
+            at=booking.handoff_requested_at if handoff_review_done else None,
+        ),
+        BookingTimelineStep(
+            key="customer_confirmed",
+            label="You confirmed completion",
+            done=handoff_confirmed_done,
+            at=booking.handoff_resolved_at if handoff_confirmed_done else None,
+        ),
+        BookingTimelineStep(
             key="completed",
             label="Completed",
             done=rank >= 3,
             at=booking.updated_at if rank >= 3 else None,
         ),
     ]
+    return steps
 
 
 def _estimate_eta_minutes(booking: Booking) -> int | None:
@@ -480,7 +507,83 @@ async def update_booking_status_for_washer(
     if current not in allowed or target not in allowed[current]:
         raise ValidationError(f"Cannot change status from {current.value} to {target.value}")
 
+    if target == BookingStatus.completed and booking.handoff_status == HandoffStatus.awaiting_customer:
+        raise ValidationError("Waiting for customer confirmation")
+
     booking.status = target
+    await db.commit()
+    await db.refresh(booking)
+    return booking
+
+
+async def request_customer_handoff(
+    db: AsyncSession, user: User, booking_id: UUID
+) -> Booking:
+    washer = await _get_washer_for_user(db, user)
+    result = await db.execute(select(Booking).where(Booking.id == booking_id))
+    booking = result.scalar_one_or_none()
+    if booking is None:
+        raise NotFoundError("Booking not found")
+    if booking.washer_id != washer.id:
+        raise ForbiddenError("Not assigned to this booking")
+    if booking.status != BookingStatus.in_progress:
+        raise ValidationError("Handoff can only be requested while the wash is in progress")
+    if booking.handoff_status == HandoffStatus.awaiting_customer:
+        return booking
+    if booking.handoff_status not in (HandoffStatus.none,):
+        raise ValidationError("Handoff already requested or resolved for this booking")
+
+    now = datetime.now(timezone.utc)
+    booking.handoff_status = HandoffStatus.awaiting_customer
+    booking.handoff_requested_at = now
+    await notify_handoff_requested(db, booking)
+    await db.commit()
+    await db.refresh(booking)
+    return booking
+
+
+async def confirm_booking_completion(
+    db: AsyncSession, user: User, booking_id: UUID
+) -> Booking:
+    booking = await _get_booking_for_customer_mutation(db, user, booking_id)
+    if booking.status == BookingStatus.completed:
+        return booking
+    if booking.status != BookingStatus.in_progress:
+        raise ValidationError("This booking is not ready to confirm")
+    if booking.handoff_status not in (
+        HandoffStatus.awaiting_customer,
+        HandoffStatus.issue_reported,
+    ):
+        raise ValidationError("Customer review is not available for this booking")
+
+    now = datetime.now(timezone.utc)
+    booking.status = BookingStatus.completed
+    booking.handoff_status = HandoffStatus.customer_confirmed
+    booking.handoff_resolved_at = now
+    await notify_handoff_confirmed(db, booking)
+    await db.commit()
+    await db.refresh(booking)
+    return booking
+
+
+async def report_booking_issue(
+    db: AsyncSession, user: User, booking_id: UUID, payload: BookingHandoffReportBody
+) -> Booking:
+    booking = await _get_booking_for_customer_mutation(db, user, booking_id)
+    if booking.status != BookingStatus.in_progress:
+        raise ValidationError("Cannot report an issue for this booking")
+    if booking.handoff_status != HandoffStatus.awaiting_customer:
+        raise ValidationError("Issue reporting is only available during customer review")
+
+    detail = (payload.reason_detail or "").strip()
+    reason_line = f"HandoffIssue:{payload.reason_key}"
+    if detail:
+        reason_line += f"|{detail}"
+    existing = (booking.notes or "").strip()
+    booking.notes = f"{existing}\n{reason_line}".strip() if existing else reason_line
+
+    booking.handoff_status = HandoffStatus.issue_reported
+    await notify_handoff_issue_reported(db, booking, payload.reason_key)
     await db.commit()
     await db.refresh(booking)
     return booking
@@ -542,6 +645,9 @@ async def get_booking_detail(db: AsyncSession, user: User, booking_id: UUID) -> 
         currency=booking.currency,
         notes=booking.notes,
         created_at=booking.created_at,
+        handoff_status=booking.handoff_status,
+        handoff_requested_at=booking.handoff_requested_at,
+        handoff_resolved_at=booking.handoff_resolved_at,
         car_label=car_label,
         customer_name=customer_name,
         customer_phone=customer_phone,

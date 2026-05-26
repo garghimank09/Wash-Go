@@ -11,6 +11,7 @@ import { useTheme } from '../../../context/ThemeContext';
 import ActiveJobHeader from '../../../components/partner/job/ActiveJobHeader';
 import RouteMapCard from '../../../components/partner/job/RouteMapCard';
 import CustomerInfoCard from '../../../components/partner/job/CustomerInfoCard';
+import CustomerJobDetailSheet from '../../../components/partner/job/CustomerJobDetailSheet';
 import FieldBriefingCard from '../../../components/partner/job/FieldBriefingCard';
 import UploadProofCard from '../../../components/partner/job/UploadProofCard';
 import WashChecklistCard from '../../../components/partner/job/WashChecklistCard';
@@ -19,6 +20,8 @@ import FloatingActionFooter, {
   FLOATING_FOOTER_BASE_HEIGHT,
 } from '../../../components/partner/job/FloatingActionFooter';
 import JobSkeleton from '../../../components/partner/job/JobSkeleton';
+import JobLoadError from '../../../components/partner/job/JobLoadError';
+import TrackingMapNotice from '../../../components/partner/job/TrackingMapNotice';
 import PartnerNotifPanel from '../../../components/partner/PartnerNotifPanel';
 import useJobRealtime from '../../../hooks/useJobRealtime';
 import useJobChecklist from '../../../hooks/useJobChecklist';
@@ -27,6 +30,7 @@ import usePartnerJob from '../../../hooks/usePartnerJob';
 import usePartnerLocationReporter from '../../../hooks/usePartnerLocationReporter';
 import { isPhaseAtLeast } from '../../../lib/jobPhases';
 import { canDialPhone, normalizeForTel } from '../../../lib/partnerPhone';
+import { formatJobAdvanceError } from '../../../lib/partnerJobErrors';
 
 /**
  * Single partner job workspace — opened from Home (active card), Schedule (Open job),
@@ -46,12 +50,18 @@ export default function PartnerJobScreen() {
 
   const bookingId = Array.isArray(params.id) ? params.id[0] : params.id;
 
-  const { detail, tracking, loading, error, refresh } = usePartnerJob(bookingId);
+  const { detail, tracking, loading, error, trackingError, refresh, refetchDetail } =
+    usePartnerJob(bookingId);
+
+  const handleStatusSynced = useCallback(async () => {
+    await refetchDetail();
+  }, [refetchDetail]);
 
   const realtime = useJobRealtime({
     bookingId,
     apiStatus: detail?.status,
     tracking,
+    onStatusSynced: handleStatusSynced,
   });
 
   const checklist = useJobChecklist(bookingId);
@@ -59,8 +69,9 @@ export default function PartnerJobScreen() {
 
   const [refreshing, setRefreshing] = useState(false);
   const [advancing, setAdvancing] = useState(false);
+  const [retrying, setRetrying] = useState(false);
+  const [customerSheetOpen, setCustomerSheetOpen] = useState(false);
 
-  // GPS heartbeat — only while the job is meaningfully active.
   const reportingEnabled =
     !!bookingId &&
     !!detail &&
@@ -68,7 +79,6 @@ export default function PartnerJobScreen() {
     detail.status !== 'cancelled';
   usePartnerLocationReporter(reportingEnabled);
 
-  // Move forward automatically once the first photo of each bucket uploads.
   useEffect(() => {
     if (realtime.phase === 'service_started' && uploads.counts.beforeSuccess > 0) {
       realtime.advance('before_uploaded').catch(() => {});
@@ -94,6 +104,15 @@ export default function PartnerJobScreen() {
     }
   }, [refresh]);
 
+  const handleRetryLoad = useCallback(async () => {
+    setRetrying(true);
+    try {
+      await refresh();
+    } finally {
+      setRetrying(false);
+    }
+  }, [refresh]);
+
   const handlePrimary = useCallback(async () => {
     if (advancing) return;
     if (realtime.phase === 'completed') {
@@ -104,7 +123,7 @@ export default function PartnerJobScreen() {
     try {
       await realtime.advance();
     } catch (err) {
-      toast.error(err?.message || 'Could not update job status. Try again.');
+      toast.error(formatJobAdvanceError(err));
     } finally {
       setAdvancing(false);
     }
@@ -130,7 +149,6 @@ export default function PartnerJobScreen() {
     }
   }, [detail, toast]);
 
-  // Footer state ------------------------------------------------------------
   const { footerDisabled, footerHint } = useMemo(() => {
     if (realtime.phase === 'service_started') {
       const need = uploads.counts.beforeSuccess === 0;
@@ -156,11 +174,20 @@ export default function PartnerJobScreen() {
       };
     }
     if (realtime.phase === 'approval_pending') {
+      const handoff = detail?.handoff_status || detail?.handoffStatus;
+      if (handoff === 'issue_reported') {
+        return {
+          footerDisabled: true,
+          footerHint: 'Customer reported an issue — support will follow up',
+        };
+      }
       return { footerDisabled: true, footerHint: 'Awaiting customer confirmation' };
     }
     return { footerDisabled: false, footerHint: null };
   }, [
     realtime.phase,
+    detail?.handoff_status,
+    detail?.handoffStatus,
     uploads.counts,
     checklist.progress,
     checklist.total,
@@ -180,7 +207,8 @@ export default function PartnerJobScreen() {
   const topPadding = insets.top + HEADER_HEIGHT + 4;
   const bottomPadding = FLOATING_FOOTER_BASE_HEIGHT + Math.max(insets.bottom, 14) + 16;
 
-  const ready = !loading && !!detail;
+  const ready = !loading && !!detail && !error;
+  const loadFailed = !loading && (!!error || !detail);
 
   return (
     <View style={[styles.safe, { backgroundColor: theme.customer.surface }]}>
@@ -201,23 +229,30 @@ export default function PartnerJobScreen() {
           />
         }
       >
-        {!ready ? (
+        {loading ? (
           <JobSkeleton />
+        ) : loadFailed ? (
+          <JobLoadError message={error} onRetry={handleRetryLoad} loading={retrying} />
         ) : (
           <>
+            <TrackingMapNotice message={trackingError} />
+
             <RouteMapCard
               washerCoord={realtime.washerCoord}
               customerCoord={
                 realtime.customerCoord || detail?.address?.coords || null
               }
               route={realtime.route}
-              etaMinutes={realtime.etaMinutes}
+              etaMinutes={realtime.etaMinutes ?? detail?.etaMinutes}
               distanceKm={realtime.distanceKm}
               phase={realtime.phase}
               trafficLevel="light"
             />
 
-            <CustomerInfoCard job={detail} />
+            <CustomerInfoCard
+              job={detail}
+              onOpenDetails={() => setCustomerSheetOpen(true)}
+            />
 
             {showBriefing ? <FieldBriefingCard briefing={detail.briefing} /> : null}
 
@@ -264,6 +299,12 @@ export default function PartnerJobScreen() {
           callDisabled={!canDialPhone(detail?.customer?.phone)}
         />
       ) : null}
+
+      <CustomerJobDetailSheet
+        visible={customerSheetOpen}
+        job={detail}
+        onClose={() => setCustomerSheetOpen(false)}
+      />
 
       <PartnerNotifPanel />
     </View>

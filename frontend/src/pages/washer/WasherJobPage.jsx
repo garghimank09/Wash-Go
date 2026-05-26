@@ -169,6 +169,8 @@ export function WasherJobPage() {
     try {
       if (apiStatus === 'pending') {
         await partnerBookingsService.accept(id);
+      } else if (nextPhase === 'awaiting_approval') {
+        await partnerBookingsService.requestHandoff(id);
       } else {
         const targetStatus = apiStatusForPhase(nextPhase);
         if (targetStatus !== apiStatus) {

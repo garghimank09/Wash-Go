@@ -4,15 +4,33 @@ const LABELS = {
   accepted: 'Washer accepted',
   on_the_way: 'Washer on the way',
   in_progress: 'Wash in progress',
+  awaiting_review: 'Ready for your review',
+  issue_reported: 'Issue under review',
   completed: 'Completed',
 };
 
-const ORDER = ['searching', 'awaiting_acceptance', 'accepted', 'on_the_way', 'in_progress', 'completed'];
+const ORDER = [
+  'searching',
+  'awaiting_acceptance',
+  'accepted',
+  'on_the_way',
+  'in_progress',
+  'awaiting_review',
+  'completed',
+];
 
 /** Phases where the customer is still *at* that step (not yet achieved). */
-const IN_PROGRESS_PHASES = new Set(['searching', 'awaiting_acceptance', 'on_the_way', 'in_progress']);
+const IN_PROGRESS_PHASES = new Set([
+  'searching',
+  'awaiting_acceptance',
+  'on_the_way',
+  'in_progress',
+  'awaiting_review',
+  'issue_reported',
+]);
 
 function stepDone(stepIndex, phaseIndex, phase) {
+  if (phase === 'issue_reported' && stepIndex <= ORDER.indexOf('awaiting_review')) return true;
   if (stepIndex < phaseIndex) return true;
   if (stepIndex === phaseIndex && !IN_PROGRESS_PHASES.has(phase)) return true;
   return false;
@@ -29,7 +47,8 @@ export function buildCustomerServiceTimeline(phase) {
     ];
   }
 
-  const idx = ORDER.indexOf(phase);
+  const resolvedPhase = phase === 'issue_reported' ? 'awaiting_review' : phase;
+  const idx = ORDER.indexOf(resolvedPhase);
   if (idx === -1) {
     return [];
   }

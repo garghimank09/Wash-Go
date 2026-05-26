@@ -7,4 +7,5 @@ export const partnerBookingsService = {
   accept: (id) => partnerApi.post(`/bookings/${id}/accept`).then((r) => r.data),
   updateStatus: (id, status) =>
     partnerApi.patch(`/bookings/${id}/status`, { status }).then((r) => r.data),
+  requestHandoff: (id) => partnerApi.post(`/bookings/${id}/handoff/request`).then((r) => r.data),
 };

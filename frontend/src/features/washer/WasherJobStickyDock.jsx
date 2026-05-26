@@ -71,6 +71,7 @@ function SwipeCompleteRail({ reduced, onComplete, disabled }) {
 export function WasherJobStickyDock({ phase, reduced, onAdvance, showSwipeComplete, showCelebrationBanner }) {
   const copy = PHASE_PRIMARY[phase] || PHASE_PRIMARY.received;
   const isDone = phase === 'completed';
+  const waitingForCustomer = phase === 'awaiting_approval';
 
   return (
     <div
@@ -101,12 +102,17 @@ export function WasherJobStickyDock({ phase, reduced, onAdvance, showSwipeComple
               type="button"
               className="h-14 w-full gap-2 rounded-2xl bg-gradient-to-r from-emerald-600 via-cyan-600 to-cyan-500 text-base font-black text-white shadow-[0_10px_32px_-6px_rgb(6_182_212/0.55)] active:scale-[0.99]"
               onClick={() => onAdvance()}
+              disabled={waitingForCustomer}
             >
-              {copy.label}
-              <ChevronRight className="size-5" strokeWidth={2.5} aria-hidden />
+              {waitingForCustomer ? 'Waiting for customer' : copy.label}
+              {!waitingForCustomer ? (
+                <ChevronRight className="size-5" strokeWidth={2.5} aria-hidden />
+              ) : null}
             </Button>
-            {showSwipeComplete && phase === 'awaiting_approval' ? (
-              <SwipeCompleteRail reduced={reduced} onComplete={() => onAdvance()} disabled={isDone} />
+            {waitingForCustomer ? (
+              <p className="mt-2 text-center text-xs text-wg-muted">
+                Customer must confirm in their app before this job can close.
+              </p>
             ) : null}
           </>
         ) : (

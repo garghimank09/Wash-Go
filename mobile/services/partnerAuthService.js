@@ -8,9 +8,7 @@ import {
 const PARTNER_ROLE = 'washer';
 
 /**
- * Thin partner auth service. Talks to the same `/auth/*` endpoints as the
- * customer side but stores the session in the isolated partner store and
- * always validates that the returned user has role `washer`.
+ * Partner auth — same `/auth/*` endpoints as web, isolated token store.
  */
 export const partnerAuthService = {
   async getToken() {
@@ -23,6 +21,18 @@ export const partnerAuthService = {
 
   async logout() {
     await clearPartnerSession();
+  },
+
+  async sendOtp(email, purpose) {
+    return partnerApiFetch('/auth/otp/send', {
+      method: 'POST',
+      body: {
+        email: email.trim().toLowerCase(),
+        purpose,
+        role_hint: 'partner',
+      },
+      skipUnauthorized: true,
+    });
   },
 
   /** Boot the partner app: validate token + role. Returns the user or null. */
@@ -47,13 +57,16 @@ export const partnerAuthService = {
     }
   },
 
-  async login(email, password) {
+  async login(email, password, otpCode) {
+    const body = {
+      email: email.trim().toLowerCase(),
+      password,
+    };
+    if (otpCode) body.otp_code = otpCode.trim();
+
     const data = await partnerApiFetch('/auth/login', {
       method: 'POST',
-      body: {
-        email: email.trim().toLowerCase(),
-        password,
-      },
+      body,
       skipUnauthorized: true,
     });
 
@@ -84,13 +97,30 @@ export const partnerAuthService = {
       phone: payload.phone?.trim() || null,
       service_area: payload.service_area?.trim() || null,
     };
+    if (payload.otp_code) body.otp_code = payload.otp_code.trim();
 
-    await partnerApiFetch('/auth/partner/signup', {
+    const data = await partnerApiFetch('/auth/partner/signup', {
       method: 'POST',
       body,
       skipUnauthorized: true,
     });
 
-    return this.login(body.email, body.password);
+    await setPartnerSession(data.access_token, null);
+
+    try {
+      const user = await partnerApiFetch('/auth/me', {
+        auth: true,
+        skipUnauthorized: true,
+      });
+      if (user.role !== PARTNER_ROLE) {
+        await clearPartnerSession();
+        throw new Error('Partner account could not be activated.');
+      }
+      await setPartnerSession(data.access_token, user);
+      return { ...data, user };
+    } catch (err) {
+      await clearPartnerSession();
+      throw err;
+    }
   },
 };

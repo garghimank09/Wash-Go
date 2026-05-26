@@ -15,7 +15,11 @@ import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../../context/ThemeContext';
 import { useAuth } from '../../context/AuthContext';
-import { validateSignup } from '../../lib/authValidation';
+import { validateSignup, formatPhoneInput } from '../../lib/authValidation';
+import { isDemoEmail } from '../../lib/demoAccounts';
+import { OTP_RESEND_COOLDOWN_SECONDS } from '../../lib/otpConstants';
+import { setPendingAuthFlow } from '../../lib/pendingAuthFlow';
+import { authService } from '../../services/authService';
 import AppIcon from '../../components/customer/AppIcon';
 import CustomerPrimaryButton from '../../components/customer/ui/CustomerPrimaryButton';
 import { CUSTOMER_LAYOUT } from '../../constants/customerTheme';
@@ -44,20 +48,36 @@ export default function Signup() {
       full_name: fullName,
       email,
       password,
+      phone,
     });
     setFieldErrors(errors);
     if (!ok) return;
 
+    const normalizedEmail = email.trim().toLowerCase();
+    const payload = {
+      full_name: fullName.trim(),
+      email: normalizedEmail,
+      password,
+        phone: phone.trim() ? formatPhoneInput(phone) : null,
+    };
+
     setError('');
     setLoading(true);
     try {
-      await signup({
-        full_name: fullName.trim(),
-        email,
-        password,
-        phone: phone.trim() || null,
+      if (isDemoEmail(normalizedEmail)) {
+        await signup(payload);
+        router.replace('/(customer)/dashboard');
+        return;
+      }
+      const res = await authService.sendOtp(normalizedEmail, 'signup', 'customer');
+      setPendingAuthFlow({
+        flow: 'customer-signup',
+        email: normalizedEmail,
+        signupPayload: payload,
+        otpInfo: res.message || 'Check your email for the code.',
+        resendCooldownSeconds: OTP_RESEND_COOLDOWN_SECONDS,
       });
-      router.replace('/(customer)/dashboard');
+      router.push('/(auth)/verify-otp');
     } catch (err) {
       setError(err.message || 'Sign up failed');
     } finally {
@@ -142,14 +162,21 @@ export default function Signup() {
                 Phone <Text style={s.optional}>(optional)</Text>
               </Text>
               <TextInput
-                style={s.input}
-                placeholder="+1 555 123 4567"
+                style={[s.input, fieldErrors.phone && s.inputError]}
+                placeholder="10-digit mobile"
                 placeholderTextColor={theme.text.muted}
                 value={phone}
-                onChangeText={setPhone}
-                keyboardType="phone-pad"
+                onChangeText={(v) => {
+                  setPhone(formatPhoneInput(v));
+                  if (fieldErrors.phone) setFieldErrors((e) => ({ ...e, phone: null }));
+                }}
+                keyboardType="number-pad"
+                maxLength={10}
                 editable={!loading}
               />
+              {fieldErrors.phone ? (
+                <Text style={s.fieldError}>{fieldErrors.phone}</Text>
+              ) : null}
             </View>
 
             <View style={s.inputGroup}>
@@ -184,7 +211,7 @@ export default function Signup() {
             </View>
 
             <CustomerPrimaryButton
-              label="Create account"
+              label="Send verification code"
               onPress={handleSignup}
               loading={loading}
               disabled={loading}

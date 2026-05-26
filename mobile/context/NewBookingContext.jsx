@@ -2,7 +2,7 @@ import { createContext, useContext, useState, useCallback, useEffect, useMemo, u
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const STORAGE_KEY = '@washgo_new_booking_draft';
-const STEP_ORDER = ['vehicle', 'package', 'schedule', 'review'];
+const STEP_ORDER = ['vehicle', 'package', 'schedule', 'review', 'payment'];
 
 const initialForm = {
   carId: null,
@@ -14,6 +14,8 @@ const initialForm = {
   scheduledAt: null,
   priceCents: null,
   currency: 'INR',
+  paymentMethod: 'upi',
+  upiId: '',
 };
 
 const NewBookingContext = createContext(null);

@@ -39,6 +39,14 @@ export const partnerBookingsService = {
     });
   },
 
+  /** POST /bookings/{id}/handoff/request — notify customer for review. */
+  requestHandoff(id) {
+    return partnerApiFetch(`/bookings/${id}/handoff/request`, {
+      method: 'POST',
+      auth: true,
+    });
+  },
+
   /** GET /bookings/sync — versioned fingerprint for polling diffs. */
   sync({ signal } = {}) {
     return partnerApiFetch('/bookings/sync', { auth: true, signal });

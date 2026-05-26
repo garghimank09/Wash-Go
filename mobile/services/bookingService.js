@@ -88,6 +88,27 @@ export const bookingService = {
       bookings.find((b) => isPhaseActive(deriveCustomerPhase(b))) ?? null
     );
   },
+
+  async sync() {
+    return apiFetch('/bookings/sync', { auth: true });
+  },
+
+  async confirmHandoff(bookingId) {
+    return apiFetch(`/bookings/${bookingId}/handoff/confirm`, {
+      method: 'POST',
+      auth: true,
+    });
+  },
+
+  async reportHandoffIssue(bookingId, { reasonKey, reasonDetail } = {}) {
+    const body = { reason_key: reasonKey || 'other' };
+    if (reasonDetail) body.reason_detail = reasonDetail;
+    return apiFetch(`/bookings/${bookingId}/handoff/report-issue`, {
+      method: 'POST',
+      auth: true,
+      body,
+    });
+  },
 };
 
 export const CANCEL_REASONS = [
@@ -96,6 +117,14 @@ export const CANCEL_REASONS = [
   { key: 'emergency', label: 'Emergency' },
   { key: 'price_issue', label: 'Price concern' },
   { key: 'vehicle_unavailable', label: 'Vehicle unavailable' },
+  { key: 'other', label: 'Other' },
+];
+
+export const HANDOFF_ISSUE_REASONS = [
+  { key: 'quality_issue', label: 'Quality not satisfactory' },
+  { key: 'incomplete_wash', label: 'Wash incomplete' },
+  { key: 'damage_concern', label: 'Possible damage' },
+  { key: 'missing_items', label: 'Missing personal items' },
   { key: 'other', label: 'Other' },
 ];
 

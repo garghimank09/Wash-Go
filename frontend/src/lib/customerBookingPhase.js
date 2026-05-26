@@ -1,5 +1,5 @@
 /**
- * Customer-facing operational phases (maps from API status + washer + schedule).
+ * Customer-facing operational phases (maps from API status + handoff + schedule).
  * API statuses: pending | confirmed | in_progress | completed | cancelled
  */
 export const CUSTOMER_PHASES = [
@@ -8,6 +8,8 @@ export const CUSTOMER_PHASES = [
   'accepted',
   'on_the_way',
   'in_progress',
+  'awaiting_review',
+  'issue_reported',
   'completed',
   'cancelled',
 ];
@@ -18,21 +20,32 @@ const PHASE_LABELS = {
   accepted: 'Accepted',
   on_the_way: 'On the way',
   in_progress: 'In progress',
+  awaiting_review: 'Ready for review',
+  issue_reported: 'Issue reported',
   completed: 'Completed',
   cancelled: 'Cancelled',
 };
 
+export function normalizeHandoffStatus(bookingLike) {
+  return bookingLike?.handoff_status || bookingLike?.handoffStatus || 'none';
+}
+
 /**
- * @param {{ status: string; washer_id?: string | null; scheduled_at?: string }} bookingLike
+ * @param {{ status: string; washer_id?: string | null; scheduled_at?: string; handoff_status?: string }} bookingLike
  */
 export function deriveCustomerPhase(bookingLike) {
   if (!bookingLike) return 'searching';
   const { status, scheduled_at } = bookingLike;
   const s = String(status || 'pending');
+  const handoff = normalizeHandoffStatus(bookingLike);
 
   if (s === 'cancelled') return 'cancelled';
   if (s === 'completed') return 'completed';
-  if (s === 'in_progress') return 'in_progress';
+  if (s === 'in_progress') {
+    if (handoff === 'awaiting_customer') return 'awaiting_review';
+    if (handoff === 'issue_reported') return 'issue_reported';
+    return 'in_progress';
+  }
   if (s === 'confirmed') {
     const t = scheduled_at ? new Date(scheduled_at).getTime() : NaN;
     if (!Number.isNaN(t)) {
@@ -62,5 +75,7 @@ export function canCustomerRescheduleFromApi(status) {
 
 /** True when washer has accepted / visit underway — show support messaging, block self-serve cancel. */
 export function requiresAssistedCancellation(phase) {
-  return ['accepted', 'on_the_way', 'in_progress'].includes(phase);
+  return ['accepted', 'on_the_way', 'in_progress', 'awaiting_review', 'issue_reported'].includes(
+    phase,
+  );
 }

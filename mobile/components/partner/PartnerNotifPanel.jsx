@@ -5,7 +5,6 @@ import {
   Modal,
   Pressable,
   StyleSheet,
-  ScrollView,
   useWindowDimensions,
 } from 'react-native';
 import { BlurView } from 'expo-blur';
@@ -21,6 +20,8 @@ import { BellOff } from 'lucide-react-native';
 import { useTheme } from '../../context/ThemeContext';
 import { usePartnerNotifications } from '../../context/PartnerNotificationContext';
 import { PARTNER_MOTION, partnerTiming } from '../../constants/partnerMotion';
+import { isNotificationUnread } from '../../lib/notificationModel';
+import ActivityNotificationList from '../notifications/ActivityNotificationList';
 import PartnerNotifCard from './PartnerNotifCard';
 
 const PANEL_WIDTH_RATIO = 0.86;
@@ -37,8 +38,11 @@ export default function PartnerNotifPanel() {
     panelOpen,
     closePanel,
     dismiss,
-    clearAll,
+    markAllRead,
     lastReadAt,
+    loading,
+    refreshing,
+    refresh,
   } = usePartnerNotifications();
 
   const translateX = useSharedValue(panelWidth);
@@ -90,10 +94,6 @@ export default function PartnerNotifPanel() {
     });
 
   const readCutoff = lastReadAt ?? 0;
-  const grouped = [
-    { key: 'today', title: 'Today', data: notifications.filter((n) => n.group === 'today') },
-    { key: 'earlier', title: 'Earlier', data: notifications.filter((n) => n.group === 'earlier') },
-  ].filter((s) => s.data.length > 0);
 
   if (!panelOpen) return null;
 
@@ -127,7 +127,7 @@ export default function PartnerNotifPanel() {
           >
             <View style={styles.header}>
               <View style={styles.headerLeft}>
-                <Text style={[styles.title, { color: theme.text.primary }]}>Notifications</Text>
+                <Text style={[styles.title, { color: theme.text.primary }]}>Activity</Text>
                 {unreadCount > 0 ? (
                   <View style={[styles.badge, { backgroundColor: theme.accent.primary }]}>
                     <Text style={styles.badgeText}>
@@ -137,47 +137,33 @@ export default function PartnerNotifPanel() {
                 ) : null}
               </View>
               {notifications.length > 0 ? (
-                <Pressable onPress={clearAll} hitSlop={8}>
-                  <Text style={[styles.clearAll, { color: theme.accent.primary }]}>Clear all</Text>
+                <Pressable onPress={markAllRead} hitSlop={8}>
+                  <Text style={[styles.markRead, { color: theme.accent.primary }]}>
+                    Mark all read
+                  </Text>
                 </Pressable>
               ) : null}
             </View>
 
-            {notifications.length === 0 ? (
-              <View style={styles.empty}>
-                <View style={[styles.emptyIcon, { backgroundColor: theme.customer.primaryBg }]}>
-                  <BellOff size={32} color={theme.text.muted} strokeWidth={2} />
-                </View>
-                <Text style={[styles.emptyTitle, { color: theme.text.primary }]}>
-                  All caught up
-                </Text>
-                <Text style={[styles.emptySub, { color: theme.text.secondary }]}>
-                  Booking updates and customer activity will show up here.
-                </Text>
-              </View>
-            ) : (
-              <ScrollView
-                showsVerticalScrollIndicator={false}
-                contentContainerStyle={styles.list}
-              >
-                {grouped.map((section) => (
-                  <View key={section.key}>
-                    <Text style={[styles.section, { color: theme.text.muted }]}>
-                      {section.title}
-                    </Text>
-                    {section.data.map((n) => (
-                      <PartnerNotifCard
-                        key={n.id}
-                        item={n}
-                        isUnread={n.createdAt > readCutoff}
-                        onDismiss={dismiss}
-                        onPress={dismissPanel}
-                      />
-                    ))}
-                  </View>
-                ))}
-              </ScrollView>
-            )}
+            <ActivityNotificationList
+              items={notifications}
+              readCutoff={readCutoff}
+              loading={loading}
+              refreshing={refreshing}
+              onRefresh={refresh}
+              theme={theme}
+              emptyIcon={BellOff}
+              emptyTitle="All caught up"
+              emptySubtitle="Booking updates and customer activity will show up here instantly."
+              renderCard={(item) => (
+                <PartnerNotifCard
+                  item={item}
+                  isUnread={isNotificationUnread(item, readCutoff)}
+                  onDismiss={dismiss}
+                  onNavigate={dismissPanel}
+                />
+              )}
+            />
           </Animated.View>
         </GestureDetector>
       </View>
@@ -205,7 +191,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 16,
+    marginBottom: 12,
   },
   headerLeft: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   title: { fontSize: 22, fontWeight: '800', letterSpacing: -0.4 },
@@ -218,31 +204,5 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   badgeText: { color: '#ffffff', fontSize: 11, fontWeight: '800' },
-  clearAll: { fontSize: 14, fontWeight: '700' },
-  list: { paddingBottom: 32 },
-  section: {
-    fontSize: 11,
-    fontWeight: '800',
-    textTransform: 'uppercase',
-    letterSpacing: 0.8,
-    marginBottom: 8,
-    marginTop: 6,
-  },
-  empty: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 24,
-    paddingTop: 60,
-  },
-  emptyIcon: {
-    width: 72,
-    height: 72,
-    borderRadius: 36,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 16,
-  },
-  emptyTitle: { fontSize: 18, fontWeight: '700', marginBottom: 6 },
-  emptySub: { fontSize: 14, textAlign: 'center', lineHeight: 20 },
+  markRead: { fontSize: 14, fontWeight: '700' },
 });

@@ -29,6 +29,7 @@ from app.routes import (
     notification_routes,
     wash_tier_routes,
 )
+from app.utils.ensure_booking_handoff_columns import ensure_booking_handoff_columns
 from app.utils.seed_demo_users import seed_demo_users
 from app.utils.seed_membership_plans import ensure_membership_plan_columns, seed_membership_plans_if_empty
 from app.utils.seed_wash_tiers import seed_wash_tiers_if_empty
@@ -41,6 +42,7 @@ async def lifespan(_: FastAPI):
         async with engine.begin() as conn:
             await conn.run_sync(Base.metadata.create_all)
             await ensure_membership_plan_columns(conn)
+            await ensure_booking_handoff_columns(conn)
         try:
             async with engine.begin() as conn:
                 await conn.execute(

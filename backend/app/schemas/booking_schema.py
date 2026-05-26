@@ -4,7 +4,7 @@ from uuid import UUID
 
 from pydantic import BaseModel, Field, field_validator, model_validator
 
-from app.models.booking import BookingStatus
+from app.models.booking import BookingStatus, HandoffStatus
 
 
 class BookingCreate(BaseModel):
@@ -43,6 +43,9 @@ class BookingRead(BaseModel):
     price_cents: int
     currency: str
     notes: str | None
+    handoff_status: HandoffStatus = HandoffStatus.none
+    handoff_requested_at: datetime | None = None
+    handoff_resolved_at: datetime | None = None
 
     model_config = {"from_attributes": True}
 
@@ -162,6 +165,29 @@ class BookingCancelBody(BaseModel):
         return v
 
 
+HANDOFF_ISSUE_REASON_KEYS = frozenset(
+    CANCEL_REASON_KEYS
+    | {
+        "quality_issue",
+        "incomplete_wash",
+        "damage_concern",
+        "missing_items",
+    }
+)
+
+
+class BookingHandoffReportBody(BaseModel):
+    reason_key: str = Field(min_length=3, max_length=64)
+    reason_detail: str | None = Field(default=None, max_length=500)
+
+    @field_validator("reason_key")
+    @classmethod
+    def known_handoff_reason(cls, v: str) -> str:
+        if v not in HANDOFF_ISSUE_REASON_KEYS:
+            raise ValueError("invalid handoff issue reason")
+        return v
+
+
 class BookingRescheduleBody(BaseModel):
     scheduled_at: datetime
 
@@ -211,6 +237,9 @@ class BookingDetailRead(BaseModel):
     currency: str
     notes: str | None
     created_at: datetime
+    handoff_status: HandoffStatus = HandoffStatus.none
+    handoff_requested_at: datetime | None = None
+    handoff_resolved_at: datetime | None = None
     car_label: str | None = None
     customer_name: str | None = None
     customer_phone: str | None = None

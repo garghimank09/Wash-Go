@@ -15,6 +15,8 @@ import OfferCard from '../../components/partner/OfferCard';
 import PartnerNotifPanel from '../../components/partner/PartnerNotifPanel';
 import usePartnerOffers from '../../hooks/usePartnerOffers';
 import { partnerBookingsService } from '../../services/partnerBookingsService';
+import { emitPartnerBookingsSync } from '../../lib/partnerSyncEvents';
+import { emitNotificationsSync } from '../../lib/notificationSyncEvents';
 import { mapOfferCard } from '../../lib/partnerMappers';
 import { usePartnerScrollEndPadding } from '../../hooks/usePartnerContentPadding';
 
@@ -29,6 +31,8 @@ export default function PartnerOffers() {
     async (offer) => {
       try {
         await partnerBookingsService.accept(offer.id);
+        emitPartnerBookingsSync({ source: 'offer_accepted' });
+        emitNotificationsSync({ source: 'offer_accepted' });
         toast.success('Job accepted');
         router.push(`/(partner)/job/${offer.id}`);
         reloadSilent();

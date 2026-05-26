@@ -22,6 +22,7 @@ from app.schemas.booking_schema import (
     BookingCancelBody,
     BookingCreate,
     BookingDetailRead,
+    BookingHandoffReportBody,
     BookingOfferList,
     BookingRead,
     BookingReadList,
@@ -169,6 +170,37 @@ async def accept_booking(
     current: Annotated[User, Depends(require_roles(UserRole.washer))],
 ) -> BookingRead:
     booking = await booking_service.accept_booking(db, current, booking_id)
+    return BookingRead.model_validate(booking)
+
+
+@router.post("/{booking_id}/handoff/request", response_model=BookingRead)
+async def request_booking_handoff(
+    booking_id: UUID,
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current: Annotated[User, Depends(require_roles(UserRole.washer))],
+) -> BookingRead:
+    booking = await booking_service.request_customer_handoff(db, current, booking_id)
+    return BookingRead.model_validate(booking)
+
+
+@router.post("/{booking_id}/handoff/confirm", response_model=BookingRead)
+async def confirm_booking_handoff(
+    booking_id: UUID,
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current: Annotated[User, Depends(require_roles(UserRole.customer))],
+) -> BookingRead:
+    booking = await booking_service.confirm_booking_completion(db, current, booking_id)
+    return BookingRead.model_validate(booking)
+
+
+@router.post("/{booking_id}/handoff/report-issue", response_model=BookingRead)
+async def report_booking_handoff_issue(
+    booking_id: UUID,
+    payload: BookingHandoffReportBody,
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current: Annotated[User, Depends(require_roles(UserRole.customer))],
+) -> BookingRead:
+    booking = await booking_service.report_booking_issue(db, current, booking_id, payload)
     return BookingRead.model_validate(booking)
 
 

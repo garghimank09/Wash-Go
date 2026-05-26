@@ -14,6 +14,10 @@ import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../../context/ThemeContext';
 import { usePartnerAuth } from '../../context/PartnerAuthContext';
+import { isDemoEmail } from '../../lib/demoAccounts';
+import { OTP_RESEND_COOLDOWN_SECONDS } from '../../lib/otpConstants';
+import { setPendingAuthFlow } from '../../lib/pendingAuthFlow';
+import { partnerAuthService } from '../../services/partnerAuthService';
 
 export default function PartnerLogin() {
   const { theme } = useTheme();
@@ -30,13 +34,26 @@ export default function PartnerLogin() {
       setError('Please fill in all fields');
       return;
     }
+    const normalizedEmail = email.trim().toLowerCase();
     setError('');
     setLoading(true);
     try {
-      await loginPartner(email, password);
-      router.replace('/(partner)/home');
+      if (isDemoEmail(normalizedEmail)) {
+        await loginPartner(normalizedEmail, password);
+        router.replace('/(partner)/home');
+        return;
+      }
+      const res = await partnerAuthService.sendOtp(normalizedEmail, 'login');
+      setPendingAuthFlow({
+        flow: 'partner-login',
+        email: normalizedEmail,
+        password,
+        otpInfo: res.message || 'Check your email for the code.',
+        resendCooldownSeconds: OTP_RESEND_COOLDOWN_SECONDS,
+      });
+      router.push('/(auth)/verify-otp');
     } catch (err) {
-      setError(err.message);
+      setError(err.message || 'Sign in failed');
     } finally {
       setLoading(false);
     }
@@ -121,7 +138,7 @@ export default function PartnerLogin() {
               {loading ? (
                 <ActivityIndicator color={theme.button.primary.text} />
               ) : (
-                <Text style={s.primaryBtnText}>Sign in as partner</Text>
+                <Text style={s.primaryBtnText}>Continue</Text>
               )}
             </TouchableOpacity>
 

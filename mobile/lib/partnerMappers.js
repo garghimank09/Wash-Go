@@ -7,6 +7,8 @@
  */
 
 import { photoUrl } from '../services/partnerPhotoService';
+import { decodeBookingMeta } from '../services/bookingService';
+import { getPackage, getVehicleSize } from '../services/pricingService';
 import { formatPartnerServiceDescriptor } from './partnerServiceDescriptor';
 
 const HOUR = 60 * 60 * 1000;
@@ -99,11 +101,18 @@ export function mapBookingDetail(detail) {
   const lat = numberOrNull(detail.latitude);
   const lng = numberOrNull(detail.longitude);
   const pkgTitle = formatPartnerServiceDescriptor(detail.notes);
+  const { packageId, vehicleSize } = decodeBookingMeta(detail.notes);
+  const pkgMeta = packageId ? getPackage(packageId) : null;
+  const sizeMeta = vehicleSize ? getVehicleSize(vehicleSize) : null;
 
   return {
     id: detail.id,
     bookingId: detail.id,
+    customerId: detail.customer_id ?? null,
     status: detail.status,
+    handoff_status: detail.handoff_status || 'none',
+    handoff_requested_at: detail.handoff_requested_at ?? null,
+    handoff_resolved_at: detail.handoff_resolved_at ?? null,
     scheduledAt: detail.scheduled_at,
     currency: detail.currency || 'USD',
     payoutCents: detail.price_cents || 0,
@@ -128,12 +137,12 @@ export function mapBookingDetail(detail) {
       label: detail.car_label ?? '',
       plate: '',
       color: '',
-      type: '',
+      type: sizeMeta?.label ?? '',
     },
     package: {
-      label: pkgTitle || null,
+      label: pkgTitle || pkgMeta?.label || null,
       durationMins: null,
-      items: [],
+      items: Array.isArray(pkgMeta?.features) ? pkgMeta.features : [],
     },
     briefing: detail.notes
       ? {

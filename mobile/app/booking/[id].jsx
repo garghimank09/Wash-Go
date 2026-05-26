@@ -32,6 +32,8 @@ import {
   shouldTrackLive,
   isPhaseTerminal,
 } from '../../lib/customerBookingPhase';
+import { onBookingsSync } from '../../lib/bookingSyncEvents';
+import WashCompletionReviewCard from '../../components/customer/WashCompletionReviewCard';
 import AppIcon from '../../components/customer/AppIcon';
 import StepHeader from '../../components/customer/StepHeader';
 import PhasePill from '../../components/customer/PhasePill';
@@ -82,6 +84,13 @@ export default function BookingDetail() {
       setRefreshing(false);
     }
   }, [id]);
+
+  useEffect(() => {
+    const off = onBookingsSync(() => {
+      if (focusedRef.current) loadBooking();
+    });
+    return off;
+  }, [loadBooking]);
 
   useFocusEffect(
     useCallback(() => {
@@ -186,8 +195,18 @@ export default function BookingDetail() {
             </Text>
           </View>
           <Text style={s.heroTitle}>{pkg?.label || 'Wash'}</Text>
-          <Text style={s.heroSub}>{PHASE_SUBTITLE[phase]}</Text>
+          {phase !== 'awaiting_review' ? (
+            <Text style={s.heroSub}>{PHASE_SUBTITLE[phase]}</Text>
+          ) : null}
         </View>
+
+        {phase === 'awaiting_review' ? (
+          <WashCompletionReviewCard
+            booking={booking}
+            vehicle={vehicle}
+            onUpdated={loadBooking}
+          />
+        ) : null}
 
         {trackLive ? (
           <TrackingCard tracking={tracking} theme={theme} />
