@@ -29,7 +29,7 @@ export function WasherSidebar() {
         railAsideClass({
           mobileOpen: false,
           surfaceClass:
-            'hidden border-white/20 bg-[color:var(--wg-glass-bg)]/80 backdrop-blur-xl dark:border-white/10 md:flex',
+            'hidden border-wg-border/80 wg-glass-surface backdrop-blur-xl dark:border-white/10 md:flex',
         }),
         '-translate-x-0 md:translate-x-0',
       )}

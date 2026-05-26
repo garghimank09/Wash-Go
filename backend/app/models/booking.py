@@ -67,6 +67,8 @@ class Booking(Base):
     price_cents: Mapped[int] = mapped_column(nullable=False, default=0)
     currency: Mapped[str] = mapped_column(String(3), nullable=False, default="INR")
     notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+    arrival_condition_notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+    service_phase: Mapped[str | None] = mapped_column(String(64), nullable=True, index=True)
     handoff_status: Mapped[HandoffStatus] = mapped_column(
         Enum(HandoffStatus, name="handoff_status", native_enum=False, length=32),
         nullable=False,

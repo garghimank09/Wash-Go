@@ -38,7 +38,7 @@ export function AdminDirectoryPartnerTable({ rows, onPreview, tickVersion }) {
   const colCount = 10;
 
   return (
-    <Card variant="enterprise" className="min-w-0 overflow-hidden border-l-4 border-l-emerald-500/55 border-white/20 p-0 dark:border-white/10">
+    <Card variant="enterprise" className="wg-admin-accent-partner min-w-0 overflow-hidden p-0">
       <div className="border-b border-white/10 px-4 py-3 dark:border-white/5">
         <h2 className="wg-heading-section">Partner / fleet directory</h2>
         <p className="mt-0.5 text-xs text-wg-muted">Fleet operations view — availability synced from fleet API.</p>

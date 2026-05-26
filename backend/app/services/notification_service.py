@@ -213,6 +213,32 @@ async def notify_handoff_issue_reported(
     )
 
 
+async def notify_customer_booking_milestone(
+    db: AsyncSession,
+    booking: Booking,
+    *,
+    service_phase: str,
+) -> None:
+    from app.schemas.service_phase import MILESTONE_NOTIFY
+
+    copy = MILESTONE_NOTIFY.get(service_phase)
+    if copy is None:
+        return
+    title, body = copy
+    await create_notification(
+        db,
+        user_id=booking.customer_id,
+        title=title,
+        body=body,
+        notification_type="booking_milestone",
+        data={
+            "booking_id": str(booking.id),
+            "service_phase": service_phase,
+            "path": f"/bookings/{booking.id}",
+        },
+    )
+
+
 async def list_notifications_for_user(
     db: AsyncSession, user_id: UUID, *, limit: int = 40
 ) -> tuple[list[Notification], int]:

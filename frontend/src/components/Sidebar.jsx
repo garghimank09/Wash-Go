@@ -6,20 +6,45 @@ import {
   expandOnHover,
   railAsideClass,
   RAIL_BRAND_ROW,
-  RAIL_FOOTER,
   RAIL_LINK,
   RAIL_NAV_PAD,
 } from '../lib/collapsibleRailSidebar';
 import { useReducedMotion } from '../lib/useReducedMotion';
 import { cn } from '../lib/cn';
 
-const links = [
+const mainLinks = [
   { to: '/dashboard', label: 'Dashboard', end: true, Icon: LayoutDashboard },
   { to: '/bookings', label: 'Bookings', Icon: Calendar },
-  { to: '/profile', label: 'Profile', Icon: UserCircle },
   { to: '/cars', label: 'My garage', Icon: Car },
   { to: '/booking', label: 'New wash', Icon: Sparkles },
 ];
+
+const footerLinks = [{ to: '/profile', label: 'Profile', Icon: UserCircle }];
+
+function SidebarNavItem({ to, label, end, Icon, onNavigate, reduced }) {
+  return (
+    <m.div whileHover={reduced ? undefined : { x: 2 }} transition={{ type: 'spring', stiffness: 420, damping: 30 }}>
+      <NavLink
+        to={to}
+        end={end}
+        onClick={onNavigate}
+        aria-label={label}
+        className={({ isActive }) =>
+          cn(
+            RAIL_LINK.base,
+            isActive
+              ? 'bg-gradient-to-r from-cyan-500/15 to-indigo-600/15 text-cyan-700 shadow-sm ring-1 ring-cyan-400/20 dark:text-cyan-300'
+              : 'text-wg-muted hover:bg-wg-surface/90 hover:text-wg-text',
+            isActive && 'md:ring-2 md:[@media(hover:hover)_and_(pointer:fine)]:group-hover/sidebar:ring-1',
+          )
+        }
+      >
+        <Icon className="size-5 shrink-0 opacity-90" strokeWidth={1.75} aria-hidden />
+        <span className={expandOnHover()}>{label}</span>
+      </NavLink>
+    </m.div>
+  );
+}
 
 export function Sidebar({ mobileOpen, onNavigate }) {
   const reduced = useReducedMotion();
@@ -29,7 +54,7 @@ export function Sidebar({ mobileOpen, onNavigate }) {
       className={railAsideClass({
         mobileOpen,
         surfaceClass:
-          'border-white/20 wg-glass-surface backdrop-blur-2xl dark:border-white/10',
+          'border-wg-border/80 wg-glass-surface backdrop-blur-2xl dark:border-white/10',
       })}
     >
       <div className={cn('flex h-16 shrink-0 items-center border-b border-wg-border', RAIL_BRAND_ROW)}>
@@ -44,36 +69,35 @@ export function Sidebar({ mobileOpen, onNavigate }) {
         </div>
       </div>
 
-      <nav className={cn('flex flex-1 flex-col gap-1 overflow-x-hidden overflow-y-auto p-3', RAIL_NAV_PAD)}>
+      <nav
+        className={cn('flex min-h-0 flex-1 flex-col gap-1 overflow-x-hidden overflow-y-auto p-3', RAIL_NAV_PAD)}
+        aria-label="Customer navigation"
+      >
         <p className={cn('mb-2 px-3 text-[10px] font-bold uppercase tracking-[0.12em] text-wg-muted', expandOnHover())}>
           Your garage
         </p>
-        {links.map(({ to, label, end, Icon }) => (
-          <m.div key={to} whileHover={reduced ? undefined : { x: 2 }} transition={{ type: 'spring', stiffness: 420, damping: 30 }}>
-            <NavLink
-              to={to}
-              end={end}
-              onClick={onNavigate}
-              aria-label={label}
-              className={({ isActive }) =>
-                cn(
-                  RAIL_LINK.base,
-                  isActive
-                    ? 'bg-gradient-to-r from-cyan-500/15 to-indigo-600/15 text-cyan-700 shadow-sm ring-1 ring-cyan-400/20 dark:text-cyan-300'
-                    : 'text-wg-muted hover:bg-wg-surface/90 hover:text-wg-text',
-                  isActive && 'md:ring-2 md:[@media(hover:hover)_and_(pointer:fine)]:group-hover/sidebar:ring-1',
-                )
-              }
-            >
-              <Icon className="size-5 shrink-0 opacity-90" strokeWidth={1.75} aria-hidden />
-              <span className={expandOnHover()}>{label}</span>
-            </NavLink>
-          </m.div>
+        {mainLinks.map((link) => (
+          <SidebarNavItem key={link.to} {...link} onNavigate={onNavigate} reduced={reduced} />
         ))}
       </nav>
 
-      <div className={cn(RAIL_FOOTER, 'border-t border-wg-border p-4 text-xs text-wg-muted', expandOnHover())}>
-        Tip: use the floating chat for quick help while you navigate.
+      <div
+        className={cn(
+          'shrink-0 border-t border-wg-border/80 p-3 dark:border-white/10',
+          RAIL_NAV_PAD,
+        )}
+      >
+        {footerLinks.map((link) => (
+          <SidebarNavItem key={link.to} {...link} onNavigate={onNavigate} reduced={reduced} />
+        ))}
+        <p
+          className={cn(
+            'mt-3 hidden px-3 text-xs leading-relaxed text-wg-muted max-md:block',
+            expandOnHover(),
+          )}
+        >
+          Tip: use the floating chat for quick help while you navigate.
+        </p>
       </div>
     </aside>
   );

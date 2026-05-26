@@ -142,7 +142,7 @@ export function PartnerLoginPage() {
         className="pointer-events-none absolute inset-0 opacity-45"
         style={{
           background:
-            'radial-gradient(ellipse 90% 55% at 50% -15%, rgba(16,185,129,0.38), transparent), radial-gradient(ellipse 55% 45% at 100% 10%, rgba(99,102,241,0.28), transparent), radial-gradient(ellipse 50% 40% at 0% 80%, rgba(6,182,212,0.2), transparent)',
+            'var(--wg-mesh), radial-gradient(ellipse 90% 55% at 50% -15%, rgba(16,185,129,0.28), transparent), radial-gradient(ellipse 55% 45% at 100% 10%, rgba(99,102,241,0.18), transparent)',
         }}
       />
       <div className="relative mx-auto w-full max-w-md">

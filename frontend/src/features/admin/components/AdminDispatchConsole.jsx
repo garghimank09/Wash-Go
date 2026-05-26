@@ -29,7 +29,7 @@ export function AdminDispatchConsole({ queue, selected, selectedId, onSelect, su
     <div className="grid min-w-0 gap-4 xl:grid-cols-12">
       <Card
         variant="enterprise"
-        className="min-w-0 border-l-4 border-l-violet-500/55 border-white/20 p-0 xl:col-span-5 dark:border-white/10"
+        className="wg-admin-accent-ops min-w-0 p-0 xl:col-span-5"
       >
         <div className="border-b border-white/10 px-4 py-3 dark:border-white/5">
           <h2 className="wg-heading-section">Assignment queue</h2>
@@ -76,7 +76,7 @@ export function AdminDispatchConsole({ queue, selected, selectedId, onSelect, su
         </ul>
       </Card>
 
-      <Card variant="enterprise" className="min-w-0 border-l-4 border-l-cyan-500/60 border-white/20 p-4 xl:col-span-7 dark:border-white/10">
+      <Card variant="enterprise" className="wg-admin-accent-revenue min-w-0 p-4 xl:col-span-7">
         {selected ? (
           <>
             <div className="flex flex-wrap items-start justify-between gap-3">

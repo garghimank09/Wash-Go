@@ -10,18 +10,19 @@ const LABELS = {
   accepted: 'Queued · heading soon',
   on_the_way: 'Heading to customer',
   arrived: 'Arrived onsite',
+  awaiting_approval: 'Vehicle condition · customer OK',
+  arrival_approved: 'Condition approved',
   wash_started: 'Service in progress',
   qc_review: 'QC review',
-  awaiting_approval: 'Awaiting customer approval',
   completed: 'Completed',
 };
 
-export function WasherJobProgress({ phase }) {
+export function WasherJobProgress({ phase, compact = false }) {
   const reduced = useReducedMotion();
   const r = phaseRank(phase);
 
   return (
-    <ol className="relative space-y-0">
+    <ol className={cn('relative space-y-0', compact && '-mx-1')}>
       <m.div
         className="absolute bottom-3 left-[15px] top-3 w-0.5 overflow-hidden rounded-full bg-wg-border/80 dark:bg-white/10"
         aria-hidden
@@ -43,7 +44,8 @@ export function WasherJobProgress({ phase }) {
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: reduced ? 0 : i * 0.035, type: 'spring', stiffness: 400, damping: 30 }}
             className={cn(
-              'relative flex gap-4 border-b border-wg-border/60 py-3.5 pl-10 last:border-0 dark:border-white/10',
+              'relative flex gap-4 border-b border-wg-border/60 last:border-0 dark:border-white/10',
+              compact ? 'py-2.5 pl-9' : 'py-3.5 pl-10',
               current && 'rounded-xl bg-gradient-to-r from-cyan-500/[0.08] to-transparent ring-1 ring-cyan-500/10',
             )}
           >
@@ -53,7 +55,8 @@ export function WasherJobProgress({ phase }) {
               ) : null}
               <span
                 className={cn(
-                  'relative flex size-8 items-center justify-center rounded-full text-[10px] font-black ring-2 transition-shadow',
+                  'relative flex items-center justify-center rounded-full font-black ring-2 transition-shadow',
+                  compact ? 'size-7 text-[9px]' : 'size-8 text-[10px]',
                   done
                     ? 'bg-emerald-500 text-white ring-emerald-300/50 shadow-[0_0_0_4px_rgb(16_185_129/0.12)]'
                     : current
@@ -65,10 +68,18 @@ export function WasherJobProgress({ phase }) {
               </span>
             </span>
             <div className="min-w-0 flex-1 pt-0.5">
-              <p className={cn('text-[15px] font-bold', current ? 'text-cyan-800 dark:text-cyan-100' : 'text-wg-text')}>
+              <p
+                className={cn(
+                  'font-bold',
+                  compact ? 'text-[13px] leading-snug' : 'text-[15px]',
+                  current ? 'text-cyan-800 dark:text-cyan-100' : 'text-wg-text',
+                )}
+              >
                 {LABELS[key]}
               </p>
-              <p className="text-xs text-wg-muted">{done ? 'Cleared' : current ? 'Live · in motion' : 'Queued'}</p>
+              <p className={cn('text-wg-muted', compact ? 'text-[11px]' : 'text-xs')}>
+                {done ? 'Cleared' : current ? 'Live · in motion' : 'Queued'}
+              </p>
             </div>
           </m.li>
         );

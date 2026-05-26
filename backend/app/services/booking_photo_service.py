@@ -86,12 +86,20 @@ async def list_booking_photos(
     return [_to_read(p) for p in photos]
 
 
+def _normalize_condition_notes(notes: str | None) -> str | None:
+    if notes is None:
+        return None
+    trimmed = notes.strip()
+    return trimmed or None
+
+
 async def upload_booking_photo(
     db: AsyncSession,
     user: User,
     booking_id: UUID,
     kind: BookingPhotoKind,
     upload: UploadFile,
+    condition_notes: str | None = None,
 ) -> BookingPhotoRead:
     if user.role != UserRole.washer:
         raise ForbiddenError("Only assigned washers can upload proof photos")
@@ -101,8 +109,17 @@ async def upload_booking_photo(
     if washer is None or booking.washer_id != washer.id:
         raise ForbiddenError("You must be assigned to this job to upload photos")
 
-    if booking.status.value in ("cancelled",):
-        raise ValidationError("Cannot upload photos for a cancelled booking")
+    if booking.status.value in ("cancelled", "completed"):
+        raise ValidationError("Cannot upload photos for a finished booking")
+
+    if kind in (BookingPhotoKind.before, BookingPhotoKind.after):
+        if booking.service_phase not in ("arrival_approved", "wash_in_progress"):
+            raise ValidationError(
+                "Customer must approve the vehicle condition before wash photos can be uploaded"
+            )
+
+    if kind == BookingPhotoKind.arrival and booking.washer_id is None:
+        raise ValidationError("Assign a washer before uploading vehicle condition proof")
 
     content_type = (upload.content_type or "image/jpeg").lower().split(";")[0].strip()
     if content_type not in ALLOWED_CONTENT_TYPES:
@@ -140,6 +157,20 @@ async def upload_booking_photo(
 
     booking.updated_at = datetime.now(timezone.utc)
     db.add(photo)
+
+    if kind == BookingPhotoKind.arrival:
+        allowed_phases = frozenset({"arrived_onsite", "awaiting_arrival_approval"})
+        if booking.service_phase not in allowed_phases:
+            raise ValidationError(
+                "Mark arrived on site before uploading the vehicle condition photo"
+            )
+        notes = _normalize_condition_notes(condition_notes)
+        if notes is not None:
+            booking.arrival_condition_notes = notes
+        from app.services.booking_service import _apply_service_phase
+
+        await _apply_service_phase(db, booking, "awaiting_arrival_approval", notify=True)
+
     await db.commit()
     await db.refresh(photo)
     return _to_read(photo)

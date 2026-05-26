@@ -25,7 +25,7 @@ export function WasherLayout() {
       )}
       style={{
         backgroundImage:
-          'var(--wg-mesh), radial-gradient(ellipse 120% 80% at 50% -10%, rgb(6 182 212 / 0.08), transparent 55%)',
+          'var(--wg-mesh), radial-gradient(ellipse 120% 80% at 50% -10%, rgb(6 182 212 / 0.05), transparent 55%)',
       }}
     >
       <PartnerBookingSyncBridge />
@@ -37,7 +37,7 @@ export function WasherLayout() {
         <main
           className={cn(
             'mx-auto w-full flex-1 px-4 pt-2 md:px-8 md:pt-4',
-            isJobDetail ? 'pb-48 md:pb-28' : 'pb-32 md:pb-8',
+            isJobDetail ? 'pb-52 md:pb-36 xl:pb-32' : 'pb-32 md:pb-8',
           )}
         >
           <PageShell maxWidth="wide" className="space-y-6 md:space-y-8">

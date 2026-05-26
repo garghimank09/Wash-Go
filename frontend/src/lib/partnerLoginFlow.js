@@ -7,23 +7,22 @@ import { partnerAuthService } from '../services/partnerAuthService';
  */
 export async function loginViaPartnerPortal(email, password) {
   const data = await authService.login(email.trim(), password);
-  authService.setToken(data.access_token);
+  authService.saveSession(data);
   const me = await authService.me();
 
   if (me.role === 'admin') {
-    authService.setToken(data.access_token);
-    partnerAuthService.setToken(null);
+    partnerAuthService.clearSession();
     return { kind: 'admin', user: me };
   }
 
   if (me.role === 'washer') {
-    authService.setToken(null);
-    partnerAuthService.setToken(data.access_token);
+    authService.clearSession();
+    partnerAuthService.saveSession(data);
     return { kind: 'washer', user: me };
   }
 
-  authService.setToken(null);
-  partnerAuthService.setToken(null);
+  authService.clearSession();
+  partnerAuthService.clearSession();
   const err = new Error('PARTNER_ROLE');
   throw err;
 }

@@ -13,11 +13,13 @@ from app.schemas.partner_schema import (
     WasherAvailabilityRead,
     WasherAvailabilityUpdate,
 )
+from app.schemas.review_schema import ReviewPartnerList
 from app.schemas.tracking_schema import WasherLocationUpdate
 from app.services import (
     partner_earning_service,
     partner_profile_service,
     partner_service,
+    review_service,
     tracking_service,
 )
 
@@ -83,3 +85,13 @@ async def upload_partner_avatar(
     file: UploadFile = File(...),
 ) -> PartnerProfileRead:
     return await partner_profile_service.upload_partner_avatar(db, current, file)
+
+
+@router.get("/reviews", response_model=ReviewPartnerList)
+async def list_partner_reviews(
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current: Annotated[User, Depends(require_roles(UserRole.washer))],
+) -> ReviewPartnerList:
+    """Customer feedback left on this partner's completed jobs."""
+    items = await review_service.list_reviews_for_partner(db, current)
+    return ReviewPartnerList(items=items)

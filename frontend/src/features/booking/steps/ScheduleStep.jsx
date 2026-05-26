@@ -1,6 +1,8 @@
 import { CalendarClock, Clock, Loader2, MapPin } from 'lucide-react';
 
+import { GoogleMapsBookingLocation } from '../../../components/maps/GoogleMapsBookingLocation';
 import { ServiceLocationPicker } from '../../../components/ServiceLocationPicker';
+import { isGoogleMapsConfigured } from '../../../constants/maps';
 import { Card } from '../../../ui/card';
 import { Input } from '../../../ui/input';
 import { cn } from '../../../lib/cn';
@@ -17,6 +19,7 @@ export function ScheduleStep({
   serviceLat,
   serviceLng,
   onLocationChange,
+  onPlaceSelect,
   scheduledDate,
   setScheduledDate,
   scheduledTime,
@@ -28,6 +31,7 @@ export function ScheduleStep({
   minTime,
 }) {
   const hasPin = serviceLat != null && serviceLng != null;
+  const useGoogle = isGoogleMapsConfigured();
 
   return (
     <div className="space-y-6">
@@ -38,30 +42,46 @@ export function ScheduleStep({
         <div className="min-w-0">
           <h2 className="text-base font-bold text-wg-text">Where & when</h2>
           <p className="mt-1 text-sm leading-relaxed text-wg-muted">
-            Enter your address — we locate it on the map automatically. Then choose your service date and time.
+            {useGoogle
+              ? 'Search with Google Maps, use your location, or drag the pin — 2D/3D and satellite views available.'
+              : 'Type your address, use your location, or drag the map pin. Add VITE_GOOGLE_MAPS_API_KEY for Google Maps.'}
           </p>
         </div>
       </div>
 
-      <div className="space-y-2">
-        <Input label="Service address" as="textarea" value={address} onChange={(e) => setAddress(e.target.value)} />
-        {geocoding ? (
-          <p className="flex items-center gap-2 text-xs font-medium text-cyan-700 dark:text-cyan-300">
-            <Loader2 className="size-3.5 animate-spin" aria-hidden />
-            Locating address on map…
-          </p>
-        ) : null}
-        {geocodeError && !geocoding ? (
-          <p className="text-xs font-medium text-amber-800 dark:text-amber-200">{geocodeError}</p>
-        ) : null}
-        {hasPin && !geocoding && !geocodeError ? (
-          <p className="text-xs font-medium text-emerald-700 dark:text-emerald-300">
-            Location found — drag the pin to refine your exact spot.
-          </p>
-        ) : null}
-      </div>
-
-      <ServiceLocationPicker lat={serviceLat} lng={serviceLng} onChange={onLocationChange} />
+      {useGoogle ? (
+        <GoogleMapsBookingLocation
+          address={address}
+          setAddress={setAddress}
+          serviceLat={serviceLat}
+          serviceLng={serviceLng}
+          onLocationChange={onLocationChange}
+          onPlaceSelect={onPlaceSelect}
+          geocoding={geocoding}
+          geocodeError={geocodeError}
+        />
+      ) : (
+        <>
+          <div className="space-y-2">
+            <Input label="Service address" as="textarea" value={address} onChange={(e) => setAddress(e.target.value)} />
+            {geocoding ? (
+              <p className="flex items-center gap-2 text-xs font-medium text-cyan-700 dark:text-cyan-300">
+                <Loader2 className="size-3.5 animate-spin" aria-hidden />
+                {hasPin ? 'Fetching service address for pin…' : 'Locating address on map…'}
+              </p>
+            ) : null}
+            {geocodeError && !geocoding ? (
+              <p className="text-xs font-medium text-amber-800 dark:text-amber-200">{geocodeError}</p>
+            ) : null}
+            {hasPin && !geocoding && !geocodeError ? (
+              <p className="text-xs font-medium text-emerald-700 dark:text-emerald-300">
+                Location set — drag the pin to refine your exact spot if needed.
+              </p>
+            ) : null}
+          </div>
+          <ServiceLocationPicker lat={serviceLat} lng={serviceLng} onChange={onLocationChange} />
+        </>
+      )}
 
       <Card variant="glass" className="border-white/35 dark:border-white/10">
         <div className="flex flex-wrap items-center justify-between gap-3 border-b border-white/15 pb-4 dark:border-white/5">

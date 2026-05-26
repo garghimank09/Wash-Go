@@ -6,3 +6,9 @@ class GeocodeRead(BaseModel):
     lng: float
     found: bool = True
     approximate: bool = False
+
+
+class ReverseGeocodeRead(BaseModel):
+    address: str
+    lat: float
+    lng: float

@@ -24,9 +24,9 @@ import { BookingDetailPage } from '../pages/BookingDetailPage';
 import { BookingPage } from '../pages/BookingPage';
 import { BookingsPage } from '../pages/BookingsPage';
 import { CarsPage } from '../pages/CarsPage';
+import { CustomerProfilePage } from '../pages/CustomerProfilePage';
 import { DashboardPage } from '../pages/DashboardPage';
 import { MembershipSubscribePage } from '../pages/MembershipSubscribePage';
-import { ProfilePage } from '../pages/ProfilePage';
 import { LandingPage } from '../pages/LandingPage';
 import { LoginPage } from '../pages/LoginPage';
 import { PartnerLoginPage } from '../pages/partner/PartnerLoginPage';
@@ -39,6 +39,7 @@ import { WasherJobPage } from '../pages/washer/WasherJobPage';
 import { WasherRequestsPage } from '../pages/washer/WasherRequestsPage';
 import { WasherProfilePage } from '../pages/washer/WasherProfilePage';
 import { WasherSchedulePage } from '../pages/washer/WasherSchedulePage';
+import { WasherHistoryPage } from '../pages/washer/WasherHistoryPage';
 
 export function AppRoutes() {
   return (
@@ -64,10 +65,11 @@ export function AppRoutes() {
                 <Route index element={<WasherDashboardPage />} />
                 <Route path="requests" element={<WasherRequestsPage />} />
                 <Route path="schedule" element={<WasherSchedulePage />} />
+                <Route path="history" element={<WasherHistoryPage />} />
                 <Route path="jobs/:id" element={<WasherJobPage />} />
                 <Route path="earnings" element={<WasherEarningsPage />} />
-                <Route path="profile" element={<WasherProfilePage />} />
                 <Route path="rewards" element={<WasherRewardsPage />} />
+                <Route path="profile" element={<WasherProfilePage />} />
               </Route>
             </Route>
           </Route>
@@ -77,7 +79,7 @@ export function AppRoutes() {
           <Route element={<CustomerShellRoute />}>
             <Route element={<MainLayout />}>
               <Route path="/dashboard" element={<DashboardPage />} />
-              <Route path="/profile" element={<ProfilePage />} />
+              <Route path="/profile" element={<CustomerProfilePage />} />
               <Route path="/membership/subscribe/:slug" element={<MembershipSubscribePage />} />
               <Route path="/cars" element={<CarsPage />} />
               <Route path="/booking" element={<BookingPage />} />

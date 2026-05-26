@@ -30,6 +30,7 @@ export function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [resendLoading, setResendLoading] = useState(false);
 
+  if (user?.role === 'admin') return <Navigate to="/admin" replace />;
   if (user) return <Navigate to={resolvePostLoginPath(user, from)} replace />;
 
   const normalizedEmail = email.trim().toLowerCase();

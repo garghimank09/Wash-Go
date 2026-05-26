@@ -30,12 +30,24 @@ class BookingCreate(BaseModel):
         return self
 
 
+class BookingMilestoneUpdate(BaseModel):
+    service_phase: str = Field(min_length=2, max_length=64)
+
+
+class ArrivalConditionNotesUpdate(BaseModel):
+    notes: str | None = Field(default=None, max_length=2000)
+
+
 class BookingRead(BaseModel):
     id: UUID
     customer_id: UUID
     car_id: UUID
     washer_id: UUID | None
     status: BookingStatus
+    service_phase: str | None = None
+    handoff_status: HandoffStatus = HandoffStatus.none
+    handoff_requested_at: datetime | None = None
+    handoff_resolved_at: datetime | None = None
     scheduled_at: datetime
     service_address: str
     latitude: Decimal | None
@@ -43,9 +55,8 @@ class BookingRead(BaseModel):
     price_cents: int
     currency: str
     notes: str | None
-    handoff_status: HandoffStatus = HandoffStatus.none
-    handoff_requested_at: datetime | None = None
-    handoff_resolved_at: datetime | None = None
+    created_at: datetime | None = None
+    updated_at: datetime | None = None
 
     model_config = {"from_attributes": True}
 
@@ -165,6 +176,16 @@ class BookingCancelBody(BaseModel):
         return v
 
 
+class BookingRescheduleBody(BaseModel):
+    scheduled_at: datetime
+
+    @model_validator(mode="after")
+    def scheduled_in_future(self) -> "BookingRescheduleBody":
+        if self.scheduled_at <= datetime.now(timezone.utc):
+            raise ValueError("scheduled_at must be in the future")
+        return self
+
+
 HANDOFF_ISSUE_REASON_KEYS = frozenset(
     CANCEL_REASON_KEYS
     | {
@@ -188,16 +209,6 @@ class BookingHandoffReportBody(BaseModel):
         return v
 
 
-class BookingRescheduleBody(BaseModel):
-    scheduled_at: datetime
-
-    @model_validator(mode="after")
-    def scheduled_in_future(self) -> "BookingRescheduleBody":
-        if self.scheduled_at <= datetime.now(timezone.utc):
-            raise ValueError("scheduled_at must be in the future")
-        return self
-
-
 class WasherPublic(BaseModel):
     id: UUID
     full_name: str
@@ -212,6 +223,15 @@ class BookingTimelineStep(BaseModel):
     label: str
     done: bool
     at: datetime | None = None
+
+
+class BookingReviewSummary(BaseModel):
+    id: UUID
+    rating: int
+    comment: str | None
+    created_at: datetime
+
+    model_config = {"from_attributes": True}
 
 
 class BookingPhotoSummary(BaseModel):
@@ -229,6 +249,10 @@ class BookingDetailRead(BaseModel):
     car_id: UUID
     washer_id: UUID | None
     status: BookingStatus
+    service_phase: str | None = None
+    handoff_status: HandoffStatus = HandoffStatus.none
+    handoff_requested_at: datetime | None = None
+    handoff_resolved_at: datetime | None = None
     scheduled_at: datetime
     service_address: str
     latitude: Decimal | None
@@ -237,9 +261,6 @@ class BookingDetailRead(BaseModel):
     currency: str
     notes: str | None
     created_at: datetime
-    handoff_status: HandoffStatus = HandoffStatus.none
-    handoff_requested_at: datetime | None = None
-    handoff_resolved_at: datetime | None = None
     car_label: str | None = None
     customer_name: str | None = None
     customer_phone: str | None = None
@@ -247,5 +268,7 @@ class BookingDetailRead(BaseModel):
     eta_minutes: int | None = None
     timeline: list[BookingTimelineStep]
     photos: list[BookingPhotoSummary] = []
+    arrival_condition_notes: str | None = None
+    review: BookingReviewSummary | None = None
 
     model_config = {"from_attributes": True}

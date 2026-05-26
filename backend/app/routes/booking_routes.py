@@ -27,13 +27,16 @@ from app.schemas.booking_schema import (
     BookingRead,
     BookingReadList,
     BookingRescheduleBody,
+    ArrivalConditionNotesUpdate,
+    BookingMilestoneUpdate,
     BookingStatusUpdate,
     WasherAdminFleetList,
     WasherDispatchList,
 )
 from app.schemas.booking_sync_schema import BookingSyncState
+from app.schemas.review_schema import ReviewAdminList, ReviewCreate, ReviewRead
 from app.schemas.tracking_schema import BookingTrackingRead
-from app.services import booking_photo_service, booking_service, tracking_service
+from app.services import booking_photo_service, booking_service, review_service, tracking_service
 from app.services.booking_sync_service import get_bookings_sync_state
 
 router = APIRouter(prefix="/bookings", tags=["Bookings"])
@@ -84,6 +87,15 @@ async def list_admin_fleet(
 ) -> WasherAdminFleetList:
     items = await booking_service.list_washers_admin_fleet(db)
     return WasherAdminFleetList(items=items)
+
+
+@router.get("/admin/reviews", response_model=ReviewAdminList)
+async def list_admin_reviews(
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current: Annotated[User, Depends(require_admin_console())],
+) -> ReviewAdminList:
+    items = await review_service.list_reviews_admin(db)
+    return ReviewAdminList(items=items)
 
 
 @router.patch("/{booking_id}/assign", response_model=BookingRead)
@@ -217,6 +229,19 @@ async def update_booking_status(
     return BookingRead.model_validate(booking)
 
 
+@router.patch("/{booking_id}/milestone", response_model=BookingRead)
+async def update_booking_milestone(
+    booking_id: UUID,
+    payload: BookingMilestoneUpdate,
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current: Annotated[User, Depends(require_roles(UserRole.washer))],
+) -> BookingRead:
+    booking = await booking_service.update_booking_milestone_for_washer(
+        db, current, booking_id, payload
+    )
+    return BookingRead.model_validate(booking)
+
+
 @router.get("/{booking_id}/tracking", response_model=BookingTrackingRead)
 async def get_booking_tracking(
     booking_id: UUID,
@@ -243,8 +268,34 @@ async def upload_booking_photo(
     current: Annotated[User, Depends(require_roles(UserRole.washer))],
     kind: Annotated[BookingPhotoKind, Form()],
     file: Annotated[UploadFile, File()],
+    condition_notes: Annotated[str | None, Form()] = None,
 ) -> BookingPhotoRead:
-    return await booking_photo_service.upload_booking_photo(db, current, booking_id, kind, file)
+    return await booking_photo_service.upload_booking_photo(
+        db, current, booking_id, kind, file, condition_notes=condition_notes
+    )
+
+
+@router.patch("/{booking_id}/arrival-condition-notes", response_model=BookingRead)
+async def update_arrival_condition_notes(
+    booking_id: UUID,
+    payload: ArrivalConditionNotesUpdate,
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current: Annotated[User, Depends(require_roles(UserRole.washer))],
+) -> BookingRead:
+    booking = await booking_service.update_arrival_condition_notes_for_washer(
+        db, current, booking_id, payload.notes
+    )
+    return BookingRead.model_validate(booking)
+
+
+@router.post("/{booking_id}/approve-arrival", response_model=BookingRead)
+async def approve_arrival(
+    booking_id: UUID,
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current: Annotated[User, Depends(require_roles(UserRole.customer))],
+) -> BookingRead:
+    booking = await booking_service.approve_arrival_for_customer(db, current, booking_id)
+    return BookingRead.model_validate(booking)
 
 
 @router.get("/{booking_id}", response_model=BookingDetailRead)
@@ -276,3 +327,22 @@ async def reschedule_booking(
 ) -> BookingRead:
     booking = await booking_service.reschedule_booking_for_customer(db, current, booking_id, payload)
     return BookingRead.model_validate(booking)
+
+
+@router.post("/{booking_id}/reviews", response_model=ReviewRead, status_code=status.HTTP_201_CREATED)
+async def submit_booking_review(
+    booking_id: UUID,
+    payload: ReviewCreate,
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current: Annotated[User, Depends(require_roles(UserRole.customer))],
+) -> ReviewRead:
+    return await review_service.create_review_for_booking(db, current, booking_id, payload)
+
+
+@router.get("/{booking_id}/reviews", response_model=ReviewRead | None)
+async def get_booking_review(
+    booking_id: UUID,
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current: Annotated[User, Depends(get_current_active_user)],
+) -> ReviewRead | None:
+    return await review_service.get_review_for_booking(db, current, booking_id)

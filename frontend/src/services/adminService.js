@@ -2,6 +2,7 @@ import { api } from './api';
 
 export const adminService = {
   listBookings: () => api.get('/bookings', { params: { scope: 'admin' } }).then((r) => r.data),
+  getBooking: (id) => api.get(`/bookings/${id}`).then((r) => r.data),
   listDispatchWashers: () => api.get('/bookings/dispatch/washers').then((r) => r.data),
   listAdminFleet: () => api.get('/bookings/admin/fleet').then((r) => r.data),
   assignBooking: (bookingId, washerId) =>
@@ -16,4 +17,5 @@ export const adminService = {
     api.patch(`/membership-plans/${slug}`, body).then((r) => r.data),
   deactivateMembershipPlan: (slug) =>
     api.delete(`/membership-plans/${slug}`).then((r) => r.data),
+  listReviews: () => api.get('/bookings/admin/reviews').then((r) => r.data),
 };

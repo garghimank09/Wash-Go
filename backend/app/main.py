@@ -13,7 +13,6 @@ from sqlalchemy import text
 from app.config.settings import settings
 from app.database.database import Base, async_session_maker, engine
 from app.services import user_service
-
 from app.routes import (
     assistant_routes,
     auth_routes,
@@ -30,6 +29,7 @@ from app.routes import (
     wash_tier_routes,
 )
 from app.utils.ensure_booking_handoff_columns import ensure_booking_handoff_columns
+from app.utils.ensure_user_columns import ensure_user_profile_columns
 from app.utils.seed_demo_users import seed_demo_users
 from app.utils.seed_membership_plans import ensure_membership_plan_columns, seed_membership_plans_if_empty
 from app.utils.seed_wash_tiers import seed_wash_tiers_if_empty
@@ -42,7 +42,18 @@ async def lifespan(_: FastAPI):
         async with engine.begin() as conn:
             await conn.run_sync(Base.metadata.create_all)
             await ensure_membership_plan_columns(conn)
+            await ensure_user_profile_columns(conn)
             await ensure_booking_handoff_columns(conn)
+            await conn.execute(
+                text(
+                    "ALTER TABLE bookings ADD COLUMN IF NOT EXISTS service_phase VARCHAR(64)"
+                )
+            )
+            await conn.execute(
+                text(
+                    "ALTER TABLE bookings ADD COLUMN IF NOT EXISTS arrival_condition_notes TEXT"
+                )
+            )
         try:
             async with engine.begin() as conn:
                 await conn.execute(
@@ -70,13 +81,28 @@ app = FastAPI(
     redoc_url="/redoc",
 )
 
-_cors = settings.CORS_ORIGINS.strip()
-_allow_origins = ["*"] if _cors == "*" else [o.strip() for o in _cors.split(",") if o.strip()]
+
+def _cors_origins() -> list[str]:
+    raw = settings.CORS_ORIGINS.strip()
+    if raw and raw != "*":
+        return [o.strip() for o in raw.split(",") if o.strip()]
+    base = settings.FRONTEND_BASE_URL.rstrip("/")
+    origins = {
+        base,
+        "http://127.0.0.1:5173",
+        "http://localhost:5173",
+        "http://127.0.0.1:4173",
+        "http://localhost:4173",
+    }
+    return sorted(origins)
+
+
+_allow_origins = _cors_origins()
 
 app.add_middleware(
     CORSMiddleware,
     allow_origins=_allow_origins,
-    allow_credentials=False,
+    allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )

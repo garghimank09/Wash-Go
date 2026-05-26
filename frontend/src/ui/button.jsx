@@ -1,11 +1,15 @@
+import { Children, cloneElement, isValidElement } from 'react';
+
 import { cn } from '../lib/cn';
 
 /**
  * WashGo primary actions. Variants: primary | secondary | ghost | danger | outline.
  * Sizes: sm | md | lg.
+ * Use `asChild` to merge styles onto a child element (e.g. React Router Link).
  */
 export function Button({
   children,
+  asChild = false,
   type = 'button',
   variant = 'primary',
   size = 'md',
@@ -34,11 +38,25 @@ export function Button({
       'border border-wg-border bg-transparent text-wg-text hover:bg-wg-surface-elevated dark:hover:bg-slate-800/80',
   };
 
+  const classes = cn(base, sizes[size], variants[variant], className);
+
+  if (asChild) {
+    const child = Children.only(children);
+    if (!isValidElement(child)) {
+      throw new Error('Button with asChild expects a single React element child');
+    }
+    return cloneElement(child, {
+      ...rest,
+      className: cn(classes, child.props.className),
+      'aria-disabled': disabled || loading ? true : undefined,
+    });
+  }
+
   return (
     <button
       type={type}
       disabled={disabled || loading}
-      className={cn(base, sizes[size], variants[variant], className)}
+      className={classes}
       {...rest}
     >
       {loading ? (

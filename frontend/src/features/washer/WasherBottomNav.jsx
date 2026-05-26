@@ -6,7 +6,7 @@ import { cn } from '../../lib/cn';
 import { WASHER_PARTNER_NAV } from './washerPartnerNav';
 
 const linkBase =
-  'flex min-w-0 flex-1 flex-col items-center gap-1 rounded-2xl py-2.5 text-[10px] font-bold uppercase tracking-wide transition wg-focus-ring active:scale-[0.96]';
+  'flex min-w-0 flex-1 flex-col items-center gap-0.5 rounded-2xl py-2 text-[9px] font-bold uppercase tracking-wide transition wg-focus-ring active:scale-[0.96] sm:gap-1 sm:py-2.5 sm:text-[10px]';
 const active =
   'text-cyan-800 shadow-[inset_0_1px_0_rgb(255_255_255/0.12)] ring-1 ring-cyan-500/25 bg-gradient-to-b from-cyan-500/15 to-cyan-500/[0.04] dark:text-cyan-100 dark:from-cyan-500/20 dark:to-transparent';
 const idle = 'text-wg-muted hover:text-wg-text';
@@ -17,10 +17,10 @@ export function WasherBottomNav() {
 
   return (
     <nav
-      className="fixed bottom-0 left-0 right-0 z-40 border-t border-white/20 bg-[color:var(--wg-glass-bg)]/95 px-2 pb-[max(0.65rem,env(safe-area-inset-bottom))] pt-2 shadow-[0_-14px_44px_-18px_rgb(0_0_0/0.32)] backdrop-blur-2xl dark:border-white/10 dark:bg-slate-950/80 dark:shadow-[0_-18px_52px_-12px_rgb(0_0_0/0.6)] md:hidden"
+      className="fixed bottom-0 left-0 right-0 z-40 border-t border-wg-border/90 bg-wg-surface-elevated/98 px-2 pb-[max(0.65rem,env(safe-area-inset-bottom))] pt-2 shadow-[0_-8px_32px_-8px_rgb(15_23_42/0.18)] backdrop-blur-xl dark:border-white/10 dark:bg-slate-950/92 dark:shadow-[0_-12px_40px_-8px_rgb(0_0_0/0.45)] md:hidden"
       aria-label="Partner navigation"
     >
-      <div className="mx-auto flex w-full max-w-lg items-stretch justify-between gap-1.5">
+      <div className="mx-auto flex w-full max-w-xl items-stretch justify-between gap-0.5 sm:gap-1.5">
         {WASHER_PARTNER_NAV.map(({ to, label, end, Icon, badgeKey }) => (
           <NavLink key={to} to={to} end={end} className={({ isActive }) => cn(linkBase, isActive ? active : idle)}>
             {({ isActive }) => (
@@ -34,8 +34,8 @@ export function WasherBottomNav() {
                   {badgeKey === 'offers' && badge > 0 ? (
                     <m.span
                       className="absolute -right-2 -top-1 flex min-w-[1rem] items-center justify-center rounded-full bg-gradient-to-br from-rose-500 to-orange-500 px-1 text-[9px] font-black leading-none text-white shadow-md ring-2 ring-white/35 dark:ring-slate-950/80"
-                      animate={{ scale: [1, 1.08, 1] }}
-                      transition={{ duration: 1.8, repeat: Infinity, ease: 'easeInOut' }}
+                      animate={{ scale: [1, 1.04, 1] }}
+                      transition={{ duration: 2.4, repeat: Infinity, ease: 'easeInOut' }}
                     >
                       {badge > 9 ? '9+' : badge}
                     </m.span>

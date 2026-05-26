@@ -1,6 +1,16 @@
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import Skeleton from 'react-loading-skeleton';
 
+import {
+  ADMIN_BAR_GRAD_ID,
+  ADMIN_CHART_HEIGHT,
+  adminAxisTick,
+  adminBarTooltipCursor,
+  adminCartesianGrid,
+  adminChartCardHover,
+  adminChartMarginBar,
+  adminTooltipContentStyle,
+} from '../adminChartTheme';
 import { Card } from '../../../ui/card';
 import { ChartMeasuredContainer } from '../../dashboard/ChartMeasuredContainer';
 
@@ -18,30 +28,22 @@ export function AdminBookingVolumeChart({ data, chartsReady }) {
   }
 
   return (
-    <Card variant="enterprise" className="min-w-0 transition hover:ring-1 hover:ring-cyan-500/20 dark:hover:ring-cyan-400/15">
+    <Card variant="enterprise" className={adminChartCardHover}>
       <div>
         <h2 className="wg-heading-section">Booking volume</h2>
         <p className="mt-1 text-xs text-wg-muted">Jobs by weekday from API.</p>
       </div>
-      <ChartMeasuredContainer className="mt-4 h-52 w-full min-w-0">
+      <ChartMeasuredContainer className={`mt-4 ${ADMIN_CHART_HEIGHT} w-full min-w-0`}>
         {({ width, height }) => (
           <ResponsiveContainer width={width} height={height} minWidth={0} minHeight={0}>
-            <BarChart data={data} margin={{ top: 8, right: 8, left: -12, bottom: 0 }}>
-              <CartesianGrid strokeDasharray="3 3" className="stroke-wg-border" vertical={false} />
-              <XAxis dataKey="label" tick={{ fontSize: 11, fill: 'var(--wg-muted)' }} axisLine={false} tickLine={false} />
-              <YAxis allowDecimals={false} width={32} tick={{ fontSize: 11, fill: 'var(--wg-muted)' }} axisLine={false} tickLine={false} />
-              <Tooltip
-                cursor={{ fill: 'rgb(6 182 212 / 0.08)' }}
-                contentStyle={{
-                  borderRadius: 12,
-                  border: '1px solid var(--wg-border)',
-                  background: 'var(--wg-surface-elevated)',
-                  color: 'var(--wg-text)',
-                }}
-              />
-              <Bar dataKey="bookings" name="Bookings" fill="url(#adminBarGrad)" radius={[6, 6, 0, 0]} maxBarSize={40} />
+            <BarChart data={data} margin={adminChartMarginBar}>
+              <CartesianGrid {...adminCartesianGrid} vertical={false} />
+              <XAxis dataKey="label" tick={adminAxisTick} axisLine={false} tickLine={false} />
+              <YAxis allowDecimals={false} width={32} tick={adminAxisTick} axisLine={false} tickLine={false} />
+              <Tooltip cursor={adminBarTooltipCursor} contentStyle={adminTooltipContentStyle} />
+              <Bar dataKey="bookings" name="Bookings" fill={`url(#${ADMIN_BAR_GRAD_ID})`} radius={[6, 6, 0, 0]} maxBarSize={40} />
               <defs>
-                <linearGradient id="adminBarGrad" x1="0" y1="0" x2="0" y2="1">
+                <linearGradient id={ADMIN_BAR_GRAD_ID} x1="0" y1="0" x2="0" y2="1">
                   <stop offset="0%" stopColor="var(--wg-brand-from)" />
                   <stop offset="100%" stopColor="var(--wg-brand-to)" />
                 </linearGradient>

@@ -5,15 +5,31 @@ export const WASHER_PHASE_ORDER = [
   'accepted',
   'on_the_way',
   'arrived',
+  'awaiting_approval',
+  'arrival_approved',
   'wash_started',
   'qc_review',
-  'awaiting_approval',
   'completed',
 ];
 
 export function phaseRank(p) {
   const i = WASHER_PHASE_ORDER.indexOf(p);
   return i === -1 ? 0 : i;
+}
+
+/** Map API service_phase → washer UI phase. */
+export function washerPhaseFromServicePhase(servicePhase) {
+  const map = {
+    awaiting_acceptance: 'received',
+    washer_accepted: 'accepted',
+    heading_to_you: 'on_the_way',
+    arrived_onsite: 'arrived',
+    awaiting_arrival_approval: 'awaiting_approval',
+    arrival_approved: 'arrival_approved',
+    wash_in_progress: 'wash_started',
+    completed: 'completed',
+  };
+  return map[servicePhase] ?? null;
 }
 
 /** Minimum washer UX phase implied by API booking status. */
@@ -28,8 +44,10 @@ export function minPhaseFromApiStatus(status) {
 /** Map UI phase to API status for persistence. */
 export function apiStatusForPhase(phase) {
   if (phase === 'completed') return 'completed';
-  if (['wash_started', 'qc_review', 'awaiting_approval'].includes(phase)) return 'in_progress';
-  if (['accepted', 'on_the_way', 'arrived'].includes(phase)) return 'confirmed';
+  if (['wash_started', 'qc_review'].includes(phase)) return 'in_progress';
+  if (['accepted', 'on_the_way', 'arrived', 'awaiting_approval', 'arrival_approved'].includes(phase)) {
+    return 'confirmed';
+  }
   return 'pending';
 }
 
@@ -74,19 +92,43 @@ export function clearStoredPhase(bookingId) {
   }
 }
 
-/** Effective phase = max(stored progression, floor from API). */
-export function effectiveWasherPhase(bookingId, apiStatus) {
+/** Effective phase = max(stored progression, floor from API status, service_phase). */
+export function effectiveWasherPhase(bookingId, apiStatus, servicePhase = null) {
   const floor = minPhaseFromApiStatus(apiStatus);
+  const fromService = servicePhase ? washerPhaseFromServicePhase(servicePhase) : null;
+  let base = floor;
+  if (fromService && phaseRank(fromService) > phaseRank(base)) {
+    base = fromService;
+  }
   const raw = getStoredPhase(bookingId);
   const stored = normalizeStoredPhase(raw);
-  if (!stored) return floor;
-  return phaseRank(stored) >= phaseRank(floor) ? stored : floor;
+  if (!stored) return base;
+  return phaseRank(stored) >= phaseRank(base) ? stored : base;
 }
 
 /** Advance local UI phase (call API separately for real bookings). */
-export function advanceWasherPhase(bookingId, apiStatus) {
-  const current = effectiveWasherPhase(bookingId, apiStatus);
+export function advanceWasherPhase(bookingId, apiStatus, servicePhase = null) {
+  const current = effectiveWasherPhase(bookingId, apiStatus, servicePhase);
   const next = getNextWasherPhase(current);
   setStoredPhase(bookingId, next);
   return next;
+}
+
+/** Whether the dock primary action should be enabled. */
+export function canWasherAdvancePhase(phase, { hasArrivalPhoto, servicePhase }) {
+  if (phase === 'arrived' && !hasArrivalPhoto) return false;
+  if (phase === 'awaiting_approval') return false;
+  if (phase === 'arrival_approved') return true;
+  if (phase === 'wash_started' && servicePhase === 'awaiting_arrival_approval') return false;
+  return phase !== 'completed';
+}
+
+export function washerAdvanceBlockedReason(phase, { hasArrivalPhoto }) {
+  if (phase === 'arrived' && !hasArrivalPhoto) {
+    return 'Capture the vehicle condition photo (and optional notes) above before continuing';
+  }
+  if (phase === 'awaiting_approval') {
+    return 'Waiting for the customer to approve the vehicle condition';
+  }
+  return null;
 }

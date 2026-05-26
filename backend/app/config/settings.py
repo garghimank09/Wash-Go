@@ -17,7 +17,10 @@ class Settings(BaseSettings):
     )
     SECRET_KEY: str = Field(..., min_length=32)
     ALGORITHM: str = "HS256"
-    ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24
+    # JWT + session cookie lifetime (default 7 days — stay signed in until logout or expiry).
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 7
+    AUTH_COOKIE_SECURE: bool = False
+    AUTH_COOKIE_SAMESITE: str = "lax"
     ENVIRONMENT: str = "development"
     # WashGo API port (8001 avoids common conflicts with other local apps on 8000).
     API_PORT: int = 8001
@@ -49,6 +52,7 @@ class Settings(BaseSettings):
     SMTP_USER: str | None = None
     SMTP_PASSWORD: str | None = None
     SMTP_FROM: str | None = None
+    # Google Maps Platform — Geocoding on server; Maps/Places use VITE_* on frontend.
     GOOGLE_MAPS_API_KEY: str | None = None
 
     @field_validator("DATABASE_URL")
