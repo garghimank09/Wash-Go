@@ -37,7 +37,7 @@ export function AdminDataNotice({ className }) {
     >
       <Database className="mt-0.5 size-4 shrink-0 text-cyan-600 dark:text-cyan-400" strokeWidth={1.75} aria-hidden />
       <p className="leading-relaxed">
-        <span className="font-semibold text-wg-text">Live sync active.</span> Bookings, fleet roster, dispatch queue, charts, and directory refresh from the API (SSE ~4s). Complaints appear when a dedicated cases API is available.
+        <span className="font-semibold text-wg-text">Live sync active.</span> Bookings, fleet roster, partner earnings ledger, dispatch queue, and charts refresh from the API (SSE ~4s). Complaints appear when a dedicated cases API is available.
       </p>
     </div>
   );

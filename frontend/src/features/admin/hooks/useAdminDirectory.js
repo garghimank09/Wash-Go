@@ -51,7 +51,7 @@ function filterStaff(rows, chip) {
  */
 export function useAdminDirectory(segment) {
   const { user } = useAuth();
-  const { items, fleetWashers } = useAdminBookings();
+  const { items, fleetWashers, earningsOverview } = useAdminBookings();
   const [search, setSearch] = useState('');
   const [chip, setChip] = useState('all');
   const [tickVersion, setTickVersion] = useState(0);
@@ -64,9 +64,9 @@ export function useAdminDirectory(segment) {
 
   const baseRows = useMemo(() => {
     if (segment === 'customers') return buildDirectoryCustomers(items);
-    if (segment === 'partners') return buildDirectoryPartners(fleetWashers);
+    if (segment === 'partners') return buildDirectoryPartners(fleetWashers, earningsOverview?.partners);
     return buildDirectoryStaff(user);
-  }, [segment, items, fleetWashers, user, tickVersion]);
+  }, [segment, items, fleetWashers, earningsOverview, user, tickVersion]);
 
   const chipFiltered = useMemo(() => {
     if (segment === 'customers') return filterCustomers(baseRows, chip);

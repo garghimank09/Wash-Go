@@ -1,4 +1,9 @@
 import { useMemo, useState } from 'react';
+
+import { ListFilterToolbar } from '../../components/list/ListFilterToolbar';
+import { ListPagination } from '../../components/list/ListPagination';
+import { usePaginatedList } from '../../hooks/usePaginatedList';
+import { compareByScheduledAt } from '../../lib/paginatedList';
 import { Link, useNavigate, useOutletContext } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { m } from 'framer-motion';
@@ -51,6 +56,7 @@ function mapOffer(o) {
     vehicle: o.car_label || 'Vehicle',
     packageLabel: packageLabel ?? '—',
     windowLabel: formatDateTime(o.scheduled_at),
+    scheduledAt: o.scheduled_at,
     etaMinutes: mins,
     isLiveSim: false,
   };
@@ -64,12 +70,29 @@ export function WasherRequestsPage() {
   const [dismissTick, setDismissTick] = useState(0);
   const [acceptingId, setAcceptingId] = useState(null);
 
+  const [query, setQuery] = useState('');
+  const [sort, setSort] = useState('newest');
+
   const offers = useMemo(() => {
     const dismissed = getDismissed();
     return items.filter((o) => !dismissed.has(o.id)).map(mapOffer);
   }, [items, dismissTick]);
 
   const enrichedOffers = useMemo(() => offers.map((o) => enrichDispatchOffer(o)), [offers]);
+
+  const { pageItems, filteredCount, page, setPage, totalPages, rangeStart, rangeEnd } = usePaginatedList(
+    enrichedOffers,
+    {
+      query,
+      sort,
+      matchSearch: (row, q) =>
+        [row.customerName, row.address, row.vehicle, row.packageLabel, row.windowLabel]
+          .join(' ')
+          .toLowerCase()
+          .includes(q),
+      compare: (a, b, s) => compareByScheduledAt({ scheduled_at: a.scheduledAt }, { scheduled_at: b.scheduledAt }, s),
+    },
+  );
 
   const accept = async (offerId) => {
     setAcceptingId(offerId);
@@ -109,6 +132,17 @@ export function WasherRequestsPage() {
 
       {error ? <p className="text-sm text-rose-600">{error}</p> : null}
 
+      {!loading && offers.length > 0 ? (
+        <ListFilterToolbar
+          query={query}
+          onQueryChange={setQuery}
+          showStatus={false}
+          sort={sort}
+          onSort={setSort}
+          queryPlaceholder="Search customer, address, vehicle…"
+        />
+      ) : null}
+
       {loading && offers.length === 0 ? (
         <Card variant="glass" className="py-10 text-center text-sm text-wg-muted">
           Loading offers…
@@ -122,9 +156,18 @@ export function WasherRequestsPage() {
             New customer bookings appear here in real time while you are online and accepting jobs.
           </p>
         </Card>
-      ) : (
+      ) : null}
+
+      {!loading && offers.length > 0 && filteredCount === 0 ? (
+        <Card variant="glass" className="py-8 text-center text-sm text-wg-muted">
+          No offers match your search.
+        </Card>
+      ) : null}
+
+      {!loading && filteredCount > 0 ? (
+        <div className="space-y-4">
         <ul className="space-y-4">
-          {enrichedOffers.map((r, i) => {
+          {pageItems.map((r, i) => {
             const intel = r.dispatchIntel;
             return (
               <m.li
@@ -220,7 +263,16 @@ export function WasherRequestsPage() {
             );
           })}
         </ul>
-      )}
+        <ListPagination
+          page={page}
+          totalPages={totalPages}
+          onPageChange={setPage}
+          rangeStart={rangeStart}
+          rangeEnd={rangeEnd}
+          totalCount={filteredCount}
+        />
+        </div>
+      ) : null}
     </div>
   );
 }

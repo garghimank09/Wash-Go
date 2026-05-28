@@ -1,5 +1,5 @@
 const DEMO_ROWS = [
-  { label: 'Admin', email: 'admin@washgo.demo', where: '/login' },
+  { label: 'Admin', email: 'admin@washgo.demo', where: '/admin/login' },
   { label: 'Customer', email: 'customer@washgo.demo', where: '/login' },
   { label: 'Partner', email: 'partner@washgo.demo', where: '/partner/login' },
 ];
@@ -9,8 +9,10 @@ const DEMO_PASSWORD = 'Demo1234';
 /**
  * Dev-only hint for seeded accounts (backend seed_demo_users).
  */
-export function DemoCredentialsPanel({ highlight }) {
+export function DemoCredentialsPanel({ highlight, excludeLabels = [] }) {
   if (import.meta.env.PROD) return null;
+
+  const rows = DEMO_ROWS.filter((row) => !excludeLabels.includes(row.label));
 
   return (
     <div className="mt-6 rounded-xl border border-amber-500/25 bg-amber-500/[0.08] p-3 text-xs text-amber-100/90">
@@ -19,7 +21,7 @@ export function DemoCredentialsPanel({ highlight }) {
         Password for all: <span className="font-mono font-semibold">{DEMO_PASSWORD}</span> — no email OTP required.
       </p>
       <ul className="mt-2 space-y-1.5">
-        {DEMO_ROWS.map((row) => (
+        {rows.map((row) => (
           <li key={row.email} className={row.label === highlight ? 'font-semibold text-amber-50' : ''}>
             <span className="text-amber-200/90">{row.label}:</span>{' '}
             <span className="font-mono">{row.email}</span>

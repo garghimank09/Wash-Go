@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { m, animate, useMotionValue } from 'framer-motion';
 import { ChevronRight, Clock, Sparkles } from 'lucide-react';
@@ -19,23 +19,89 @@ const PHASE_PRIMARY = {
 };
 
 function SwipeCompleteRail({ reduced, onComplete, disabled, compact = false }) {
+  const trackRef = useRef(null);
+  const handleRef = useRef(null);
   const x = useMotionValue(0);
+  const [maxX, setMaxX] = useState(0);
   const [committed, setCommitted] = useState(false);
-  const maxX = compact ? 132 : 148;
+  const draggingRef = useRef(false);
+  const pointerStartRef = useRef(0);
+  const xStartRef = useRef(0);
 
-  const onDragEnd = useCallback(
-    async (_e, info) => {
+  const measure = useCallback(() => {
+    const track = trackRef.current;
+    const handle = handleRef.current;
+    if (!track || !handle) return;
+    const inset = 8;
+    const nextMax = Math.max(0, track.clientWidth - handle.offsetWidth - inset);
+    setMaxX(nextMax);
+    if (x.get() > nextMax) x.set(nextMax);
+  }, [x]);
+
+  useLayoutEffect(() => {
+    measure();
+    const track = trackRef.current;
+    if (!track) return undefined;
+    const ro = new ResizeObserver(() => measure());
+    ro.observe(track);
+    return () => ro.disconnect();
+  }, [measure, compact]);
+
+  useEffect(() => {
+    if (!disabled) setCommitted(false);
+  }, [disabled]);
+
+  const finishSwipe = useCallback(async () => {
+    if (disabled || committed || reduced) return;
+    const current = x.get();
+    const threshold = Math.max(40, maxX * 0.72);
+    if (current >= threshold && maxX > 0) {
+      setCommitted(true);
+      await animate(x, maxX, { type: 'spring', stiffness: 380, damping: 28 });
+      onComplete();
+    } else {
+      animate(x, 0, { type: 'spring', stiffness: 520, damping: 34 });
+    }
+  }, [committed, disabled, maxX, onComplete, reduced, x]);
+
+  const onPointerDown = useCallback(
+    (e) => {
       if (disabled || committed || reduced) return;
-      if (info.offset.x > 64) {
-        setCommitted(true);
-        await animate(x, maxX, { type: 'spring', stiffness: 380, damping: 28 });
-        onComplete();
-      } else {
-        animate(x, 0, { type: 'spring', stiffness: 520, damping: 34 });
-      }
+      draggingRef.current = true;
+      pointerStartRef.current = e.clientX;
+      xStartRef.current = x.get();
+      e.currentTarget.setPointerCapture(e.pointerId);
+      e.preventDefault();
     },
-    [committed, disabled, reduced, x, maxX, onComplete],
+    [committed, disabled, reduced, x],
   );
+
+  const onPointerMove = useCallback(
+    (e) => {
+      if (!draggingRef.current || disabled || committed) return;
+      const delta = e.clientX - pointerStartRef.current;
+      const next = Math.min(maxX, Math.max(0, xStartRef.current + delta));
+      x.set(next);
+    },
+    [committed, disabled, maxX, x],
+  );
+
+  const onPointerUp = useCallback(
+    (e) => {
+      if (!draggingRef.current) return;
+      draggingRef.current = false;
+      if (e.currentTarget.hasPointerCapture(e.pointerId)) {
+        e.currentTarget.releasePointerCapture(e.pointerId);
+      }
+      void finishSwipe();
+    },
+    [finishSwipe],
+  );
+
+  const onPointerCancel = useCallback(() => {
+    draggingRef.current = false;
+    animate(x, 0, { type: 'spring', stiffness: 520, damping: 34 });
+  }, [x]);
 
   if (reduced) {
     return (
@@ -45,10 +111,13 @@ function SwipeCompleteRail({ reduced, onComplete, disabled, compact = false }) {
     );
   }
 
+  const inactive = disabled || committed;
+
   return (
     <div
+      ref={trackRef}
       className={cn(
-        'relative overflow-hidden rounded-xl border border-emerald-500/25 bg-slate-900/60 shadow-inner dark:bg-slate-950/80',
+        'relative touch-none select-none overflow-hidden rounded-xl border border-emerald-500/25 bg-slate-900/60 shadow-inner dark:bg-slate-950/80',
         compact ? 'h-11' : 'h-12',
       )}
     >
@@ -56,20 +125,29 @@ function SwipeCompleteRail({ reduced, onComplete, disabled, compact = false }) {
         <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-white/35">Swipe to finish</p>
       </div>
       <m.div
-        drag="x"
-        dragConstraints={{ left: 0, right: maxX }}
-        dragElastic={0.05}
-        dragMomentum={false}
+        ref={handleRef}
+        aria-label="Swipe to finish job"
+        tabIndex={inactive ? -1 : 0}
         style={{ x }}
-        onDragEnd={onDragEnd}
-        whileTap={disabled || committed ? undefined : { scale: 0.98 }}
+        onPointerDown={onPointerDown}
+        onPointerMove={onPointerMove}
+        onPointerUp={onPointerUp}
+        onPointerCancel={onPointerCancel}
+        onKeyDown={(e) => {
+          if (inactive || maxX <= 0) return;
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            setCommitted(true);
+            void animate(x, maxX, { type: 'spring', stiffness: 380, damping: 28 }).then(() => onComplete());
+          }
+        }}
         className={cn(
-          'absolute left-1 top-1 flex cursor-grab items-center justify-center gap-1 rounded-lg border border-white/20 bg-gradient-to-br from-emerald-400 to-cyan-500 text-[11px] font-black text-slate-950 shadow-md active:cursor-grabbing',
+          'absolute left-1 top-1 z-10 flex touch-none items-center justify-center gap-1 rounded-lg border border-white/20 bg-gradient-to-br from-emerald-400 to-cyan-500 text-[11px] font-black text-slate-950 shadow-md',
           compact ? 'h-9 w-[6.5rem]' : 'h-[calc(100%-0.5rem)] w-[7rem]',
-          (disabled || committed) && 'pointer-events-none opacity-50',
+          inactive ? 'cursor-not-allowed opacity-50' : 'cursor-grab active:cursor-grabbing',
         )}
       >
-        <Sparkles className="size-3" strokeWidth={2} aria-hidden />
+        <Sparkles className="size-3 shrink-0" strokeWidth={2} aria-hidden />
         Slide
       </m.div>
     </div>

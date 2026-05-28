@@ -7,7 +7,8 @@ import { OtpVerificationFields } from '../components/OtpVerificationFields';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { useAuth } from '../context/AuthContext';
-import { isDemoEmail } from '../lib/demoAccounts';
+import { ADMIN_LOGIN_ONLY_MESSAGE, isAdminDemoEmail, isDemoEmail } from '../lib/demoAccounts';
+import { clearCustomerSession } from '../lib/adminLoginGuard';
 import { resolvePostLoginPath } from '../lib/appPaths';
 import { authService } from '../services/authService';
 import { getErrorMessage } from '../services/api';
@@ -30,11 +31,15 @@ export function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [resendLoading, setResendLoading] = useState(false);
 
-  if (user?.role === 'admin') return <Navigate to="/admin" replace />;
+  if (user?.role === 'admin') return <Navigate to="/admin/login" replace />;
   if (user) return <Navigate to={resolvePostLoginPath(user, from)} replace />;
 
   const normalizedEmail = email.trim().toLowerCase();
-  const demoAccount = isDemoEmail(normalizedEmail);
+  const demoAccount = isDemoEmail(normalizedEmail) && !isAdminDemoEmail(normalizedEmail);
+
+  const rejectAdminOnThisPortal = () => {
+    setError(ADMIN_LOGIN_ONLY_MESSAGE);
+  };
 
   const submitCredentials = async (e) => {
     e.preventDefault();
@@ -47,10 +52,19 @@ export function LoginPage() {
       setError('Password is required');
       return;
     }
+    if (isAdminDemoEmail(normalizedEmail)) {
+      rejectAdminOnThisPortal();
+      return;
+    }
     setLoading(true);
     try {
       if (demoAccount) {
         const me = await login(normalizedEmail, password);
+        if (me.role === 'admin') {
+          clearCustomerSession(authService);
+          rejectAdminOnThisPortal();
+          return;
+        }
         navigate(resolvePostLoginPath(me, from), { replace: true });
         return;
       }
@@ -73,9 +87,18 @@ export function LoginPage() {
       setError(otpErr);
       return;
     }
+    if (isAdminDemoEmail(normalizedEmail)) {
+      rejectAdminOnThisPortal();
+      return;
+    }
     setLoading(true);
     try {
       const me = await login(normalizedEmail, password, otp.trim());
+      if (me.role === 'admin') {
+        clearCustomerSession(authService);
+        rejectAdminOnThisPortal();
+        return;
+      }
       navigate(resolvePostLoginPath(me, from), { replace: true });
     } catch (err) {
       setError(getErrorMessage(err));
@@ -85,10 +108,14 @@ export function LoginPage() {
   };
 
   const handleResend = async () => {
+    if (isAdminDemoEmail(normalizedEmail)) {
+      rejectAdminOnThisPortal();
+      return;
+    }
     setResendLoading(true);
     setError('');
     try {
-      const res = await authService.sendOtp(normalizedEmail, 'login', demoAccount ? 'admin' : 'customer');
+      const res = await authService.sendOtp(normalizedEmail, 'login', 'customer');
       setOtpInfo(res.message || 'A new code was sent.');
       setOtp('');
       setOtpError('');
@@ -214,10 +241,14 @@ export function LoginPage() {
             <Link to="/partner/login" className="font-semibold text-emerald-400 hover:text-emerald-300">
               Partner sign in
             </Link>
+            {' · '}
+            <Link to="/admin/login" className="font-semibold text-indigo-300 hover:text-indigo-200">
+              Admin console
+            </Link>
           </p>
-          <DemoCredentialsPanel highlight="Admin" />
+          <DemoCredentialsPanel highlight="Customer" excludeLabels={['Admin']} />
           <p className="mt-2 text-center text-[11px] text-white/45">
-            Demo accounts skip email verification. Admin & customer use this page.
+            Demo accounts skip email verification on this page.
           </p>
         </>
       ) : null}

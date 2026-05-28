@@ -94,14 +94,14 @@ export function ProfileView() {
               ))}
             </ul>
             <Button asChild variant="secondary">
-              <Link to="/#plans">Change plan</Link>
+              <Link to="/membership/plans">Change plan</Link>
             </Button>
           </div>
         ) : (
           <div className="mt-4 space-y-3">
             <p className="text-sm text-wg-muted">You do not have an active membership yet.</p>
             <Button asChild>
-              <Link to="/#plans">Browse plans</Link>
+              <Link to="/membership/plans">Upgrade plan</Link>
             </Button>
           </div>
         )}

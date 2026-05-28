@@ -1,5 +1,5 @@
 import { m } from 'framer-motion';
-import { Clock, Droplets, MapPin, Shield, Sparkles } from 'lucide-react';
+import { Bot, Clock, Droplets, MapPin, Shield, Sparkles } from 'lucide-react';
 
 import { cn } from '../../lib/cn';
 import { useReducedMotion } from '../../lib/useReducedMotion';
@@ -48,7 +48,7 @@ export function WhyWashGoSection() {
   const reduced = useReducedMotion();
 
   return (
-    <section id="why-washgo" className="scroll-mt-20 border-b border-wg-border bg-wg-surface-elevated/30 py-14 dark:bg-wg-surface/40 sm:py-16">
+    <section id="why-washgo" className="wg-premium-section scroll-mt-28 border-b border-wg-border bg-wg-surface-elevated/30 dark:bg-wg-surface/40">
       <div className="mx-auto max-w-6xl px-4 sm:px-6">
         <MarketingReveal className="text-center">
           <p className="text-xs font-bold uppercase tracking-[0.14em] text-emerald-700 dark:text-emerald-300">Why WashGo</p>

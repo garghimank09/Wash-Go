@@ -19,15 +19,10 @@ export function AdminRoute() {
     }
   }, [user, allowed]);
 
-  if (!user) {
-    return (
-      <div className="flex min-h-[40vh] items-center justify-center p-8">
-        <p className="text-sm text-wg-muted">Loading admin console…</p>
-      </div>
-    );
-  }
-
   if (!allowed) {
+    if (!user) {
+      return <Navigate to="/admin/login" replace state={{ from: location.pathname }} />;
+    }
     return <Navigate to="/dashboard" replace state={{ from: location.pathname }} />;
   }
 

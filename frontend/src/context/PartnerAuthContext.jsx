@@ -46,11 +46,6 @@ function usePartnerAuthState() {
     }
 
     const result = await loginViaPartnerPortal(email, password);
-    if (result.kind === 'admin') {
-      const err = new Error('ADMIN_ROLE');
-      err.user = result.user;
-      throw err;
-    }
     setUser(result.user);
     return result.user;
   }, []);

@@ -120,7 +120,39 @@ export function computeEarningsBreakdown(kpis) {
   const washerPayoutsCents = Math.round(gross * 0.9);
   const platformFeesCents = Math.max(0, gross - washerPayoutsCents);
   const pendingSettlementCents = washerPayoutsCents;
-  return { grossCents: gross, platformFeesCents, washerPayoutsCents, pendingSettlementCents };
+  return {
+    grossCents: gross,
+    grossAcceptedLifetimeCents: gross,
+    platformFeesCents,
+    washerPayoutsCents,
+    partnerPayoutsLifetimeCents: washerPayoutsCents,
+    platformFeesLifetimeCents: platformFeesCents,
+    pendingSettlementCents,
+    customerPaid30dCents: gross,
+    customerPaidLifetimeCents: gross,
+    paidOutCents: 0,
+    sharePercent: 90,
+    fromApi: false,
+  };
+}
+
+/** Map live admin earnings API to card + revenue UI shapes. */
+export function mapAdminEarningsOverview(overview) {
+  if (!overview) return null;
+  return {
+    grossCents: overview.gross_accepted_30d_cents ?? 0,
+    platformFeesCents: overview.platform_fees_30d_cents ?? 0,
+    washerPayoutsCents: overview.partner_payouts_30d_cents ?? 0,
+    pendingSettlementCents: overview.pending_settlement_cents ?? 0,
+    paidOutCents: overview.paid_out_cents ?? 0,
+    customerPaid30dCents: overview.customer_paid_30d_cents ?? 0,
+    customerPaidLifetimeCents: overview.customer_paid_lifetime_cents ?? 0,
+    grossAcceptedLifetimeCents: overview.gross_accepted_lifetime_cents ?? 0,
+    partnerPayoutsLifetimeCents: overview.partner_payouts_lifetime_cents ?? 0,
+    platformFeesLifetimeCents: overview.platform_fees_lifetime_cents ?? 0,
+    sharePercent: overview.share_percent ?? 90,
+    fromApi: true,
+  };
 }
 
 export function computeHeatmap(bookings) {
@@ -335,23 +367,44 @@ export function buildDirectoryCustomers(bookings) {
   );
 }
 
-export function buildDirectoryPartners(fleetWashers) {
-  return (fleetWashers || []).map((w) => ({
-    id: String(w.id),
-    fullName: w.full_name,
-    email: '—',
-    active: true,
-    joinedAt: (w.updated_at || '').slice(0, 10) || '—',
-    online: !!w.is_available,
-    acceptancePct: Math.min(99, 88 + Math.round((Number(w.rating_avg) || 0) * 2)),
-    completionPct: Math.min(99, 90 + Math.round((Number(w.rating_avg) || 0) * 2)),
-    trustScore: Math.min(99, 78 + Math.round((Number(w.rating_avg) || 0) * 4)),
-    earningsYtdCents: (Number(w.completed7d) || 0) * 2200 * 52,
-    activeJobs: Number(w.active_jobs) || 0,
-    operationalState: (Number(w.active_jobs) || 0) > 0 ? 'busy' : w.is_available ? 'available' : 'off_shift',
-    territory: w.service_area || '—',
-    notes: w.is_available ? 'Available for dispatch' : 'Offline',
-  }));
+export function buildDirectoryPartners(fleetWashers, partnerPayoutRows = []) {
+  const payoutByWasher = new Map(
+    (partnerPayoutRows || []).map((p) => [String(p.washer_id), p]),
+  );
+  return (fleetWashers || []).map((w) => {
+    const payout = payoutByWasher.get(String(w.id));
+    const partnerCents = Number(payout?.partner_cents) || 0;
+    return {
+      id: String(w.id),
+      fullName: w.full_name,
+      email: '—',
+      active: true,
+      joinedAt: (w.updated_at || '').slice(0, 10) || '—',
+      online: !!w.is_available,
+      acceptancePct: Math.min(99, 88 + Math.round((Number(w.rating_avg) || 0) * 2)),
+      completionPct: Math.min(99, 90 + Math.round((Number(w.rating_avg) || 0) * 2)),
+      trustScore: Math.min(99, 78 + Math.round((Number(w.rating_avg) || 0) * 4)),
+      earningsYtdCents: partnerCents,
+      pendingPayoutCents: Number(payout?.pending_cents) || 0,
+      paidPayoutCents: Number(payout?.paid_cents) || 0,
+      acceptedJobs: Number(payout?.jobs) || 0,
+      activeJobs: Number(w.active_jobs) || 0,
+      operationalState: (Number(w.active_jobs) || 0) > 0 ? 'busy' : w.is_available ? 'available' : 'off_shift',
+      territory: w.service_area || '—',
+      notes: payout
+        ? `${payout.jobs} accepted jobs · ${partnerCents ? formatCentsShort(partnerCents) : '₹0'} partner share`
+        : w.is_available
+          ? 'Available for dispatch'
+          : 'Offline',
+    };
+  });
+}
+
+function formatCentsShort(cents) {
+  const n = Number(cents) || 0;
+  if (n >= 100000) return `₹${(n / 100000).toFixed(1)}L`;
+  if (n >= 100) return `₹${Math.round(n / 100)}`;
+  return `₹${(n / 100).toFixed(0)}`;
 }
 
 export function buildDirectoryStaff(authUser) {

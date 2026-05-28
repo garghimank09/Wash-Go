@@ -26,8 +26,10 @@ import { BookingsPage } from '../pages/BookingsPage';
 import { CarsPage } from '../pages/CarsPage';
 import { CustomerProfilePage } from '../pages/CustomerProfilePage';
 import { DashboardPage } from '../pages/DashboardPage';
+import { MembershipPlansPage } from '../pages/MembershipPlansPage';
 import { MembershipSubscribePage } from '../pages/MembershipSubscribePage';
 import { LandingPage } from '../pages/LandingPage';
+import { AdminLoginPage } from '../pages/AdminLoginPage';
 import { LoginPage } from '../pages/LoginPage';
 import { PartnerLoginPage } from '../pages/partner/PartnerLoginPage';
 import { PartnerSignupPage } from '../pages/partner/PartnerSignupPage';
@@ -52,6 +54,7 @@ export function AppRoutes() {
         <Route element={<AuthLayout />}>
           <Route path="/login" element={<LoginPage />} />
           <Route path="/signup" element={<SignupPage />} />
+          <Route path="/admin/login" element={<AdminLoginPage />} />
         </Route>
 
         <Route path="/washer/*" element={<WasherLegacyRedirect />} />
@@ -80,6 +83,7 @@ export function AppRoutes() {
             <Route element={<MainLayout />}>
               <Route path="/dashboard" element={<DashboardPage />} />
               <Route path="/profile" element={<CustomerProfilePage />} />
+              <Route path="/membership/plans" element={<MembershipPlansPage />} />
               <Route path="/membership/subscribe/:slug" element={<MembershipSubscribePage />} />
               <Route path="/cars" element={<CarsPage />} />
               <Route path="/booking" element={<BookingPage />} />

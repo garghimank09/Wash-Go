@@ -60,7 +60,7 @@ export function AdminBookingsTable({
                   {r.priceCents > 0 ? formatCents(r.priceCents) : '—'}
                 </td>
                 <td className="wg-admin-table-td whitespace-nowrap text-right">
-                  <Button type="button" size="sm" variant="outline" onClick={() => setMonitorId(r.id)}>
+                  <Button type="button" size="sm" variant="outline" onClick={() => setMonitorId(r.rawId)}>
                     Photos
                   </Button>
                 </td>

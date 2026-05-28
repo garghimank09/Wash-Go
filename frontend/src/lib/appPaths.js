@@ -21,7 +21,9 @@ export function defaultAppPathForRole(user) {
  */
 export function resolvePostLoginPath(user, from) {
   if (!user) return '/dashboard';
-  const safeFrom = typeof from === 'string' && from.startsWith('/') && from !== '/login' ? from : null;
+  const authPaths = new Set(['/login', '/signup', '/admin/login', '/partner/login', '/partner/signup']);
+  const safeFrom =
+    typeof from === 'string' && from.startsWith('/') && !authPaths.has(from) ? from : null;
   if (safeFrom) {
     if (user.role === 'admin') return safeFrom.startsWith('/admin') ? safeFrom : '/admin';
     if (user.role === 'washer' && !safeFrom.startsWith('/partner')) return '/partner';

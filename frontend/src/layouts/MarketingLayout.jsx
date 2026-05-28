@@ -1,14 +1,14 @@
 import { Outlet } from 'react-router-dom';
 
-import { Navbar } from '../components/Navbar';
-import { SiteFooter } from '../components/SiteFooter';
+import { MarketingFloatingNav } from '../features/marketing/premium/MarketingFloatingNav';
+import { PremiumFooter } from '../features/marketing/premium/PremiumFooter';
 
 export function MarketingLayout() {
   return (
     <div className="flex min-h-dvh flex-col bg-wg-surface">
-      <Navbar variant="marketing" />
+      <MarketingFloatingNav />
       <Outlet />
-      <SiteFooter />
+      <PremiumFooter />
     </div>
   );
 }

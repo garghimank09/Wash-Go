@@ -1,20 +1,35 @@
 import { Card } from '../../../ui/card';
+import { AdminDataSourceBadge } from './AdminDataSourceBadge';
 import { formatCents } from '../../../utils/format';
 
 export function AdminEarningsCard({ earnings }) {
   if (!earnings) return null;
 
   const rows = [
-    { label: 'Gross volume', value: earnings.grossCents, emphasize: true },
-    { label: 'Platform fees', value: earnings.platformFeesCents },
-    { label: 'Washer payouts', value: earnings.washerPayoutsCents },
-    { label: 'Pending settlement', value: earnings.pendingSettlementCents },
+    { label: 'Customer paid (30d · completed)', value: earnings.customerPaid30dCents, emphasize: false },
+    { label: 'Accepted gross (30d · ledger)', value: earnings.grossCents, emphasize: true },
+    { label: `Partner share (${earnings.sharePercent ?? 90}%)`, value: earnings.washerPayoutsCents },
+    { label: 'Platform fees (30d)', value: earnings.platformFeesCents },
+    { label: 'Pending partner settlement', value: earnings.pendingSettlementCents },
+    { label: 'Paid out to partners', value: earnings.paidOutCents },
   ];
+
+  if (earnings.customerPaidLifetimeCents != null) {
+    rows.push({
+      label: 'Customer paid (lifetime)',
+      value: earnings.customerPaidLifetimeCents,
+    });
+  }
 
   return (
     <Card variant="enterprise" className="min-w-0 border-white/35 dark:border-white/10">
-      <h2 className="wg-heading-section">Earnings overview</h2>
-      <p className="mt-1 text-xs text-wg-muted">Settlement pipeline snapshot (30d gross).</p>
+      <div className="flex items-start justify-between gap-2">
+        <div>
+          <h2 className="wg-heading-section">Earnings overview</h2>
+          <p className="mt-1 text-xs text-wg-muted">Live from bookings + partner earnings ledger.</p>
+        </div>
+        <AdminDataSourceBadge source={earnings.fromApi ? 'live' : 'demo'} />
+      </div>
       <ul className="mt-3 space-y-2">
         {rows.map((r) => (
           <li

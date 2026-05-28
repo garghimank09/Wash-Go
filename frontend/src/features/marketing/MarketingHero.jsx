@@ -1,19 +1,13 @@
 import { Link } from 'react-router-dom';
 import { m } from 'framer-motion';
-import { Droplets, Home, Leaf, ShieldCheck, Sparkles } from 'lucide-react';
+import { Sparkles } from 'lucide-react';
 
 import { Button } from '../../ui/button';
 import { useReducedMotion } from '../../lib/useReducedMotion';
 import { HeroAmbientBackground } from './hero/HeroAmbientBackground';
 import { HeroCinematicVisual } from './hero/HeroCinematicVisual';
+import { HERO_TRUST } from './premium/premiumContent';
 import { marketingContainer, marketingItem } from './marketingMotion';
-
-const TRUST_PILLS = [
-  { label: 'Eco-conscious car care', icon: Leaf },
-  { label: 'Water-saving wash process', icon: Droplets },
-  { label: 'Doorstep convenience', icon: Home },
-  { label: 'Trusted mobile washers', icon: ShieldCheck },
-];
 
 export function MarketingHero() {
   const reduced = useReducedMotion();
@@ -40,7 +34,7 @@ export function MarketingHero() {
             className="wg-hero-glass-pill relative inline-flex items-center gap-2 rounded-full border border-emerald-500/25 px-4 py-1.5 text-xs font-bold uppercase tracking-widest text-emerald-800 backdrop-blur-md"
           >
             <Sparkles className="size-3.5" strokeWidth={2} aria-hidden />
-            Premium doorstep car care
+            AI-Powered Doorstep Car Care
           </m.p>
 
           <m.h1 variants={marketingItem(reduced)} className="wg-hero relative mt-6 max-w-[38rem] leading-[1.06]">
@@ -54,15 +48,14 @@ export function MarketingHero() {
             variants={marketingItem(reduced)}
             className="relative mt-6 max-w-[34rem] text-base leading-relaxed text-wg-muted sm:text-lg sm:leading-relaxed"
           >
-            Book trusted mobile washers, track every visit, and enjoy a calmer driveway experience — with eco-minded
-            products and water-conscious methods built into every service.
+            Book premium doorstep cleaning with real-time tracking, eco-safe products, and AI-powered scheduling.
           </m.p>
 
           <m.div variants={marketingItem(reduced)} className="relative mt-10 flex min-w-0 flex-wrap items-center gap-3 sm:gap-4">
             <Link to="/signup" className="inline-block">
               {reduced ? (
-                <Button size="lg" className="wg-marketing-cta-shimmer wg-marketing-hero-cta relative overflow-hidden">
-                  Book your first wash
+                <Button size="lg" className="wg-premium-cta wg-marketing-cta-shimmer relative overflow-hidden">
+                  Book your wash
                 </Button>
               ) : (
                 <m.span
@@ -71,36 +64,33 @@ export function MarketingHero() {
                   whileTap={{ scale: 0.98 }}
                   transition={{ type: 'spring', stiffness: 400, damping: 22 }}
                 >
-                  <Button
-                    size="lg"
-                    className="wg-marketing-cta-shimmer wg-marketing-hero-cta relative overflow-hidden transition-shadow duration-300"
-                  >
-                    Book your first wash
+                  <Button size="lg" className="wg-premium-cta wg-marketing-cta-shimmer relative overflow-hidden">
+                    Book your wash
                   </Button>
                 </m.span>
               )}
             </Link>
-            <Link to="/login">
+            <Link to="/membership/plans">
               <Button
                 size="lg"
                 variant="outline"
                 className="border-white/60 bg-white/50 shadow-sm backdrop-blur-sm transition duration-300 hover:border-cyan-500/35 hover:bg-white/70"
               >
-                I have an account
+                Explore membership
               </Button>
             </Link>
           </m.div>
 
           <m.ul
             variants={marketingItem(reduced)}
-            className="relative mt-10 flex flex-wrap gap-2.5 sm:mt-11"
-            aria-label="Service highlights"
+            className="relative mt-10 grid gap-2 sm:grid-cols-2 sm:mt-11"
+            aria-label="Trust indicators"
           >
-            {TRUST_PILLS.map(({ label, icon: Icon }) => (
+            {HERO_TRUST.map(({ label, sub }) => (
               <li key={label}>
-                <span className="wg-hero-glass-pill inline-flex items-center gap-1.5 rounded-full border border-white/50 px-3.5 py-2 text-xs font-semibold text-wg-text backdrop-blur-sm transition duration-300 hover:border-emerald-500/30 hover:shadow-md">
-                  <Icon className="size-3.5 shrink-0 text-emerald-600/90" strokeWidth={2} aria-hidden />
-                  {label}
+                <span className="wg-hero-glass-pill block rounded-2xl border border-white/50 px-4 py-3 backdrop-blur-sm">
+                  <span className="block text-sm font-bold text-wg-text">{label}</span>
+                  <span className="block text-xs text-wg-muted">{sub}</span>
                 </span>
               </li>
             ))}

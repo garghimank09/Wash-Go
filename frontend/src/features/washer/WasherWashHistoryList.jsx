@@ -55,13 +55,14 @@ function HistoryRow({ booking }) {
  */
 export function WasherWashHistoryList({
   bookings,
+  rows = null,
   loading = false,
   limit = null,
   emptyTitle = 'No completed washes yet',
   emptyDescription = 'Jobs you accept and finish will appear here with payout and completion time.',
 }) {
-  const history = selectCompletedWashHistory(bookings);
-  const visible = limit != null ? history.slice(0, limit) : history;
+  const history = rows ?? selectCompletedWashHistory(bookings);
+  const visible = limit != null && rows == null ? history.slice(0, limit) : history;
 
   if (loading) {
     return (

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 
+import { onMembershipSync } from '../lib/membershipSyncEvents';
 import { membershipService } from '../services/membershipService';
 import { getErrorMessage } from '../services/api';
 
@@ -25,6 +26,8 @@ export function useMyMembership() {
   useEffect(() => {
     reload();
   }, [reload]);
+
+  useEffect(() => onMembershipSync(() => void reload()), [reload]);
 
   return { membership, loading, error, reload, setMembership };
 }

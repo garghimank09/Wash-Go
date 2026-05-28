@@ -4,6 +4,7 @@ import { useAdminBookings } from '../../../hooks/useAdminBookings';
 import {
   computeCustomerGrowth,
   computeEarningsBreakdown,
+  mapAdminEarningsOverview,
   computeEscalations,
   computeHeatmap,
   computePeakHourInsight,
@@ -25,7 +26,8 @@ import {
 const CHART_LOAD_MS = 320;
 
 export function useAdminOverview() {
-  const { items, fleetWashers, loading, error, kpis: baseKpis, liveOpsSnapshot } = useAdminBookings();
+  const { items, fleetWashers, earningsOverview, loading, error, kpis: baseKpis, liveOpsSnapshot } =
+    useAdminBookings();
   const [chartsReady, setChartsReady] = useState(false);
 
   useEffect(() => {
@@ -53,19 +55,20 @@ export function useAdminOverview() {
     ];
   }, [items]);
 
-  const washers = useMemo(() => fleetWashersToGridRows(fleetWashers), [fleetWashers]);
+  const washers = useMemo(() => fleetWashersToGridRows(fleetWashers, items), [fleetWashers, items]);
 
-  const kpis = useMemo(
-    () => ({
+  const kpis = useMemo(() => {
+    const earnings = mapAdminEarningsOverview(earningsOverview);
+    return {
       ...baseKpis,
+      revenue30dCents: earnings?.customerPaid30dCents ?? baseKpis.revenue30dCents,
       repeatCustomerPct: computeRepeatCustomerPct(items),
       customerGrowthPct:
         baseKpis.bookings30d > 0
           ? Math.min(99, Math.round(computeRepeatCustomerPct(items)))
           : 0,
-    }),
-    [baseKpis, items],
-  );
+    };
+  }, [baseKpis, items, earningsOverview]);
 
   const data = useMemo(
     () => ({
@@ -75,7 +78,9 @@ export function useAdminOverview() {
       bookingVolumeFromApi: true,
       customerGrowth: computeCustomerGrowth(items),
       satisfaction: computeSatisfactionSegments(items),
-      earnings: computeEarningsBreakdown(kpis),
+      earnings: mapAdminEarningsOverview(earningsOverview) ?? computeEarningsBreakdown(kpis),
+      earningsFromApi: Boolean(earningsOverview),
+      partnerPayouts: earningsOverview?.partners ?? [],
       heatmap: computeHeatmap(items),
       washers,
       washersFromApi: !!fleetWashers?.length,
@@ -99,6 +104,7 @@ export function useAdminOverview() {
       bookingVolumeSeries,
       washers,
       fleetWashers,
+      earningsOverview,
       items,
     ],
   );

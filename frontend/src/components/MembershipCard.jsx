@@ -54,7 +54,7 @@ export function MembershipCard({ title, price, perks, highlighted, planSlug }) {
         className="mt-6 w-full rounded-xl border border-wg-border bg-wg-surface/80 py-2.5 text-sm font-semibold text-wg-text transition hover:bg-wg-surface dark:bg-white/[0.04] dark:hover:bg-white/[0.07] wg-focus-ring"
         onClick={handleJoin}
       >
-        Join waitlist
+        {user ? 'Choose plan' : 'Get started'}
       </button>
     </div>
   );

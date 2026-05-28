@@ -19,7 +19,7 @@ export function AdminDirectoryMetricsStrip({ segment, metrics }) {
         <MetricCard label="Partners" value={metrics.count} sub="In filter" accent="slate" />
         <MetricCard label="Online now" value={metrics.online} sub="Live on fleet map" accent="emerald" />
         <MetricCard label="Busy on job" value={metrics.busy} sub="Active wash" accent="amber" />
-        <MetricCard label="YTD payouts" value={formatCents(metrics.earningsYtdCents || 0)} sub="Fleet cohort" accent="cyan" isText />
+        <MetricCard label="Partner share" value={formatCents(metrics.earningsYtdCents || 0)} sub="Ledger total" accent="cyan" isText />
       </div>
     );
   }

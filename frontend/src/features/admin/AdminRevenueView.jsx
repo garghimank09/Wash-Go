@@ -9,7 +9,9 @@ import { AdminBookingVolumeChart } from './components/AdminBookingVolumeChart';
 import { AdminCustomerGrowthChart } from './components/AdminCustomerGrowthChart';
 import { AdminDataNotice } from './components/AdminDataNotice';
 import { AdminEarningsCard } from './components/AdminEarningsCard';
+import { AdminPartnerPayoutsTable } from './components/AdminPartnerPayoutsTable';
 import { AdminKpiStrip } from './components/AdminKpiStrip';
+import { AdminRevenueFinanceStrip } from './components/AdminRevenueFinanceStrip';
 import { AdminRepeatCustomerCard } from './components/AdminRepeatCustomerCard';
 import { AdminRevenueChart } from './components/AdminRevenueChart';
 import { AdminSatisfactionChart } from './components/AdminSatisfactionChart';
@@ -18,7 +20,7 @@ import { useAdminOverview } from './hooks/useAdminOverview';
 
 export function AdminRevenueView() {
   const reduced = useReducedMotion();
-  const { data, chartsReady } = useAdminOverview();
+  const { data, chartsReady, loading } = useAdminOverview();
 
   return (
     <m.div
@@ -30,7 +32,9 @@ export function AdminRevenueView() {
       <m.div variants={adminSectionItem(reduced)} className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="wg-heading-display">Revenue</h1>
-          <p className="mt-1 max-w-2xl text-sm text-wg-muted">Gross performance, pipeline, and satisfaction — derived from completed bookings.</p>
+          <p className="mt-1 max-w-2xl text-sm text-wg-muted">
+            Total customer revenue, washer payouts, and platform income — live from bookings and the partner earnings ledger.
+          </p>
         </div>
         <Link
           to="/admin"
@@ -45,8 +49,12 @@ export function AdminRevenueView() {
         <AdminDataNotice />
       </m.div>
 
-      <m.div variants={adminSectionItem(reduced)}>
-        <AdminKpiStrip kpis={data.kpis} loading={false} tickVersion={0} />
+      <m.div variants={adminSectionItem(reduced)} className="space-y-4">
+        <AdminRevenueFinanceStrip earnings={data.earnings} loading={loading} />
+        <div>
+          <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-wg-muted">Operations</p>
+          <AdminKpiStrip kpis={data.kpis} loading={loading} tickVersion={0} hideRevenue />
+        </div>
       </m.div>
 
       <m.div variants={adminSectionItem(reduced)}>
@@ -74,6 +82,14 @@ export function AdminRevenueView() {
           <AdminSatisfactionChart segments={data.satisfaction} chartsReady={chartsReady} />
         </m.div>
       </div>
+
+      <m.div variants={adminSectionItem(reduced)}>
+        <AdminPartnerPayoutsTable
+          partners={data.partnerPayouts}
+          sharePercent={data.earnings?.sharePercent}
+          fromApi={data.earningsFromApi}
+        />
+      </m.div>
     </m.div>
   );
 }

@@ -5,25 +5,31 @@ import { StatCard } from '../../../ui/stat-card';
 import { useReducedMotion } from '../../../lib/useReducedMotion';
 import { formatCents } from '../../../utils/format';
 
-export function AdminKpiStrip({ kpis, loading, tickVersion = 0 }) {
+export function AdminKpiStrip({ kpis, loading, tickVersion = 0, hideRevenue = false }) {
   const reduced = useReducedMotion();
 
   return (
     <div className="space-y-3">
       <m.div
         key={tickVersion ? `kpi-tick-${tickVersion}` : 'kpi'}
-        className="grid min-w-0 gap-3 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-6"
+        className={
+          hideRevenue
+            ? 'grid min-w-0 gap-3 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-5'
+            : 'grid min-w-0 gap-3 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-6'
+        }
         animate={reduced || !tickVersion ? undefined : { opacity: [0.94, 1] }}
         transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
       >
-        <StatCard
-          label="Revenue (30d)"
-          value={kpis ? formatCents(kpis.revenue30dCents) : '—'}
-          loading={loading}
-          animate={false}
-          icon={DollarSign}
-          variant="glass"
-        />
+        {!hideRevenue ? (
+          <StatCard
+            label="Revenue (30d)"
+            value={kpis ? formatCents(kpis.revenue30dCents) : '—'}
+            loading={loading}
+            animate={false}
+            icon={DollarSign}
+            variant="glass"
+          />
+        ) : null}
         <StatCard
           label="Bookings (30d)"
           value={kpis?.bookings30d ?? 0}

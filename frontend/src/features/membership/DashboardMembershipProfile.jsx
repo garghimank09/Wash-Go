@@ -31,8 +31,8 @@ export function DashboardMembershipProfile({ membership, loading }) {
           <h3 className="mt-1 text-lg font-bold text-wg-text">Save with a monthly plan</h3>
           <p className="mt-1 text-sm text-wg-muted">Bundle washes and track credits in your profile.</p>
         </div>
-        <Button asChild variant="secondary" className="shrink-0">
-          <Link to="/#plans">View plans</Link>
+        <Button asChild className="shrink-0 gap-1.5">
+          <Link to="/membership/plans">Upgrade plan</Link>
         </Button>
       </Card>
     );
@@ -62,9 +62,14 @@ export function DashboardMembershipProfile({ membership, loading }) {
             </p>
           </div>
         </div>
-        <Button asChild variant="ghost" size="sm" className="shrink-0">
-          <Link to="/profile">Profile</Link>
-        </Button>
+        <div className="flex shrink-0 flex-wrap gap-2">
+          <Button asChild variant="secondary" size="sm">
+            <Link to="/membership/plans">Change plan</Link>
+          </Button>
+          <Button asChild variant="ghost" size="sm">
+            <Link to="/profile">Profile</Link>
+          </Button>
+        </div>
       </div>
 
       <div className="mt-5">

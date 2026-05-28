@@ -13,18 +13,40 @@ const KIND_LABELS = {
   after: 'After wash',
 };
 
+function normalizePhotos(bookingPhotos, listPhotos) {
+  const fromBooking = bookingPhotos ?? [];
+  if (fromBooking.length) return fromBooking;
+  return (listPhotos ?? []).map((p) => ({
+    id: p.id,
+    kind: p.kind,
+    url: p.url,
+  }));
+}
+
 export function AdminBookingMonitorModal({ bookingId, onClose }) {
   const [loading, setLoading] = useState(true);
   const [booking, setBooking] = useState(null);
+  const [photos, setPhotos] = useState([]);
 
   useEffect(() => {
     if (!bookingId) return undefined;
     let cancelled = false;
     setLoading(true);
-    adminService
-      .getBooking(bookingId)
-      .then((data) => {
-        if (!cancelled) setBooking(data);
+    setBooking(null);
+    setPhotos([]);
+
+    Promise.all([
+      adminService.getBooking(bookingId).catch(() => null),
+      adminService.listBookingPhotos(bookingId).catch(() => []),
+    ])
+      .then(([detail, photoList]) => {
+        if (cancelled) return;
+        if (detail) setBooking(detail);
+        const merged = normalizePhotos(detail?.photos, photoList);
+        setPhotos(merged);
+        if (!detail && !merged.length) {
+          toast.error('Could not load booking photos');
+        }
       })
       .catch((e) => {
         if (!cancelled) toast.error(getErrorMessage(e));
@@ -32,6 +54,7 @@ export function AdminBookingMonitorModal({ bookingId, onClose }) {
       .finally(() => {
         if (!cancelled) setLoading(false);
       });
+
     return () => {
       cancelled = true;
     };
@@ -39,7 +62,6 @@ export function AdminBookingMonitorModal({ bookingId, onClose }) {
 
   if (!bookingId) return null;
 
-  const photos = booking?.photos ?? [];
   const washPhotos = photos.filter((p) => p.kind === 'before' || p.kind === 'after');
   const arrival = photos.find((p) => p.kind === 'arrival');
 
@@ -75,10 +97,14 @@ export function AdminBookingMonitorModal({ bookingId, onClose }) {
             </p>
           ) : null}
 
-          {!loading && booking ? (
+          {!loading ? (
             <>
-              <p className="font-mono text-xs text-wg-muted">{booking.id}</p>
-              {booking.arrival_condition_notes ? (
+              {booking ? (
+                <p className="font-mono text-xs text-wg-muted">{booking.id}</p>
+              ) : (
+                <p className="font-mono text-xs text-wg-muted">{bookingId}</p>
+              )}
+              {booking?.arrival_condition_notes ? (
                 <div className="rounded-xl border border-amber-500/25 bg-amber-500/8 px-4 py-3">
                   <p className="text-[10px] font-bold uppercase tracking-wide text-amber-900 dark:text-amber-100">
                     Condition notes (washer)
@@ -91,7 +117,11 @@ export function AdminBookingMonitorModal({ bookingId, onClose }) {
                   <p className="border-b border-wg-border/60 px-3 py-2 text-[10px] font-bold uppercase tracking-wide text-wg-muted dark:border-white/10">
                     {KIND_LABELS.arrival}
                   </p>
-                  <img src={photoUrl(arrival.url)} alt="" className="aspect-[4/3] w-full object-cover" />
+                  <img
+                    src={photoUrl(arrival.url)}
+                    alt="Vehicle condition at arrival"
+                    className="aspect-[4/3] w-full object-cover"
+                  />
                 </div>
               ) : null}
               {washPhotos.length ? (
@@ -104,7 +134,11 @@ export function AdminBookingMonitorModal({ bookingId, onClose }) {
                       <p className="border-b border-wg-border/60 px-3 py-2 text-[10px] font-bold uppercase tracking-wide text-wg-muted dark:border-white/10">
                         {KIND_LABELS[p.kind] || p.kind}
                       </p>
-                      <img src={photoUrl(p.url)} alt="" className="aspect-[4/3] w-full object-cover" />
+                      <img
+                        src={photoUrl(p.url)}
+                        alt={KIND_LABELS[p.kind] || p.kind}
+                        className="aspect-[4/3] w-full object-cover"
+                      />
                     </div>
                   ))}
                 </div>

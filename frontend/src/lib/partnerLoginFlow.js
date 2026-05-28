@@ -2,8 +2,8 @@ import { authService } from '../services/authService';
 import { partnerAuthService } from '../services/partnerAuthService';
 
 /**
- * Partner portal login: washers use partner token; admins use customer token + /admin.
- * @returns {{ kind: 'admin' | 'washer', user: object }}
+ * Partner portal login: washers only. Admin accounts must use /admin/login.
+ * @returns {{ kind: 'washer', user: object }}
  */
 export async function loginViaPartnerPortal(email, password) {
   const data = await authService.login(email.trim(), password);
@@ -11,8 +11,11 @@ export async function loginViaPartnerPortal(email, password) {
   const me = await authService.me();
 
   if (me.role === 'admin') {
+    authService.clearSession();
     partnerAuthService.clearSession();
-    return { kind: 'admin', user: me };
+    const err = new Error('ADMIN_ROLE');
+    err.user = me;
+    throw err;
   }
 
   if (me.role === 'washer') {

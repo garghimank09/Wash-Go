@@ -1,6 +1,6 @@
 from functools import lru_cache
 
-from pydantic import Field, field_validator
+from pydantic import Field, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -59,6 +59,15 @@ class Settings(BaseSettings):
         if v.startswith("postgresql://") and "+asyncpg" not in v:
             return v.replace("postgresql://", "postgresql+asyncpg://", 1)
         return v
+
+    @model_validator(mode="after")
+    def prefer_openai_when_key_present(self) -> "Settings":
+        """Use OpenAI when a key is configured and provider was left on Ollama default."""
+        key = (self.OPENAI_API_KEY or "").strip()
+        provider = self.AI_PROVIDER.lower().strip()
+        if key and provider == "ollama":
+            self.AI_PROVIDER = "openai"
+        return self
 
 
 @lru_cache

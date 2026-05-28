@@ -16,6 +16,7 @@ from app.database.database import async_session_maker, get_db
 from app.models.user import User, UserRole
 from app.models.booking_photo import BookingPhotoKind
 from app.schemas.booking_photo_schema import BookingPhotoList, BookingPhotoRead
+from app.schemas.admin_earning_schema import AdminEarningsOverview
 from app.schemas.booking_schema import (
     BookingAdminReadList,
     BookingAssignBody,
@@ -35,7 +36,13 @@ from app.schemas.booking_schema import (
 from app.schemas.booking_sync_schema import BookingSyncState
 from app.schemas.review_schema import ReviewAdminList, ReviewCreate, ReviewRead
 from app.schemas.tracking_schema import BookingTrackingRead
-from app.services import booking_photo_service, booking_service, review_service, tracking_service
+from app.services import (
+    admin_earning_service,
+    booking_photo_service,
+    booking_service,
+    review_service,
+    tracking_service,
+)
 from app.services.booking_sync_service import get_bookings_sync_state
 
 router = APIRouter(prefix="/bookings", tags=["Bookings"])
@@ -86,6 +93,14 @@ async def list_admin_fleet(
 ) -> WasherAdminFleetList:
     items = await booking_service.list_washers_admin_fleet(db)
     return WasherAdminFleetList(items=items)
+
+
+@router.get("/admin/earnings", response_model=AdminEarningsOverview)
+async def get_admin_earnings(
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current: Annotated[User, Depends(require_admin_console())],
+) -> AdminEarningsOverview:
+    return await admin_earning_service.get_admin_earnings_overview(db)
 
 
 @router.get("/admin/reviews", response_model=ReviewAdminList)

@@ -124,8 +124,7 @@ export function AssistantChat({ compact = false, className = '' }) {
             Support online
           </div>
           <p className="mx-auto mt-3 max-w-md text-xs text-slate-500">
-            Answers use your WashGo backend (Ollama or OpenAI). Configure <code className="rounded bg-slate-100 px-1">AI_PROVIDER</code> in{' '}
-            <code className="rounded bg-slate-100 px-1">backend/.env</code>.
+            Powered by WashGo AI — answers from your account context and our service guides.
           </p>
         </header>
       )}

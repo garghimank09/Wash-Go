@@ -11,7 +11,8 @@ export function ProtectedRoute() {
     return <Loader fullScreen message="Loading your garage…" />;
   }
   if (!user) {
-    return <Navigate to="/login" replace state={{ from: location.pathname }} />;
+    const loginPath = location.pathname.startsWith('/admin') ? '/admin/login' : '/login';
+    return <Navigate to={loginPath} replace state={{ from: location.pathname }} />;
   }
   return <Outlet />;
 }

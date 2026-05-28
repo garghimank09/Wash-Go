@@ -13,7 +13,7 @@ function optionLabel(v) {
     .replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
-function StatusDropdown({ id, label, value, options, onChange, className }) {
+function StatusDropdown({ id, label, value, options, onChange, className, formatLabel = optionLabel }) {
   return (
     <div className={cn('relative w-full sm:w-[11.5rem]', className)}>
       <label htmlFor={id} className="sr-only">
@@ -30,7 +30,7 @@ function StatusDropdown({ id, label, value, options, onChange, className }) {
       >
         {options.map((s) => (
           <option key={s} value={s}>
-            {optionLabel(s)}
+            {formatLabel(s)}
           </option>
         ))}
       </select>
@@ -46,6 +46,8 @@ function StatusDropdown({ id, label, value, options, onChange, className }) {
 /**
  * @param {'hub' | 'bookings' | 'complaints'} scope
  */
+const SORT_VALUES = ['newest', 'oldest'];
+
 export function AdminOperationsToolbar({
   scope = 'hub',
   query,
@@ -54,6 +56,8 @@ export function AdminOperationsToolbar({
   onStatusFilter,
   complaintStatus = 'all',
   onComplaintStatus,
+  sort,
+  onSort,
 }) {
   const showBookings = scope === 'hub' || scope === 'bookings';
   const showComplaints = scope === 'hub' || scope === 'complaints';
@@ -107,6 +111,16 @@ export function AdminOperationsToolbar({
               value={complaintStatus}
               options={COMPLAINT_STATUS}
               onChange={onComplaintStatus}
+            />
+          ) : null}
+          {showBookings && onSort ? (
+            <StatusDropdown
+              id="admin-booking-sort"
+              label="Sort bookings"
+              value={sort ?? 'newest'}
+              options={SORT_VALUES}
+              onChange={onSort}
+              formatLabel={(v) => (v === 'oldest' ? 'Oldest first' : 'Newest first')}
             />
           ) : null}
         </div>

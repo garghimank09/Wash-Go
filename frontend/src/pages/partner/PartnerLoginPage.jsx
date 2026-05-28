@@ -10,7 +10,9 @@ import { usePartnerAuth } from '../../context/PartnerAuthContext';
 import { Button } from '../../ui/button';
 import { Input } from '../../ui/input';
 import { GlassPanel } from '../../ui/glass-panel';
-import { isDemoEmail } from '../../lib/demoAccounts';
+import { ADMIN_LOGIN_ONLY_MESSAGE, isAdminDemoEmail, isDemoEmail } from '../../lib/demoAccounts';
+import { clearCustomerSession } from '../../lib/adminLoginGuard';
+import { authService } from '../../services/authService';
 import { partnerAuthService } from '../../services/partnerAuthService';
 import { getErrorMessage } from '../../services/api';
 import { isValidEmail, validateOtpCode } from '../../utils/validators';
@@ -42,7 +44,7 @@ export function PartnerLoginPage() {
   }
 
   if (customerUser?.role === 'admin') {
-    return <Navigate to="/admin" replace />;
+    return <Navigate to="/admin/login" replace />;
   }
 
   if (user?.role === 'washer') {
@@ -50,7 +52,11 @@ export function PartnerLoginPage() {
   }
 
   const normalizedEmail = email.trim().toLowerCase();
-  const demoAccount = isDemoEmail(normalizedEmail);
+  const demoAccount = isDemoEmail(normalizedEmail) && !isAdminDemoEmail(normalizedEmail);
+
+  const rejectAdminOnThisPortal = () => {
+    setError(ADMIN_LOGIN_ONLY_MESSAGE);
+  };
 
   const submitCredentials = async (e) => {
     e.preventDefault();
@@ -61,6 +67,10 @@ export function PartnerLoginPage() {
     }
     if (!password) {
       setError('Password is required');
+      return;
+    }
+    if (isAdminDemoEmail(normalizedEmail)) {
+      rejectAdminOnThisPortal();
       return;
     }
     setLoading(true);
@@ -78,6 +88,12 @@ export function PartnerLoginPage() {
       setOtpInfo(res.message || 'Check your email for the code.');
       setStep('otp');
     } catch (err) {
+      if (err?.message === 'ADMIN_ROLE') {
+        clearCustomerSession(authService);
+        await refreshUser();
+        rejectAdminOnThisPortal();
+        return;
+      }
       if (err?.message === 'PARTNER_ROLE') {
         setError('This portal is for approved WashGo partners only.');
         return;
@@ -97,6 +113,10 @@ export function PartnerLoginPage() {
       setError(otpErr);
       return;
     }
+    if (isAdminDemoEmail(normalizedEmail)) {
+      rejectAdminOnThisPortal();
+      return;
+    }
     setLoading(true);
     try {
       await loginPartner(normalizedEmail, password, otp.trim());
@@ -107,8 +127,9 @@ export function PartnerLoginPage() {
       navigate(safeFrom, { replace: true });
     } catch (err) {
       if (err?.message === 'ADMIN_ROLE') {
+        clearCustomerSession(authService);
         await refreshUser();
-        navigate('/admin', { replace: true });
+        rejectAdminOnThisPortal();
         return;
       }
       if (err?.message === 'PARTNER_ROLE') {
@@ -282,7 +303,13 @@ export function PartnerLoginPage() {
           ) : null}
         </GlassPanel>
 
-        <DemoCredentialsPanel highlight="Partner" />
+        <DemoCredentialsPanel highlight="Partner" excludeLabels={['Admin']} />
+        <p className="mt-4 text-center text-sm text-white/55">
+          WashGo admin?{' '}
+          <Link to="/admin/login" className="font-semibold text-indigo-300 hover:text-indigo-200">
+            Admin console sign in
+          </Link>
+        </p>
 
         <p className="mt-8 text-center text-[11px] text-white/40">
           Demo partner account skips email verification.

@@ -1,10 +1,23 @@
+function washerRevenue7dCents(bookings, washerId) {
+  const since = Date.now() - 7 * 86400000;
+  return (bookings || [])
+    .filter(
+      (b) =>
+        String(b.washer_id) === String(washerId) &&
+        b.status === 'completed' &&
+        new Date(b.scheduled_at).getTime() >= since,
+    )
+    .reduce((sum, b) => sum + (Number(b.price_cents) || 0), 0);
+}
+
 /** Map API admin fleet rows to washer grid cards (live + derived metrics). */
-export function fleetWashersToGridRows(fleetItems) {
+export function fleetWashersToGridRows(fleetItems, bookings = []) {
   return (fleetItems || []).map((w) => {
     const rating = Number(w.rating_avg) || 0;
     const activeJobs = Number(w.active_jobs) || 0;
     const completed7d = Number(w.completed7d) || 0;
     const trustScore = Math.min(99, Math.round(78 + rating * 4 + Math.min(8, completed7d)));
+    const revenue7dCents = washerRevenue7dCents(bookings, w.id);
     return {
       id: String(w.id),
       name: w.full_name,
@@ -17,7 +30,7 @@ export function fleetWashersToGridRows(fleetItems) {
       completed: completed7d * 12,
       onTimePct: Math.min(99, 90 + Math.round(rating * 2)),
       trustScore,
-      revenue7dCents: completed7d * 2200,
+      revenue7dCents,
       trend7d: Array.from({ length: 7 }, () => completed7d),
       region: w.service_area || '—',
       topBadge: activeJobs > 0 ? 'On job' : w.is_available ? 'Available' : 'Offline',

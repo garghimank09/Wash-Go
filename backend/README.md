@@ -116,7 +116,7 @@ The API proxies to either **Ollama** (default) or **OpenAI**, configured in `.en
 
 | Variable | Purpose |
 |----------|---------|
-| `AI_PROVIDER` | `ollama` (default) or `openai` |
+| `AI_PROVIDER` | `openai` (default) or `ollama` — auto-uses OpenAI when `OPENAI_API_KEY` is set |
 | `OLLAMA_BASE_URL` | e.g. `http://localhost:11434` |
 | `OLLAMA_MODEL` | e.g. `llama3.2` (run `ollama pull <name>` first) |
 | `OPENAI_API_KEY` | Required when `AI_PROVIDER=openai` |

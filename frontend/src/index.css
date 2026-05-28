@@ -58,7 +58,7 @@
   }
   body {
     @apply min-h-dvh bg-wg-surface font-sans text-wg-text transition-colors duration-300;
-    font-family: 'Plus Jakarta Sans', ui-sans-serif, system-ui, sans-serif;
+    font-family: 'Inter', 'Plus Jakarta Sans', ui-sans-serif, system-ui, sans-serif;
   }
   #root {
     @apply min-h-dvh;
@@ -797,5 +797,89 @@
   .wg-footer-social-link:focus-visible .wg-footer-social-icon,
   .wg-footer-social-icon {
     transform: none !important;
+  }
+}
+
+/* Premium marketing — next-gen landing */
+.wg-premium-page {
+  background:
+    radial-gradient(ellipse 100% 80% at 50% -30%, rgb(224 242 254 / 0.9), transparent 55%),
+    var(--wg-surface);
+}
+
+.dark .wg-premium-page {
+  background:
+    radial-gradient(ellipse 90% 60% at 50% -20%, rgb(34 211 238 / 0.08), transparent 50%),
+    var(--wg-surface);
+}
+
+.wg-premium-nav {
+  transition: box-shadow 0.35s ease, border-color 0.35s ease;
+}
+
+.wg-premium-eyebrow {
+  @apply text-xs font-bold uppercase tracking-[0.2em] text-cyan-600 dark:text-cyan-400;
+}
+
+.wg-premium-title {
+  @apply text-3xl font-black tracking-[-0.03em] text-wg-text sm:text-4xl md:text-[2.75rem] md:leading-[1.08];
+}
+
+.wg-premium-subtitle {
+  @apply text-base font-medium leading-relaxed text-wg-muted sm:text-lg;
+}
+
+.wg-premium-section {
+  @apply py-16 sm:py-20 md:py-24;
+}
+
+.wg-premium-section-alt {
+  background: linear-gradient(180deg, transparent, rgb(241 245 249 / 0.8) 50%, transparent);
+}
+
+.dark .wg-premium-section-alt {
+  background: linear-gradient(180deg, transparent, rgb(15 23 42 / 0.35) 50%, transparent);
+}
+
+.wg-premium-section-dark {
+  @apply bg-slate-950 text-white;
+}
+
+.wg-premium-glass {
+  background: rgb(255 255 255 / 0.72);
+  border: 1px solid rgb(255 255 255 / 0.55);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  box-shadow:
+    0 1px 0 rgb(255 255 255 / 0.8) inset,
+    0 12px 40px rgb(15 23 42 / 0.06);
+}
+
+.dark .wg-premium-glass {
+  background: rgb(15 23 42 / 0.55);
+  border-color: rgb(148 163 184 / 0.12);
+  box-shadow: 0 12px 40px rgb(0 0 0 / 0.25);
+}
+
+.wg-premium-cta {
+  @apply bg-gradient-to-r from-cyan-500 to-indigo-500 text-white shadow-lg shadow-cyan-500/25 transition hover:shadow-xl hover:shadow-cyan-500/30;
+}
+
+@keyframes wg-premium-marquee {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+.wg-premium-marquee-track {
+  animation: wg-premium-marquee 28s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .wg-premium-marquee-track {
+    animation: none;
   }
 }

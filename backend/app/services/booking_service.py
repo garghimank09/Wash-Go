@@ -13,6 +13,7 @@ from app.services.notification_service import notify_customer_booking_milestone,
 from app.services.partner_earning_service import record_earning_on_accept
 from app.services.user_membership_service import consume_wash_credit
 from app.models.car import Car
+from app.auth.dependencies import user_has_admin_console_access
 from app.models.user import User, UserRole
 from app.models.washer import Washer
 from app.schemas.service_phase import VALID_SERVICE_PHASES, phase_rank
@@ -285,6 +286,7 @@ async def assign_booking_by_admin(
     booking.washer_id = washer.id
     if booking.status == BookingStatus.pending:
         booking.status = BookingStatus.confirmed
+    await record_earning_on_accept(db, booking, washer)
     await db.commit()
     await db.refresh(booking)
     return booking
@@ -637,7 +639,7 @@ async def get_booking_detail(db: AsyncSession, user: User, booking_id: UUID) -> 
     if booking is None:
         raise NotFoundError("Booking not found")
 
-    if user.role == UserRole.admin:
+    if user_has_admin_console_access(user) and user.role != UserRole.customer:
         pass
     elif user.role == UserRole.washer:
         wr = await db.execute(select(Washer).where(Washer.user_id == user.id))

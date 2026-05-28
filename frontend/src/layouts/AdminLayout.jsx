@@ -1,5 +1,6 @@
 import { useState } from 'react';
 
+import { AdminBookingsProvider } from '../context/AdminBookingsContext';
 import { AdminBookingSyncBridge } from '../components/BookingSyncBridge';
 import { AdminHeader } from '../components/AdminHeader';
 import { AdminSidebar } from '../components/AdminSidebar';
@@ -13,6 +14,7 @@ export function AdminLayout() {
   const [mobileMenu, setMobileMenu] = useState(false);
 
   return (
+    <AdminBookingsProvider>
     <div className="relative flex min-h-dvh bg-wg-surface">
       <AdminBookingSyncBridge />
       <div
@@ -44,5 +46,6 @@ export function AdminLayout() {
         <AssistantDock />
       </div>
     </div>
+    </AdminBookingsProvider>
   );
 }

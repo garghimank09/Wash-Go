@@ -53,7 +53,7 @@ export function AdminDirectoryPartnerTable({ rows, onPreview, tickVersion }) {
               <th className="px-3 py-3">Accept</th>
               <th className="px-3 py-3">Complete</th>
               <th className="px-3 py-3">Trust</th>
-              <th className="px-3 py-3">YTD earnings</th>
+              <th className="px-3 py-3">Partner share</th>
               <th className="px-3 py-3">Active jobs</th>
               <th className="px-3 py-3">Ops state</th>
               <th className="px-4 py-3 text-right">Actions</th>
