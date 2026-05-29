@@ -5,6 +5,7 @@ import {
   Pressable,
   ScrollView,
   StyleSheet,
+  Platform,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as Haptics from 'expo-haptics';
@@ -13,8 +14,8 @@ import { getPartnerShadow } from '../../../constants/partnerTheme';
 import { getScheduleTokens } from '../../../constants/scheduleTheme';
 import { usePartnerSchedule } from '../../../context/PartnerScheduleContext';
 
-const PILL_WIDTH = 60;
-const PILL_GAP = 8;
+const PILL_WIDTH = 54;
+const PILL_GAP = 6;
 
 export default function DaySelector({ selectedKey, onSelect }) {
   const { theme, isDark } = useTheme();
@@ -40,15 +41,7 @@ export default function DaySelector({ selectedKey, onSelect }) {
   };
 
   return (
-    <View
-      style={[
-        styles.outer,
-        {
-          backgroundColor: theme.customer.surface,
-          borderBottomColor: theme.customer.outlineVariant,
-        },
-      ]}
-    >
+    <View style={styles.outer}>
       <ScrollView
         ref={scrollRef}
         horizontal
@@ -74,7 +67,7 @@ export default function DaySelector({ selectedKey, onSelect }) {
                     ? tokens.daySelector.todayRing
                     : tokens.daySelector.pillBorder,
                 },
-                isActive && shadows.rim,
+                isActive && Platform.OS === 'ios' && shadows.rim,
                 pressed && !isActive && { opacity: 0.94 },
               ]}
             >
@@ -136,8 +129,8 @@ export default function DaySelector({ selectedKey, onSelect }) {
 
 const styles = StyleSheet.create({
   outer: {
-    paddingVertical: 10,
-    borderBottomWidth: 1,
+    paddingVertical: 8,
+    paddingBottom: 10,
   },
   scroll: {
     paddingHorizontal: 20,
@@ -145,8 +138,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   pill: {
-    height: 72,
-    borderRadius: 18,
+    height: 68,
+    borderRadius: 16,
     borderWidth: 1,
     overflow: 'hidden',
     alignItems: 'center',
@@ -159,7 +152,7 @@ const styles = StyleSheet.create({
     letterSpacing: 0.6,
   },
   day: {
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: '800',
     letterSpacing: -0.4,
   },

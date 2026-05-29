@@ -46,7 +46,7 @@ function StatusLabel({ status }) {
 
 export default function PartnerProfile() {
   const router = useRouter();
-  const { theme, isDark, setThemePreference } = useTheme();
+  const { theme, isDark, themePreference, setThemePreference } = useTheme();
   const toggleTheme = useCallback(() => {
     setThemePreference(isDark ? 'light' : 'dark');
   }, [isDark, setThemePreference]);
@@ -190,7 +190,11 @@ export default function PartnerProfile() {
             <View style={styles.rowText}>
               <Text style={[styles.rowLabel, { color: theme.text.secondary }]}>Appearance</Text>
               <Text style={[styles.rowValue, { color: theme.text.primary }]}>
-                {isDark ? 'Dark' : 'Light'} mode
+                {themePreference === 'system'
+                  ? 'System (device)'
+                  : isDark
+                    ? 'Dark mode'
+                    : 'Light mode'}
               </Text>
             </View>
             <ChevronRight size={18} color={theme.text.muted} />

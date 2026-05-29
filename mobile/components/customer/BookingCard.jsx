@@ -89,6 +89,7 @@ const styles = StyleSheet.create({
     borderLeftWidth: 3,
     padding: 16,
     marginBottom: 10,
+    overflow: 'hidden',
   },
   cardActive: {},
   topRow: {

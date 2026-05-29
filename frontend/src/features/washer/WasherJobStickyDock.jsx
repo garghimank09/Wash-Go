@@ -14,7 +14,7 @@ const PHASE_PRIMARY = {
   awaiting_approval: { label: 'Waiting for customer', sub: 'They review condition photo & notes' },
   arrival_approved: { label: 'Start service', sub: 'Condition approved — begin wash' },
   wash_started: { label: 'Service in progress', sub: 'Quality pass + wash photos' },
-  qc_review: { label: 'Run QC review', sub: 'Checklist + shine verification' },
+  qc_review: { label: 'Mark service completed', sub: 'Finish QC and close out the job' },
   completed: { label: 'Job complete', sub: 'Great work — back to ops' },
 };
 

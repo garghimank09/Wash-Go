@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { View, Text, Pressable, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet } from 'react-native';
 import { Swipeable } from 'react-native-gesture-handler';
 import { MotiView } from 'moti';
 import Animated, {
@@ -11,14 +11,14 @@ import Animated, {
 import * as Haptics from 'expo-haptics';
 import { Trash2, ChevronDown } from 'lucide-react-native';
 import { useTheme } from '../../../context/ThemeContext';
-import { getPartnerShadow } from '../../../constants/partnerTheme';
 import { getPayoutStatus } from '../../../constants/earningsTheme';
 import { formatPayoutCurrency, formatPayoutDate } from '../../../lib/partnerFormatters';
+import CardSurface from '../../ui/CardSurface';
 
 export default function EarningsHistoryItem({ item, index = 0, onDismiss }) {
   const { theme, isDark } = useTheme();
-  const shadows = getPartnerShadow(isDark);
   const statusTokens = getPayoutStatus(item.status, isDark);
+  const c = theme.customer;
 
   const [expanded, setExpanded] = useState(false);
   const rotate = useSharedValue(0);
@@ -58,17 +58,13 @@ export default function EarningsHistoryItem({ item, index = 0, onDismiss }) {
         friction={1.6}
         rightThreshold={48}
       >
-        <Pressable
+        <CardSurface
           onPress={toggleExpanded}
-          style={({ pressed }) => [
-            styles.card,
-            {
-              backgroundColor: theme.customer.surfaceContainerLowest,
-              borderColor: theme.customer.outlineVariant,
-            },
-            shadows.rim,
-            pressed && { opacity: 0.94 },
-          ]}
+          borderRadius={18}
+          backgroundColor={c.surfaceContainerLowest}
+          shadow="rim"
+          portal="partner"
+          style={styles.card}
         >
           <View style={styles.row}>
             <View style={styles.col}>
@@ -99,7 +95,7 @@ export default function EarningsHistoryItem({ item, index = 0, onDismiss }) {
               from={{ opacity: 0, translateY: -2 }}
               animate={{ opacity: 1, translateY: 0 }}
               transition={{ type: 'timing', duration: 220 }}
-              style={[styles.detail, { borderTopColor: theme.customer.outlineVariant }]}
+              style={[styles.detail, { borderTopColor: c.outlineVariant }]}
             >
               <View style={styles.detailRow}>
                 <Text style={[styles.detailLabel, { color: theme.text.muted }]}>
@@ -119,7 +115,7 @@ export default function EarningsHistoryItem({ item, index = 0, onDismiss }) {
               </View>
             </MotiView>
           ) : null}
-        </Pressable>
+        </CardSurface>
       </Swipeable>
     </MotiView>
   );
@@ -127,8 +123,6 @@ export default function EarningsHistoryItem({ item, index = 0, onDismiss }) {
 
 const styles = StyleSheet.create({
   card: {
-    borderRadius: 18,
-    borderWidth: 1,
     paddingHorizontal: 14,
     paddingVertical: 12,
   },

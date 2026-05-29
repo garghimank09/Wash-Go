@@ -10,6 +10,7 @@ import {
   Share,
 } from 'react-native';
 import { useRouter } from 'expo-router';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import * as ImagePicker from 'expo-image-picker';
 import { MotiView } from 'moti';
 import { useTheme } from '../../context/ThemeContext';
@@ -49,8 +50,16 @@ function Stagger({ index, children }) {
   );
 }
 
+function appearanceLabel(themePreference, isDark) {
+  if (themePreference === 'system') return 'System (device)';
+  return isDark ? 'Dark mode' : 'Light mode';
+}
+
 export default function ProfileScreen() {
-  const { theme } = useTheme();
+  const { theme, isDark, themePreference, setThemePreference } = useTheme();
+  const toggleAppearance = useCallback(() => {
+    setThemePreference(isDark ? 'light' : 'dark');
+  }, [isDark, setThemePreference]);
   const router = useRouter();
   const { user, logout, refreshUser } = useAuth();
   const scrollEndPadding = useCustomerScrollEndPadding();
@@ -76,7 +85,6 @@ export default function ProfileScreen() {
     bookingReminders: true,
     marketingEmails: false,
     language: 'English',
-    darkMode: 'system',
   });
 
   const loadAll = useCallback(async () => {
@@ -195,17 +203,17 @@ export default function ProfileScreen() {
 
   if (loading) {
     return (
-      <View style={[styles.safe, { backgroundColor: c.surface }]}>
+      <SafeAreaView style={[styles.safe, { backgroundColor: c.surface }]} edges={['top']}>
         <View style={styles.skeletonPad}>
           <CustomerSkeleton />
           <CustomerSkeleton />
         </View>
-      </View>
+      </SafeAreaView>
     );
   }
 
   return (
-    <View style={[styles.safe, { backgroundColor: c.surface }]}>
+    <SafeAreaView style={[styles.safe, { backgroundColor: c.surface }]} edges={['top']}>
       <ScrollView
         contentContainerStyle={[
           styles.scroll,
@@ -388,10 +396,8 @@ export default function ProfileScreen() {
             <ProfileMenuRow
               icon="brightness-6"
               label="Appearance"
-              value={`${prefs.darkMode} (follows device)`}
-              onPress={() =>
-                Alert.alert('Appearance', 'Theme follows your device settings for now.')
-              }
+              value={appearanceLabel(themePreference, isDark)}
+              onPress={toggleAppearance}
               last
             />
           </ProfileSectionCard>
@@ -439,7 +445,7 @@ export default function ProfileScreen() {
         onClose={() => setEditVisible(false)}
         onSave={handleSaveProfile}
       />
-    </View>
+    </SafeAreaView>
   );
 }
 
@@ -447,7 +453,7 @@ const styles = StyleSheet.create({
   safe: { flex: 1 },
   scroll: {
     paddingHorizontal: CUSTOMER_LAYOUT.screenPadding,
-    paddingTop: 12,
+    paddingTop: 8,
     gap: CUSTOMER_LAYOUT.sectionGap,
   },
   screenTitle: {

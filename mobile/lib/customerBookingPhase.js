@@ -1,6 +1,4 @@
-// Derives customer-facing booking phases from API status + handoff sub-state.
-// API statuses: pending | confirmed | in_progress | completed | cancelled
-// Handoff: none | awaiting_customer | customer_confirmed | issue_reported
+// Derives customer-facing booking phases from API status + service_phase.
 
 export const CUSTOMER_PHASES = [
   'searching',
@@ -8,83 +6,96 @@ export const CUSTOMER_PHASES = [
   'accepted',
   'on_the_way',
   'in_progress',
-  'awaiting_review',
-  'issue_reported',
   'completed',
   'cancelled',
 ];
 
+const PHASE_LABELS = {
+  searching: 'Searching',
+  awaiting_acceptance: 'Awaiting acceptance',
+  accepted: 'Accepted',
+  on_the_way: 'On the way',
+  in_progress: 'In progress',
+  completed: 'Completed',
+  cancelled: 'Cancelled',
+};
+
+const PHASE_SUBTITLES = {
+  searching: 'We are matching you with a nearby washer',
+  awaiting_acceptance: 'Waiting for the washer to confirm',
+  accepted: 'Your washer has accepted the booking',
+  on_the_way: 'Your washer is heading to you',
+  in_progress: 'Your vehicle is being washed',
+  completed: 'Your wash is complete',
+  cancelled: 'This booking was cancelled',
+};
+
+/** Bookings still in progress (shown under Active filters, live notifications). */
 const ACTIVE_PHASES = new Set([
   'searching',
   'awaiting_acceptance',
   'accepted',
   'on_the_way',
   'in_progress',
-  'awaiting_review',
-  'issue_reported',
 ]);
 
 const TERMINAL_PHASES = new Set(['completed', 'cancelled']);
 
-export const PHASE_LABEL = {
-  searching: 'Searching',
-  awaiting_acceptance: 'Awaiting acceptance',
-  accepted: 'Accepted',
-  on_the_way: 'On the way',
-  in_progress: 'In progress',
-  awaiting_review: 'Ready for review',
-  issue_reported: 'Issue reported',
-  completed: 'Completed',
-  cancelled: 'Cancelled',
-};
+/**
+ * @param {{ status: string; washer_id?: string | null; scheduled_at?: string; service_phase?: string | null }} bookingLike
+ */
+export function deriveCustomerPhase(bookingLike) {
+  if (!bookingLike) return 'searching';
+  const { status, washer_id: washerId, scheduled_at: scheduledAt, service_phase: servicePhase } =
+    bookingLike;
+  const s = String(status || 'pending');
 
-export const PHASE_SUBTITLE = {
-  searching: 'Finding a washer for your booking',
-  awaiting_acceptance: 'Waiting for the washer to confirm',
-  accepted: 'Your washer is scheduled',
-  on_the_way: 'Your washer is heading over',
-  in_progress: 'Your wash is in progress',
-  awaiting_review: 'Your wash is ready for review',
-  issue_reported: 'We are reviewing your report',
-  completed: 'Your wash is complete',
-  cancelled: 'This booking was cancelled',
-};
-
-export function normalizeHandoffStatus(booking) {
-  return booking?.handoff_status || booking?.handoffStatus || 'none';
-}
-
-export function deriveCustomerPhase(booking) {
-  if (!booking || !booking.status) return 'searching';
-  const { status, washer_id: washerId, scheduled_at: scheduledAt } = booking;
-  const handoff = normalizeHandoffStatus(booking);
-
-  if (status === 'cancelled') return 'cancelled';
-  if (status === 'completed') return 'completed';
-
-  if (status === 'in_progress') {
-    if (handoff === 'awaiting_customer') return 'awaiting_review';
-    if (handoff === 'issue_reported') return 'issue_reported';
-    return 'in_progress';
+  if (s === 'cancelled') return 'cancelled';
+  if (s === 'completed') return 'completed';
+  if (s === 'in_progress') return 'in_progress';
+  if (s === 'confirmed') {
+    const sp = servicePhase || bookingLike.servicePhase;
+    if (
+      sp === 'heading_to_you' ||
+      sp === 'arrived_onsite' ||
+      sp === 'awaiting_arrival_approval' ||
+      sp === 'arrival_approved'
+    ) {
+      const t = scheduledAt ? new Date(scheduledAt).getTime() : NaN;
+      if (!Number.isNaN(t)) {
+        const mins = (t - Date.now()) / 60000;
+        if (mins <= 60 && mins >= -30) return 'on_the_way';
+      }
+      return 'accepted';
+    }
+    if (sp === 'wash_in_progress') return 'in_progress';
+    const t = scheduledAt ? new Date(scheduledAt).getTime() : NaN;
+    if (!Number.isNaN(t)) {
+      const mins = (t - Date.now()) / 60000;
+      if (mins <= 60 && mins >= -30) return 'on_the_way';
+    }
+    return washerId ? 'accepted' : 'awaiting_acceptance';
   }
-
-  if (status === 'pending') {
+  if (s === 'pending') {
     return washerId ? 'awaiting_acceptance' : 'searching';
   }
-
-  if (status === 'confirmed') {
-    if (!scheduledAt) return 'accepted';
-    const scheduled = new Date(scheduledAt).getTime();
-    if (Number.isNaN(scheduled)) return 'accepted';
-    const now = Date.now();
-    const diffMinutes = (scheduled - now) / 60000;
-    if (diffMinutes >= -30 && diffMinutes <= 60) return 'on_the_way';
-    return 'accepted';
-  }
-
   return 'searching';
 }
 
+export function customerPhaseLabel(phase) {
+  return PHASE_LABELS[phase] || String(phase).replace(/_/g, ' ');
+}
+
+/** @deprecated Use customerPhaseLabel */
+export const PHASE_LABEL = PHASE_LABELS;
+
+export const PHASE_SUBTITLE = PHASE_SUBTITLES;
+
+export function customerPhaseSubtitle(phase) {
+  return PHASE_SUBTITLES[phase] || '';
+}
+
+/** True while the booking is still in a live / non-terminal phase. */
 export function isPhaseActive(phase) {
   return ACTIVE_PHASES.has(phase);
 }
@@ -101,32 +112,37 @@ export function canRescheduleBooking(booking) {
   return booking?.status === 'pending';
 }
 
-export function shouldTrackLive(phase) {
-  return phase === 'accepted' || phase === 'on_the_way' || phase === 'in_progress';
+/** Only while API booking is still open (before washer acceptance). */
+export function canCustomerCancelFromApi(status) {
+  return String(status || '') === 'pending';
 }
 
-export function phaseColor(phase, theme) {
-  const c = theme.customer;
+export function canCustomerRescheduleFromApi(status) {
+  return String(status || '') === 'pending';
+}
+
+/** True when washer has accepted / visit underway — show support messaging, block self-serve cancel. */
+export function requiresAssistedCancellation(phase) {
+  return ['accepted', 'on_the_way', 'in_progress'].includes(phase);
+}
+
+export function getCustomerPhaseThemeKey(phase) {
   switch (phase) {
     case 'searching':
-      return { fg: '#b45309', bg: 'rgba(245,158,11,0.14)' };
+      return 'searching';
     case 'awaiting_acceptance':
-      return { fg: '#6d28d9', bg: 'rgba(139,92,246,0.14)' };
+      return 'awaiting_acceptance';
     case 'accepted':
-      return { fg: theme.accent.dark, bg: c.primaryBg };
+      return 'accepted';
     case 'on_the_way':
-      return { fg: '#1d4ed8', bg: 'rgba(59,130,246,0.14)' };
+      return 'on_the_way';
     case 'in_progress':
-      return { fg: '#0e7490', bg: 'rgba(6,182,212,0.18)' };
-    case 'awaiting_review':
-      return { fg: '#b45309', bg: 'rgba(245,158,11,0.16)' };
-    case 'issue_reported':
-      return { fg: '#c2410c', bg: 'rgba(248,113,113,0.14)' };
+      return 'in_progress';
     case 'completed':
-      return { fg: '#047857', bg: 'rgba(16,185,129,0.14)' };
+      return 'completed';
     case 'cancelled':
-      return { fg: c.error, bg: 'rgba(220,38,38,0.10)' };
+      return 'cancelled';
     default:
-      return { fg: theme.text.secondary, bg: c.surfaceContainerLow };
+      return 'searching';
   }
 }

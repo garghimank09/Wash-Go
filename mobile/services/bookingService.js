@@ -4,7 +4,9 @@ import { formatCents, DEFAULT_CURRENCY } from '../lib/formatCurrency';
 
 function encodeNotes({ packageId, vehicleSize, extra }) {
   const base = `WashGo|package:${packageId || 'super_deluxe'}|vehicle:${vehicleSize || 'sedan'}`;
-  return extra ? `${base}|${extra}` : base;
+  const trimmed = (extra || '').trim();
+  if (!trimmed) return base;
+  return `${base}|note:${trimmed.replace(/\|/g, ' ')}`;
 }
 
 export function decodeBookingMeta(notes) {
@@ -41,6 +43,7 @@ export const bookingService = {
     priceCents,
     packageId,
     vehicleSize,
+    instructions,
     currency = DEFAULT_CURRENCY,
   }) {
     return apiFetch('/bookings', {
@@ -55,7 +58,7 @@ export const bookingService = {
         longitude,
         price_cents: priceCents,
         currency,
-        notes: encodeNotes({ packageId, vehicleSize }),
+        notes: encodeNotes({ packageId, vehicleSize, extra: instructions }),
       },
     });
   },
@@ -82,6 +85,21 @@ export const bookingService = {
     return apiFetch(`/bookings/${bookingId}/tracking`, { auth: true });
   },
 
+  async submitReview(bookingId, { rating, comment } = {}) {
+    return apiFetch(`/bookings/${bookingId}/reviews`, {
+      method: 'POST',
+      auth: true,
+      body: {
+        rating,
+        comment: comment?.trim() || null,
+      },
+    });
+  },
+
+  async getReview(bookingId) {
+    return apiFetch(`/bookings/${bookingId}/reviews`, { auth: true });
+  },
+
   async getActiveBooking() {
     const bookings = await this.getBookings();
     return (
@@ -91,6 +109,13 @@ export const bookingService = {
 
   async sync() {
     return apiFetch('/bookings/sync', { auth: true });
+  },
+
+  async approveArrival(bookingId) {
+    return apiFetch(`/bookings/${bookingId}/approve-arrival`, {
+      method: 'POST',
+      auth: true,
+    });
   },
 
   async confirmHandoff(bookingId) {

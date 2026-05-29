@@ -76,6 +76,7 @@ export default function NewWashPayment() {
         priceCents: form.priceCents,
         packageId: form.packageId,
         vehicleSize: form.vehicleSize,
+        instructions: form.instructions,
         currency: form.currency || 'INR',
       });
       emitBookingsSync({ source: 'create' });

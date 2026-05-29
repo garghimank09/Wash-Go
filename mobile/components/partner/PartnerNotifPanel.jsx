@@ -13,7 +13,6 @@ import Animated, {
   useSharedValue,
   useAnimatedStyle,
   withTiming,
-  runOnJS,
 } from 'react-native-reanimated';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import { BellOff } from 'lucide-react-native';
@@ -70,9 +69,8 @@ export default function PartnerNotifPanel() {
   }));
 
   const dismissPanel = () => {
-    translateX.value = withTiming(panelWidth, panelTiming, (finished) => {
-      if (finished) runOnJS(closePanel)();
-    });
+    closePanel();
+    translateX.value = withTiming(panelWidth, panelTiming);
     backdropOpacity.value = withTiming(0, backdropTiming);
   };
 

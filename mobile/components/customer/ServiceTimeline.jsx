@@ -20,7 +20,6 @@ const DISPLAY_STEPS = [
   { key: 'accepted', label: 'Washer accepted', icon: 'verified' },
   { key: 'on_the_way', label: 'On the way', icon: 'directions-car' },
   { key: 'in_progress', label: 'Wash in progress', icon: 'local-car-wash' },
-  { key: 'awaiting_review', label: 'Your review', icon: 'rate-review' },
   { key: 'completed', label: 'Completed', icon: 'task-alt' },
 ];
 
@@ -30,9 +29,7 @@ const PHASE_INDEX = {
   accepted: 1,
   on_the_way: 2,
   in_progress: 3,
-  awaiting_review: 4,
-  issue_reported: 4,
-  completed: 5,
+  completed: 4,
 };
 
 export default function ServiceTimeline({ phase }) {

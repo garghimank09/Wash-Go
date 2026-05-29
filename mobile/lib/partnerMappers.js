@@ -9,7 +9,10 @@
 import { photoUrl } from '../services/partnerPhotoService';
 import { decodeBookingMeta } from '../services/bookingService';
 import { getPackage, getVehicleSize } from '../services/pricingService';
+import { DEFAULT_CURRENCY } from './formatCurrency';
+import { partnerEarningsCents } from './partnerEarnings';
 import { formatPartnerServiceDescriptor } from './partnerServiceDescriptor';
+import { buildFieldBriefing } from './parseBookingBriefing';
 
 const HOUR = 60 * 60 * 1000;
 const DAY = 24 * HOUR;
@@ -65,7 +68,8 @@ export function mapBookingToCard(booking) {
       lng: numberOrNull(booking.longitude),
     },
     priceCents: booking.price_cents || 0,
-    currency: booking.currency || 'USD',
+    partnerPayoutCents: partnerEarningsCents(booking.price_cents),
+    currency: booking.currency || DEFAULT_CURRENCY,
     packageLabel: booking.notes ?? null,
     vehicleLabel: booking.car_label ?? null,
   };
@@ -84,7 +88,8 @@ export function mapOfferCard(offer) {
     address: offer.service_address || '',
     scheduledAt: offer.scheduled_at,
     priceCents: offer.price_cents || 0,
-    currency: offer.currency || 'USD',
+    partnerPayoutCents: partnerEarningsCents(offer.price_cents),
+    currency: offer.currency || DEFAULT_CURRENCY,
     packageLabel: null,
     vehicleLabel: offer.car_label ?? null,
   };
@@ -110,12 +115,14 @@ export function mapBookingDetail(detail) {
     bookingId: detail.id,
     customerId: detail.customer_id ?? null,
     status: detail.status,
+    service_phase: detail.service_phase ?? null,
+    arrival_condition_notes: detail.arrival_condition_notes ?? null,
     handoff_status: detail.handoff_status || 'none',
     handoff_requested_at: detail.handoff_requested_at ?? null,
     handoff_resolved_at: detail.handoff_resolved_at ?? null,
     scheduledAt: detail.scheduled_at,
-    currency: detail.currency || 'USD',
-    payoutCents: detail.price_cents || 0,
+    currency: detail.currency || DEFAULT_CURRENCY,
+    payoutCents: partnerEarningsCents(detail.price_cents),
     surgeBonusCents: 0,
     customer: {
       name: customerName,
@@ -144,13 +151,10 @@ export function mapBookingDetail(detail) {
       durationMins: null,
       items: Array.isArray(pkgMeta?.features) ? pkgMeta.features : [],
     },
-    briefing: detail.notes
-      ? {
-          tags: [],
-          notes: detail.notes,
-          alerts: [],
-        }
-      : null,
+    briefing: buildFieldBriefing({
+      notes: detail.notes,
+      arrivalConditionNotes: detail.arrival_condition_notes,
+    }),
     timeline: Array.isArray(detail.timeline) ? detail.timeline : [],
     photos: Array.isArray(detail.photos)
       ? detail.photos.map((p) => ({
@@ -214,10 +218,10 @@ export function summarizeBookings(items = []) {
     if (['confirmed', 'in_progress'].includes(b.status)) activeCount += 1;
     if (b.status === 'completed' && ms >= startOfTodayMs) {
       completedToday += 1;
-      earningsTodayCents += b.price_cents || 0;
+      earningsTodayCents += partnerEarningsCents(b.price_cents);
     }
     if (b.status === 'completed' && ms >= startOfWeekMs) {
-      earningsWeekCents += b.price_cents || 0;
+      earningsWeekCents += partnerEarningsCents(b.price_cents);
     }
   }
 
@@ -286,12 +290,12 @@ export function buildWeeklySeries(items = []) {
   const byKey = new Map(buckets.map((b) => [b.key, b]));
   for (const b of items) {
     if (b.status !== 'completed') continue;
-    const d = safeDate(b.scheduled_at);
+    const d = safeDate(b.updated_at || b.scheduled_at);
     if (!d) continue;
     d.setHours(0, 0, 0, 0);
     const slot = byKey.get(isoDateKey(d));
     if (!slot) continue;
-    slot.cents += b.price_cents || 0;
+    slot.cents += partnerEarningsCents(b.price_cents);
     slot.jobs += 1;
   }
   return buckets;

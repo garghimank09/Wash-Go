@@ -1,27 +1,26 @@
 import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { useTheme } from '../../../context/ThemeContext';
-import { CUSTOMER_LAYOUT, getCustomerShadow } from '../../../constants/customerTheme';
+import { CUSTOMER_LAYOUT } from '../../../constants/customerTheme';
+import CardSurface from '../../ui/CardSurface';
+
 export default function ProfileSectionCard({
   title,
   subtitle,
   actionLabel,
   onAction,
   children,
-  delay = 0,
   style,
 }) {
-  const { theme, isDark } = useTheme();
-  const shadows = getCustomerShadow(isDark);
+  const { theme } = useTheme();
   const c = theme.customer;
 
   return (
-    <View
-      style={[
-        styles.wrap,
-        shadows.soft,
-        { backgroundColor: c.surfaceContainerLowest, borderColor: c.outlineVariant },
-        style,
-      ]}
+    <CardSurface
+      borderRadius={CUSTOMER_LAYOUT.card.radius}
+      backgroundColor={c.surfaceContainerLowest}
+      shadow="soft"
+      portal="customer"
+      style={style}
     >
       <View style={styles.header}>
         <View style={{ flex: 1 }}>
@@ -37,16 +36,11 @@ export default function ProfileSectionCard({
         ) : null}
       </View>
       <View style={[styles.body, { borderTopColor: c.outlineVariant }]}>{children}</View>
-    </View>
+    </CardSurface>
   );
 }
 
 const styles = StyleSheet.create({
-  wrap: {
-    borderRadius: CUSTOMER_LAYOUT.card.radius,
-    borderWidth: StyleSheet.hairlineWidth,
-    overflow: 'hidden',
-  },
   header: {
     flexDirection: 'row',
     alignItems: 'flex-start',

@@ -186,6 +186,15 @@ export default function NewWashReview() {
             onEdit={() => router.push('/new-wash/schedule')}
             theme={theme}
           />
+          {form.instructions?.trim() ? (
+            <ReviewRow
+              label="Instructions"
+              value={form.instructions.trim()}
+              multiline
+              onEdit={() => router.push('/new-wash/schedule')}
+              theme={theme}
+            />
+          ) : null}
         </CollapsibleSection>
 
         <View style={s.totalCard}>

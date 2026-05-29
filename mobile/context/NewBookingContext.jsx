@@ -14,6 +14,7 @@ const initialForm = {
   scheduledAt: null,
   priceCents: null,
   currency: 'INR',
+  instructions: '',
   paymentMethod: 'upi',
   upiId: '',
 };

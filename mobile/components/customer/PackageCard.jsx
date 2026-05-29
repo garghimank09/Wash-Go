@@ -9,6 +9,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import { useTheme } from '../../context/ThemeContext';
 import { CUSTOMER_LAYOUT } from '../../constants/customerTheme';
+import { getSelectionFill, getSelectionBorder } from '../../lib/selectableCardStyle';
 import AppIcon from './AppIcon';
 
 const FEATURE_ROW_HEIGHT = 22;
@@ -24,7 +25,6 @@ export default function PackageCard({
 }) {
   const { theme } = useTheme();
   const progress = useSharedValue(expanded ? 1 : 0);
-  const selectRing = useSharedValue(selected ? 1 : 0);
 
   useEffect(() => {
     progress.value = withTiming(expanded ? 1 : 0, {
@@ -32,10 +32,6 @@ export default function PackageCard({
       easing: Easing.out(Easing.cubic),
     });
   }, [expanded, progress]);
-
-  useEffect(() => {
-    selectRing.value = withTiming(selected ? 1 : 0, { duration: 220 });
-  }, [selected, selectRing]);
 
   const featuresBlockStyle = useAnimatedStyle(() => {
     const count = pkg.features?.length || 0;
@@ -51,22 +47,25 @@ export default function PackageCard({
     transform: [{ rotate: `${progress.value * 180}deg` }],
   }));
 
-  const borderStyle = useAnimatedStyle(() => ({
-    borderColor: selected
-      ? theme.accent.primary
-      : theme.customer.outlineVariant,
-  }));
-
   const c = theme.customer;
   const s = styles(theme);
   const isPopular = pkg.badge === 'Popular';
   const isBestValue = pkg.badge === 'Best value';
 
   return (
-    <Animated.View style={[s.card, borderStyle]}>
+    <View
+      style={[
+        s.card,
+        {
+          borderColor: selected ? getSelectionBorder(theme) : c.outlineVariant,
+          borderWidth: selected ? 2 : 1.5,
+          backgroundColor: selected ? getSelectionFill(theme) : c.surfaceContainerLowest,
+        },
+      ]}
+    >
       {selected ? (
         <LinearGradient
-          colors={['rgba(6,182,212,0.08)', 'rgba(6,182,212,0)']}
+          colors={['rgba(6,182,212,0.12)', 'rgba(6,182,212,0)']}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
           style={StyleSheet.absoluteFill}
@@ -140,7 +139,7 @@ export default function PackageCard({
           </Text>
         </View>
       </Pressable>
-    </Animated.View>
+    </View>
   );
 }
 
@@ -148,9 +147,7 @@ const styles = (theme) => {
   const c = theme.customer;
   return StyleSheet.create({
     card: {
-      backgroundColor: c.surfaceContainerLowest,
       borderRadius: CUSTOMER_LAYOUT.card.radius,
-      borderWidth: 1.5,
       overflow: 'hidden',
     },
     pressBody: { padding: 18 },

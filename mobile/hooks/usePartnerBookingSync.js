@@ -17,7 +17,7 @@ import { emitNotificationsSync } from '../lib/notificationSyncEvents';
  * websocket gateway later only requires swapping this hook.
  */
 
-const POLL_MS = 12_000;
+const POLL_MS = 4_000;
 
 export function usePartnerBookingSync() {
   const { isPartnerAuthenticated } = usePartnerAuth();

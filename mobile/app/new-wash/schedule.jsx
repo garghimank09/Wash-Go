@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import {
   View,
   Text,
@@ -7,6 +7,7 @@ import {
   Pressable,
   KeyboardAvoidingView,
   Platform,
+  TextInput,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -62,8 +63,35 @@ export default function NewWashSchedule() {
   const [errors, setErrors] = useState({});
   const [vehicleLabel, setVehicleLabel] = useState('—');
   const [geocoding, setGeocoding] = useState(false);
+  const skipGeocodeFromMapRef = useRef(null);
   const s = styles(theme);
   const pkg = getPackage(form.packageId);
+
+  const handleGeocodeStatusChange = useCallback((patch) => {
+    if (patch.geocoding != null) setGeocoding(!!patch.geocoding);
+  }, []);
+
+  const handleLocationResolved = useCallback(
+    ({ latitude, longitude }) => {
+      setFields({ latitude, longitude });
+    },
+    [setFields],
+  );
+
+  const handleMapResolveAddress = useCallback(
+    (addr) => {
+      skipGeocodeFromMapRef.current?.();
+      setField('address', addr);
+    },
+    [setField],
+  );
+
+  const handleMapCoordsChange = useCallback(
+    ({ latitude, longitude }) => {
+      setFields({ latitude, longitude });
+    },
+    [setFields],
+  );
 
   useEffect(() => {
     setLastStep('schedule');
@@ -146,16 +174,17 @@ export default function NewWashSchedule() {
           </View>
 
           <View style={s.card}>
-            <Text style={s.cardTitle}>Service address</Text>
-            <View style={{ height: 12 }} />
             <AddressSearchField
               value={form.address}
               onChangeText={(v) => setField('address', v)}
               error={errors.address}
-              onGeocodeStatusChange={({ geocoding: g }) => setGeocoding(!!g)}
-              onLocationResolved={({ latitude, longitude }) =>
-                setFields({ latitude, longitude })
-              }
+              coordinates={{
+                latitude: form.latitude,
+                longitude: form.longitude,
+              }}
+              onSkipGeocodeRef={skipGeocodeFromMapRef}
+              onGeocodeStatusChange={handleGeocodeStatusChange}
+              onLocationResolved={handleLocationResolved}
             />
             {errors.pin ? <Text style={s.errorText}>{errors.pin}</Text> : null}
 
@@ -165,10 +194,8 @@ export default function NewWashSchedule() {
               autoLocateOnMount
               latitude={form.latitude}
               longitude={form.longitude}
-              onChange={({ latitude, longitude }) =>
-                setFields({ latitude, longitude })
-              }
-              onResolveAddress={(addr) => setField('address', addr)}
+              onChange={handleMapCoordsChange}
+              onResolveAddress={handleMapResolveAddress}
             />
           </View>
 
@@ -224,6 +251,32 @@ export default function NewWashSchedule() {
                 );
               })}
             </View>
+          </View>
+
+          <View style={s.card}>
+            <View style={s.scheduleHeader}>
+              <AppIcon name="notes" size={18} color={theme.accent.primary} />
+              <View style={{ flex: 1 }}>
+                <Text style={s.cardTitle}>Special instructions</Text>
+                <Text style={s.cardSub}>Optional — gate codes, parking, pets, etc.</Text>
+              </View>
+            </View>
+            <TextInput
+              value={form.instructions}
+              onChangeText={(v) => setField('instructions', v)}
+              placeholder="e.g. Park near gate B, call on arrival"
+              placeholderTextColor={theme.text.muted}
+              multiline
+              maxLength={500}
+              style={[
+                s.instructionsInput,
+                {
+                  color: theme.text.primary,
+                  borderColor: c.outlineVariant,
+                  backgroundColor: c.surface,
+                },
+              ]}
+            />
           </View>
         </ScrollView>
 
@@ -301,5 +354,17 @@ const styles = (theme) => {
       borderColor: theme.accent.primary,
     },
     quickChipText: { fontSize: 12, fontWeight: '700', color: theme.text.primary },
+    instructionsInput: {
+      marginTop: 12,
+      minHeight: 88,
+      borderRadius: 14,
+      borderWidth: 1,
+      paddingHorizontal: 14,
+      paddingVertical: 12,
+      fontSize: 14,
+      fontWeight: '500',
+      lineHeight: 20,
+      textAlignVertical: 'top',
+    },
   });
 };

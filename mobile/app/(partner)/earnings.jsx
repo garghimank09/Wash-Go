@@ -7,12 +7,10 @@ import Animated, {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../../context/ThemeContext';
 import { usePartnerScrollEndPadding } from '../../hooks/usePartnerContentPadding';
-import {
-  PartnerEarningsProvider,
-  usePartnerEarnings,
-} from '../../context/PartnerEarningsContext';
+import { usePartnerEarnings } from '../../context/PartnerEarningsContext';
 import EarningsHeader from '../../components/partner/earnings/EarningsHeader';
 import EarningsHeroCard from '../../components/partner/earnings/EarningsHeroCard';
+import PendingPayoutCard from '../../components/partner/earnings/PendingPayoutCard';
 import WeeklyChartCard from '../../components/partner/earnings/WeeklyChartCard';
 import StatsMiniCard from '../../components/partner/earnings/StatsMiniCard';
 import EarningsHistoryItem from '../../components/partner/earnings/EarningsHistoryItem';
@@ -76,6 +74,7 @@ function EarningsContent() {
         ) : (
           <>
             <EarningsHeroCard />
+            <PendingPayoutCard />
             <WeeklyChartCard />
             <StatsMiniCard />
 
@@ -128,11 +127,7 @@ function EarningsContent() {
 }
 
 export default function PartnerEarnings() {
-  return (
-    <PartnerEarningsProvider>
-      <EarningsContent />
-    </PartnerEarningsProvider>
-  );
+  return <EarningsContent />;
 }
 
 const styles = StyleSheet.create({

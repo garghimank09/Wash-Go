@@ -526,11 +526,15 @@ async def update_booking_status_for_washer(
                 "Customer must approve the vehicle condition before you can start the wash"
             )
 
-    if target == BookingStatus.completed and booking.handoff_status == HandoffStatus.awaiting_customer:
-        raise ValidationError("Waiting for customer confirmation")
-
     booking.status = target
     if target == BookingStatus.completed:
+        if booking.handoff_status in (
+            HandoffStatus.none,
+            HandoffStatus.awaiting_customer,
+            HandoffStatus.issue_reported,
+        ):
+            booking.handoff_status = HandoffStatus.customer_confirmed
+            booking.handoff_resolved_at = datetime.now(timezone.utc)
         await _apply_service_phase(db, booking, "completed", notify=True)
     elif target == BookingStatus.in_progress:
         await _apply_service_phase(db, booking, "wash_in_progress", notify=True)

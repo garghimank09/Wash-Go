@@ -13,7 +13,7 @@ export default function ProfileVehicleRow({ vehicle, onPress }) {
       style={({ pressed }) => [
         styles.card,
         {
-          backgroundColor: c.surfaceContainerLow,
+          backgroundColor: c.surfaceContainerLowest,
           borderColor: c.outlineVariant,
         },
         pressed && { opacity: 0.9 },
@@ -35,8 +35,9 @@ const styles = StyleSheet.create({
     width: 168,
     padding: 12,
     borderRadius: 18,
-    borderWidth: 1,
+    borderWidth: StyleSheet.hairlineWidth,
     marginRight: 10,
+    overflow: 'hidden',
   },
   body: { marginTop: 8, gap: 2 },
   title: { fontSize: 13, fontWeight: '700' },

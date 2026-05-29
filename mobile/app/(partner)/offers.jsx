@@ -1,4 +1,4 @@
-import { useCallback } from 'react';
+import { useCallback, useMemo, useRef } from 'react';
 import {
   View,
   Text,
@@ -19,12 +19,16 @@ import { emitPartnerBookingsSync } from '../../lib/partnerSyncEvents';
 import { emitNotificationsSync } from '../../lib/notificationSyncEvents';
 import { mapOfferCard } from '../../lib/partnerMappers';
 import { usePartnerScrollEndPadding } from '../../hooks/usePartnerContentPadding';
+import ListPaginationBar from '../../components/ui/ListPaginationBar';
+import { useClientPagination } from '../../hooks/useClientPagination';
+import { OFFERS_PAGE_SIZE } from '../../constants/listPagination';
 
 export default function PartnerOffers() {
   const { theme } = useTheme();
   const router = useRouter();
   const toast = useToast();
   const scrollEndPadding = usePartnerScrollEndPadding();
+  const scrollRef = useRef(null);
   const { items, loading, refreshing, error, reload, reloadSilent } = usePartnerOffers();
 
   const handleAccept = useCallback(
@@ -47,7 +51,35 @@ export default function PartnerOffers() {
     [router, reloadSilent, toast],
   );
 
-  const cards = items.map(mapOfferCard).filter(Boolean);
+  const cards = useMemo(
+    () => items.map(mapOfferCard).filter(Boolean),
+    [items],
+  );
+
+  const {
+    pageItems,
+    showPagination,
+    rangeLabel,
+    pageLabel,
+    canPrev,
+    canNext,
+    goPrev,
+    goNext,
+  } = useClientPagination(cards, { pageSize: OFFERS_PAGE_SIZE });
+
+  const scrollToTop = useCallback(() => {
+    scrollRef.current?.scrollTo({ y: 0, animated: true });
+  }, []);
+
+  const handlePaginationPrev = useCallback(() => {
+    goPrev();
+    scrollToTop();
+  }, [goPrev, scrollToTop]);
+
+  const handlePaginationNext = useCallback(() => {
+    goNext();
+    scrollToTop();
+  }, [goNext, scrollToTop]);
 
   return (
     <SafeAreaView
@@ -62,6 +94,7 @@ export default function PartnerOffers() {
       </View>
 
       <ScrollView
+        ref={scrollRef}
         contentContainerStyle={[styles.scroll, { paddingBottom: scrollEndPadding }]}
         showsVerticalScrollIndicator={false}
         refreshControl={
@@ -121,14 +154,29 @@ export default function PartnerOffers() {
             </Text>
           </View>
         ) : (
-          cards.map((offer, i) => (
-            <OfferCard
-              key={offer.id}
-              offer={offer}
-              index={i}
-              onAccept={handleAccept}
-            />
-          ))
+          <>
+            {pageItems.map((offer, i) => (
+              <OfferCard
+                key={offer.id}
+                offer={offer}
+                index={i}
+                onAccept={handleAccept}
+              />
+            ))}
+            {showPagination ? (
+              <View style={styles.pagination}>
+                <ListPaginationBar
+                  rangeLabel={rangeLabel}
+                  pageLabel={pageLabel}
+                  canPrev={canPrev}
+                  canNext={canNext}
+                  onPrev={handlePaginationPrev}
+                  onNext={handlePaginationNext}
+                  itemNoun="offers"
+                />
+              </View>
+            ) : null}
+          </>
         )}
       </ScrollView>
 
@@ -143,6 +191,7 @@ const styles = StyleSheet.create({
   title: { fontSize: 24, fontWeight: '800', letterSpacing: -0.4 },
   subtitle: { fontSize: 13, fontWeight: '500', marginTop: 4 },
   scroll: { paddingTop: 8 },
+  pagination: { marginHorizontal: 20 },
   empty: {
     alignItems: 'center',
     paddingHorizontal: 28,

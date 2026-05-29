@@ -1,8 +1,9 @@
 import { useState } from 'react';
-import { View, Text, StyleSheet, Pressable, TextInput } from 'react-native';
+import { View, Text, StyleSheet, TextInput } from 'react-native';
 import { MotiView } from 'moti';
 import { LinearGradient } from 'expo-linear-gradient';
 import { CreditCard, QrCode, Wallet } from 'lucide-react-native';
+import SelectableCard from '../ui/SelectableCard';
 
 const METHODS = [
   {
@@ -51,45 +52,36 @@ export default function PaymentMethodPicker({
         const selected = value === m.id;
         const Icon = m.Icon;
         return (
-          <Pressable key={m.id} onPress={() => onChange(m.id)} style={styles.cardPress}>
-            <MotiView
-              animate={{
-                scale: selected ? 1.02 : 1,
-                borderColor: selected ? accentColor : c.outlineVariant + '90',
-              }}
-              transition={{ type: 'timing', duration: 220 }}
+          <SelectableCard
+            key={m.id}
+            selected={selected}
+            onPress={() => onChange(m.id)}
+            borderRadius={18}
+            contentStyle={styles.card}
+            accessibilityLabel={`${m.label} payment method`}
+          >
+            <LinearGradient
+              colors={selected ? m.gradient : ['#94a3b8', '#cbd5e1']}
+              style={styles.iconWrap}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+            >
+              <Icon size={22} color="#fff" strokeWidth={1.75} />
+            </LinearGradient>
+            <View style={styles.cardText}>
+              <Text style={[styles.cardTitle, { color: theme.text.primary }]}>{m.label}</Text>
+              <Text style={[styles.cardSub, { color: theme.text.muted }]}>{m.subtitle}</Text>
+            </View>
+            <View
               style={[
-                styles.card,
+                styles.radio,
                 {
-                  backgroundColor: selected ? `${accentColor}10` : c.surfaceContainerLowest,
-                  borderColor: selected ? accentColor : c.outlineVariant + '90',
-                  shadowOpacity: selected ? 0.12 : 0.04,
+                  borderColor: selected ? accentColor : c.outlineVariant,
+                  backgroundColor: selected ? accentColor : 'transparent',
                 },
               ]}
-            >
-              <LinearGradient
-                colors={selected ? m.gradient : ['#94a3b8', '#cbd5e1']}
-                style={styles.iconWrap}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-              >
-                <Icon size={22} color="#fff" strokeWidth={1.75} />
-              </LinearGradient>
-              <View style={styles.cardText}>
-                <Text style={[styles.cardTitle, { color: theme.text.primary }]}>{m.label}</Text>
-                <Text style={[styles.cardSub, { color: theme.text.muted }]}>{m.subtitle}</Text>
-              </View>
-              <View
-                style={[
-                  styles.radio,
-                  {
-                    borderColor: selected ? accentColor : c.outlineVariant,
-                    backgroundColor: selected ? accentColor : 'transparent',
-                  },
-                ]}
-              />
-            </MotiView>
-          </Pressable>
+            />
+          </SelectableCard>
         );
       })}
 
@@ -137,18 +129,11 @@ export default function PaymentMethodPicker({
 
 const styles = StyleSheet.create({
   wrap: { gap: 12 },
-  cardPress: { borderRadius: 18 },
   card: {
     flexDirection: 'row',
     alignItems: 'center',
     padding: 14,
-    borderRadius: 18,
-    borderWidth: 1.5,
     gap: 14,
-    shadowColor: '#0f172a',
-    shadowRadius: 12,
-    shadowOffset: { width: 0, height: 6 },
-    elevation: 3,
   },
   iconWrap: {
     width: 44,

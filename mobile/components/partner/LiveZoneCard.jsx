@@ -1,7 +1,8 @@
 import { useEffect } from 'react';
-import { View, Text, StyleSheet, Pressable, Platform } from 'react-native';
+import { View, Text, StyleSheet } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import MapView, { Marker, PROVIDER_DEFAULT } from 'react-native-maps';
+import MapView, { Marker } from 'react-native-maps';
+import { MAP_PROVIDER } from '../../lib/mapProvider';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -12,7 +13,8 @@ import Animated, {
 import * as Haptics from 'expo-haptics';
 import { MapPin, TrendingUp, ChevronRight } from 'lucide-react-native';
 import { useTheme } from '../../context/ThemeContext';
-import { getPartnerSurge, getPartnerShadow } from '../../constants/partnerTheme';
+import { getPartnerSurge } from '../../constants/partnerTheme';
+import CardSurface from '../ui/CardSurface';
 
 /**
  * Live-offer summary card. The number of nearby requests is driven by the
@@ -29,7 +31,7 @@ export default function LiveZoneCard({
 }) {
   const { theme, isDark } = useTheme();
   const surge = getPartnerSurge(isDark);
-  const shadows = getPartnerShadow(isDark);
+  const c = theme.customer;
 
   const pulse = useSharedValue(0);
   useEffect(() => {
@@ -51,103 +53,100 @@ export default function LiveZoneCard({
   };
 
   return (
-    <Pressable
+    <CardSurface
       onPress={handlePress}
-      style={({ pressed }) => [
-        styles.outer,
-        shadows.soft,
-        pressed && { opacity: 0.94 },
-      ]}
+      borderRadius={24}
+      backgroundColor={c.surfaceContainerLowest}
+      shadow="soft"
+      portal="partner"
+      style={styles.outer}
+      accessibilityLabel="View open offers in your zone"
     >
-      <View style={styles.card}>
-        <View style={styles.mapWrap}>
-          <MapView
-            provider={Platform.OS === 'android' ? PROVIDER_DEFAULT : undefined}
-            style={StyleSheet.absoluteFill}
-            initialRegion={{
-              latitude: center.latitude,
-              longitude: center.longitude,
-              latitudeDelta: 0.018,
-              longitudeDelta: 0.018,
-            }}
-            pointerEvents="none"
-            scrollEnabled={false}
-            zoomEnabled={false}
-            rotateEnabled={false}
-            pitchEnabled={false}
-            toolbarEnabled={false}
-          >
-            <Marker
-              coordinate={center}
-              anchor={{ x: 0.5, y: 0.5 }}
-              tracksViewChanges={false}
-            >
-              <View style={styles.markerWrap}>
-                <Animated.View
-                  style={[
-                    styles.markerPulse,
-                    { backgroundColor: surge.pulseRing },
-                    pulseStyle,
-                  ]}
-                />
-                <View style={[styles.markerDot, { backgroundColor: surge.accent }]} />
-              </View>
-            </Marker>
-          </MapView>
-          <LinearGradient
-            colors={[
-              isDark ? 'rgba(15,23,42,0.0)' : 'rgba(255,255,255,0.0)',
-              isDark ? 'rgba(15,23,42,0.85)' : 'rgba(255,255,255,0.92)',
-            ]}
-            start={{ x: 0.5, y: 0 }}
-            end={{ x: 0.5, y: 1 }}
-            style={StyleSheet.absoluteFill}
-            pointerEvents="none"
-          />
+      <View style={styles.mapWrap}>
+        <MapView
+          provider={MAP_PROVIDER}
+          style={StyleSheet.absoluteFill}
+          initialRegion={{
+            latitude: center.latitude,
+            longitude: center.longitude,
+            latitudeDelta: 0.018,
+            longitudeDelta: 0.018,
+          }}
+          pointerEvents="none"
+          scrollEnabled={false}
+          zoomEnabled={false}
+          rotateEnabled={false}
+          pitchEnabled={false}
+          toolbarEnabled={false}
+        >
+          <Marker coordinate={center} anchor={{ x: 0.5, y: 0.5 }} tracksViewChanges={false}>
+            <View style={styles.markerWrap}>
+              <Animated.View
+                style={[
+                  styles.markerPulse,
+                  { backgroundColor: surge.pulseRing },
+                  pulseStyle,
+                ]}
+              />
+              <View style={[styles.markerDot, { backgroundColor: surge.accent }]} />
+            </View>
+          </Marker>
+        </MapView>
+        <LinearGradient
+          colors={[
+            isDark ? 'rgba(15,23,42,0.0)' : 'rgba(255,255,255,0.0)',
+            isDark ? 'rgba(15,23,42,0.85)' : 'rgba(255,255,255,0.92)',
+          ]}
+          start={{ x: 0.5, y: 0 }}
+          end={{ x: 0.5, y: 1 }}
+          style={StyleSheet.absoluteFill}
+          pointerEvents="none"
+        />
+      </View>
+
+      <View style={[styles.body, { backgroundColor: c.surfaceContainerLowest }]}>
+        <View style={styles.headerRow}>
+          {surgeMultiplier ? (
+            <View style={[styles.surgeBadge, { backgroundColor: surge.badgeBg }]}>
+              <TrendingUp size={12} color={surge.badgeFg} strokeWidth={2.4} />
+              <Text style={[styles.surgeBadgeText, { color: surge.badgeFg }]}>
+                {surgeMultiplier}× surge
+              </Text>
+            </View>
+          ) : (
+            <View />
+          )}
+          <ChevronRight size={18} color={theme.text.muted} strokeWidth={2} />
         </View>
 
-        <View style={styles.body}>
-          <View style={styles.headerRow}>
-            {surgeMultiplier ? (
-              <View style={[styles.surgeBadge, { backgroundColor: surge.badgeBg }]}>
-                <TrendingUp size={12} color={surge.badgeFg} strokeWidth={2.4} />
-                <Text style={[styles.surgeBadgeText, { color: surge.badgeFg }]}>
-                  {surgeMultiplier}× surge
-                </Text>
-              </View>
-            ) : <View />}
-            <ChevronRight size={18} color={theme.text.muted} strokeWidth={2} />
-          </View>
+        <View style={styles.titleRow}>
+          <MapPin size={16} color={theme.accent.primary} strokeWidth={2.4} />
+          <Text style={[styles.title, { color: theme.text.primary }]} numberOfLines={1}>
+            {serviceArea || 'Your live zone'}
+          </Text>
+        </View>
 
-          <View style={styles.titleRow}>
-            <MapPin size={16} color={theme.accent.primary} strokeWidth={2.4} />
-            <Text style={[styles.title, { color: theme.text.primary }]} numberOfLines={1}>
-              {serviceArea || 'Your live zone'}
+        <View style={styles.metricsRow}>
+          <View style={styles.metric}>
+            <Text style={[styles.metricValue, { color: theme.text.primary }]}>
+              {nearbyRequests}
+            </Text>
+            <Text style={[styles.metricLabel, { color: theme.text.secondary }]}>
+              Open offers
             </Text>
           </View>
-
-          <View style={styles.metricsRow}>
-            <View style={styles.metric}>
-              <Text style={[styles.metricValue, { color: theme.text.primary }]}>
-                {nearbyRequests}
-              </Text>
-              <Text style={[styles.metricLabel, { color: theme.text.secondary }]}>
-                Open offers
-              </Text>
-            </View>
-            <View style={[styles.divider, { backgroundColor: theme.customer.outlineVariant }]} />
-            <View style={styles.metric}>
-              <Text style={[styles.metricValue, { color: theme.text.primary }]}>
-                Tap to view
-              </Text>
-              <Text style={[styles.metricLabel, { color: theme.text.secondary }]}>
-                Accept new jobs
-              </Text>
-            </View>
+          <View style={[styles.divider, { backgroundColor: c.outlineVariant }]} />
+          <View style={styles.metric}>
+            <Text style={[styles.metricValue, { color: theme.text.primary }]}>
+              Tap to view
+            </Text>
+            <Text style={[styles.metricLabel, { color: theme.text.secondary }]}>
+              Accept new jobs
+            </Text>
           </View>
         </View>
       </View>
-    </Pressable>
+    </CardSurface>
   );
 }
 
@@ -155,12 +154,6 @@ const styles = StyleSheet.create({
   outer: {
     marginHorizontal: 20,
     marginTop: 14,
-    borderRadius: 24,
-    overflow: 'hidden',
-  },
-  card: {
-    borderRadius: 24,
-    overflow: 'hidden',
   },
   mapWrap: {
     height: 110,

@@ -12,6 +12,7 @@ import {
   Pressable,
 } from 'react-native';
 import { useRouter } from 'expo-router';
+import { goBackToRoleSelection } from '../../lib/authNavigation';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../../context/ThemeContext';
 import { useAuth } from '../../context/AuthContext';
@@ -98,7 +99,7 @@ export default function Signup() {
           contentContainerStyle={s.scroll}
           keyboardShouldPersistTaps="handled"
         >
-          <Pressable onPress={() => router.back()} style={s.backBtn} hitSlop={12}>
+          <Pressable onPress={() => goBackToRoleSelection(router)} style={s.backBtn} hitSlop={12}>
             <AppIcon name="arrow-back" size={22} color={theme.text.primary} />
           </Pressable>
 

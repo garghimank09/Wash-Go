@@ -1,20 +1,7 @@
-import { useEffect, useMemo, useState } from 'react';
 import { View, Text, Pressable, StyleSheet } from 'react-native';
-import Svg, {
-  Defs,
-  LinearGradient as SvgLinearGradient,
-  Path,
-  Stop,
-  Circle,
-} from 'react-native-svg';
+import { useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { MotiView } from 'moti';
-import Animated, {
-  useSharedValue,
-  useAnimatedProps,
-  withTiming,
-  Easing,
-} from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
 import { Route, Clock4, ChevronRight } from 'lucide-react-native';
 import { useTheme } from '../../../context/ThemeContext';
@@ -22,73 +9,34 @@ import { getPartnerShadow } from '../../../constants/partnerTheme';
 import { getScheduleTokens, getTrafficTokens } from '../../../constants/scheduleTheme';
 import { formatPayoutCurrency, formatBookingTime } from '../../../lib/partnerFormatters';
 import { usePartnerSchedule } from '../../../context/PartnerScheduleContext';
-import { buildSmoothChartPath } from '../earnings/chartPath';
+import ScheduleRouteMap from './ScheduleRouteMap';
 
-const AnimatedPath = Animated.createAnimatedComponent(Path);
-
-const CHART_HEIGHT = 84;
+function pickPrimaryStop(stops = []) {
+  const active = stops.find(
+    (s) => s.status === 'en_route' || s.status === 'in_progress',
+  );
+  if (active) return active;
+  const upcoming = stops.find(
+    (s) => s.status === 'confirmed' || s.status === 'scheduled' || s.status === 'pending',
+  );
+  if (upcoming) return upcoming;
+  return stops[0] || null;
+}
 
 export default function RouteSummaryCard() {
   const { theme, isDark } = useTheme();
+  const router = useRouter();
   const tokens = getScheduleTokens(isDark);
   const { routePlan } = usePartnerSchedule();
   const traffic = getTrafficTokens(routePlan.traffic, isDark);
   const shadows = getPartnerShadow(isDark);
 
-  const [chartWidth, setChartWidth] = useState(0);
-
-  // Build a soft waveform across N stops so the route line looks natural.
-  const values = useMemo(() => {
-    const n = Math.max(2, routePlan.stops.length);
-    const center = (n - 1) / 2;
-    return routePlan.stops.map((_, i) => {
-      const dist = Math.abs(i - center);
-      // dome shape, slightly offset so it doesn't look like a perfect smile
-      return Math.cos(dist / center) * 60 + (i % 2 === 0 ? 6 : -4);
-    });
-  }, [routePlan.stops]);
-
-  const { line, points, pathLength } = useMemo(() => {
-    if (!chartWidth) {
-      return { line: '', points: [], pathLength: 1 };
-    }
-    const built = buildSmoothChartPath(values, {
-      width: chartWidth - 24,
-      height: CHART_HEIGHT - 16,
-      padY: 12,
-    });
-    const length = built.points.reduce((acc, p, i) => {
-      if (i === 0) return 0;
-      const prev = built.points[i - 1];
-      return acc + Math.hypot(p.x - prev.x, p.y - prev.y);
-    }, 0);
-    return {
-      ...built,
-      pathLength: Math.max(length * 1.2, 1),
-    };
-  }, [chartWidth, values]);
-
-  const reveal = useSharedValue(0);
-
-  useEffect(() => {
-    if (!chartWidth || !points.length) return;
-    reveal.value = 0;
-    reveal.value = withTiming(1, { duration: 720, easing: Easing.out(Easing.cubic) });
-  }, [chartWidth, points.length, reveal]);
-
-  const animatedLineProps = useAnimatedProps(() => ({
-    strokeDasharray: [pathLength, pathLength],
-    strokeDashoffset: pathLength * (1 - reveal.value),
-  }));
-
   const handlePress = () => {
     Haptics.selectionAsync().catch(() => {});
-  };
-
-  const stopColors = (status) => {
-    if (status === 'completed') return tokens.route.stopDone;
-    if (status === 'in_progress' || status === 'en_route') return tokens.route.stopActive;
-    return tokens.route.stopUpcoming;
+    const stop = pickPrimaryStop(routePlan.stops);
+    if (stop?.id) {
+      router.push(`/(partner)/job/${stop.id}`);
+    }
   };
 
   return (
@@ -128,63 +76,15 @@ export default function RouteSummaryCard() {
                 Optimized route
               </Text>
               <Text style={[styles.title, { color: theme.text.primary }]}>
-                {routePlan.stops.length} stops{routePlan.distanceKm != null ? ` · ${routePlan.distanceKm} km` : ''}
+                {routePlan.stops.length} stops
+                {routePlan.distanceKm != null ? ` · ${routePlan.distanceKm} km` : ''}
               </Text>
             </View>
           </View>
           <ChevronRight size={18} color={theme.text.muted} strokeWidth={2} />
         </View>
 
-        <View
-          style={[styles.chartArea, { height: CHART_HEIGHT }]}
-          onLayout={(e) => setChartWidth(e.nativeEvent.layout.width)}
-        >
-          {chartWidth > 0 && points.length > 0 ? (
-            <Svg width={chartWidth} height={CHART_HEIGHT}>
-              <Defs>
-                <SvgLinearGradient id="route-line" x1="0" y1="0" x2="1" y2="0">
-                  <Stop offset="0" stopColor={tokens.route.stroke} stopOpacity={0.85} />
-                  <Stop offset="1" stopColor={tokens.route.stroke} stopOpacity={1} />
-                </SvgLinearGradient>
-              </Defs>
-              <AnimatedPath
-                d={line}
-                stroke={tokens.route.strokeGlow}
-                strokeWidth={6}
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                fill="none"
-                animatedProps={animatedLineProps}
-                transform="translate(12, 8)"
-              />
-              <AnimatedPath
-                d={line}
-                stroke="url(#route-line)"
-                strokeWidth={2.4}
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                fill="none"
-                animatedProps={animatedLineProps}
-                transform="translate(12, 8)"
-              />
-              {routePlan.stops.map((stop, i) => {
-                const p = points[i];
-                if (!p) return null;
-                return (
-                  <Circle
-                    key={stop.id}
-                    cx={p.x + 12}
-                    cy={p.y + 8}
-                    r={5}
-                    fill={stopColors(stop.status)}
-                    stroke={theme.customer.surfaceContainerLowest}
-                    strokeWidth={2}
-                  />
-                );
-              })}
-            </Svg>
-          ) : null}
-        </View>
+        <ScheduleRouteMap stops={routePlan.stops} />
 
         <View style={styles.stopsRow}>
           {routePlan.stops.slice(0, 4).map((stop) => (
@@ -280,10 +180,6 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
   },
   title: { fontSize: 15, fontWeight: '800', letterSpacing: -0.2, marginTop: 1 },
-  chartArea: {
-    width: '100%',
-    overflow: 'hidden',
-  },
   stopsRow: {
     flexDirection: 'row',
     paddingHorizontal: 6,

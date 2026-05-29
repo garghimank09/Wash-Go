@@ -5,7 +5,6 @@ import {
   Pressable,
   StyleSheet,
   Linking,
-  Platform,
   Share,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -30,6 +29,7 @@ import {
 } from '../../../lib/partnerFormatters';
 import { canDialPhone, normalizeForTel } from '../../../lib/partnerPhone';
 import { formatScheduledTime } from '../../../lib/jobPhases';
+import { openMapPin } from '../../../lib/openExternalMaps';
 
 const COPY_FEEDBACK_MS = 1400;
 
@@ -57,7 +57,7 @@ export default function CustomerInfoCard({ job, onOpenDetails }) {
     scheduledAt,
     payoutCents,
     surgeBonusCents,
-    currency: jobCurrency = 'USD',
+    currency: jobCurrency = 'INR',
   } = job;
 
   const trustLine = formatCustomerTrustLine({
@@ -76,16 +76,14 @@ export default function CustomerInfoCard({ job, onOpenDetails }) {
     Number.isFinite(durationMins) ? `${Math.round(durationMins)} min` : null,
   ]);
 
-  const handleMaps = () => {
+  const handleMaps = async () => {
     Haptics.selectionAsync().catch(() => {});
     const { latitude, longitude } = address.coords || {};
-    const label = encodeURIComponent(customer.name);
-    if (latitude == null || longitude == null) return;
-    const url =
-      Platform.OS === 'ios'
-        ? `maps:0,0?q=${label}@${latitude},${longitude}`
-        : `geo:${latitude},${longitude}?q=${latitude},${longitude}(${label})`;
-    Linking.openURL(url).catch(() => {});
+    await openMapPin({
+      latitude,
+      longitude,
+      label: customer.name || address.full || address.line1 || 'Customer',
+    });
   };
 
   const handleCopy = async () => {

@@ -2,7 +2,7 @@ import { useMemo } from 'react';
 import { View, Text, Pressable, StyleSheet, Platform } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
-import { Bell, Wallet } from 'lucide-react-native';
+import { Bell } from 'lucide-react-native';
 import Animated, {
   useAnimatedStyle,
   interpolate,
@@ -13,8 +13,6 @@ import { useTheme } from '../../../context/ThemeContext';
 import { usePartnerStatus } from '../../../context/PartnerStatusContext';
 import { usePartnerNotifications } from '../../../context/PartnerNotificationContext';
 import { getPartnerStatus, getPartnerShadow } from '../../../constants/partnerTheme';
-import { formatPayoutCurrency } from '../../../lib/partnerFormatters';
-import { usePartnerSchedule } from '../../../context/PartnerScheduleContext';
 import { usePartnerAuth } from '../../../context/PartnerAuthContext';
 
 function initialOf(name) {
@@ -29,7 +27,6 @@ export default function ScheduleHeader({ scrollY }) {
   const { status } = usePartnerStatus();
   const { unreadCount, openPanel } = usePartnerNotifications();
   const { user } = usePartnerAuth();
-  const { todaySummary } = usePartnerSchedule();
   const statusTokens = getPartnerStatus(status, isDark);
   const shadows = getPartnerShadow(isDark);
   const displayName = user?.full_name || 'Partner';
@@ -92,22 +89,7 @@ export default function ScheduleHeader({ scrollY }) {
           </View>
         </View>
 
-        <View style={styles.right}>
-          <View
-            style={[
-              styles.earningsChip,
-              {
-                backgroundColor: theme.customer.primaryBg,
-              },
-            ]}
-          >
-            <Wallet size={12} color={theme.accent.primary} strokeWidth={2.4} />
-            <Text style={[styles.earningsChipText, { color: theme.accent.primary }]}>
-              {formatPayoutCurrency(todaySummary.projectedCents)}
-            </Text>
-          </View>
-
-          <Pressable
+        <Pressable
             onPress={openPanel}
             hitSlop={10}
             style={({ pressed }) => [
@@ -135,7 +117,6 @@ export default function ScheduleHeader({ scrollY }) {
               </View>
             ) : null}
           </Pressable>
-        </View>
       </View>
 
       <Animated.View
@@ -193,16 +174,6 @@ const styles = StyleSheet.create({
   titleCol: { flex: 1 },
   eyebrow: { fontSize: 11, fontWeight: '600', letterSpacing: 0.4, textTransform: 'uppercase' },
   name: { fontSize: 16, fontWeight: '800', letterSpacing: -0.3, marginTop: 1 },
-  right: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  earningsChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 999,
-  },
-  earningsChipText: { fontSize: 12, fontWeight: '800', letterSpacing: -0.1 },
   bell: {
     width: 38,
     height: 38,

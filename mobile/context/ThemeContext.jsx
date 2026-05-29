@@ -1,43 +1,82 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, {
+  createContext,
+  useCallback,
+  useContext,
+  useRef,
+  useState,
+} from 'react';
 import { useColorScheme } from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { lightTheme, darkTheme } from '../constants/theme';
-
-const THEME_STORAGE_KEY = '@washgo_theme_preference';
+import {
+  isValidThemePreference,
+  loadThemePreference,
+  saveThemePreference,
+} from '../lib/themePreferenceStore';
 
 const ThemeContext = createContext({
   theme: lightTheme,
   isDark: false,
   themePreference: 'system',
+  themeScope: { portal: null, userId: null },
   setThemePreference: () => {},
+  setThemeScope: () => {},
 });
 
 export function ThemeProvider({ children }) {
   const systemColorScheme = useColorScheme();
   const [themePreference, setThemePreferenceState] = useState('system');
-  const [isLoaded, setIsLoaded] = useState(false);
+  const [themeScope, setThemeScopeState] = useState({
+    portal: null,
+    userId: null,
+  });
+  const [isScopeReady, setIsScopeReady] = useState(false);
+  const scopeKeyRef = useRef('');
+  const themeScopeRef = useRef({ portal: null, userId: null });
 
-  useEffect(() => {
-    AsyncStorage.getItem(THEME_STORAGE_KEY)
-      .then((saved) => {
-        if (saved === 'light' || saved === 'dark' || saved === 'system') {
-          setThemePreferenceState(saved);
-        }
-      })
-      .finally(() => setIsLoaded(true));
+  const setThemeScope = useCallback(async (portal, userId) => {
+    const nextKey =
+      portal && userId != null && userId !== ''
+        ? `${portal}:${userId}`
+        : '';
+
+    if (nextKey === scopeKeyRef.current) return;
+    scopeKeyRef.current = nextKey;
+
+    const scope = { portal: portal ?? null, userId: userId ?? null };
+    themeScopeRef.current = scope;
+    setThemeScopeState(scope);
+
+    if (!portal || userId == null || userId === '') {
+      setThemePreferenceState('system');
+      setIsScopeReady(true);
+      return;
+    }
+
+    const saved = await loadThemePreference(portal, userId);
+    setThemePreferenceState(saved);
+    setIsScopeReady(true);
   }, []);
 
-  const setThemePreference = async (preference) => {
-    setThemePreferenceState(preference);
-    await AsyncStorage.setItem(THEME_STORAGE_KEY, preference);
-  };
+  const setThemePreference = useCallback(
+    async (preference) => {
+      if (!isValidThemePreference(preference)) return;
+
+      setThemePreferenceState(preference);
+
+      const { portal, userId } = themeScopeRef.current;
+      if (portal && userId) {
+        await saveThemePreference(portal, userId, preference);
+      }
+    },
+    [],
+  );
 
   const isDark =
     themePreference === 'system'
       ? systemColorScheme === 'dark'
       : themePreference === 'dark';
 
-  const theme = isLoaded
+  const theme = isScopeReady
     ? isDark
       ? darkTheme
       : lightTheme
@@ -45,7 +84,14 @@ export function ThemeProvider({ children }) {
 
   return (
     <ThemeContext.Provider
-      value={{ theme, isDark: isLoaded ? isDark : false, themePreference, setThemePreference }}
+      value={{
+        theme,
+        isDark: isScopeReady ? isDark : false,
+        themePreference,
+        themeScope,
+        setThemePreference,
+        setThemeScope,
+      }}
     >
       {children}
     </ThemeContext.Provider>

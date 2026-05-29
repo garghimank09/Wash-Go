@@ -13,8 +13,6 @@ const PHASE_ALERTS = {
   accepted: NOTIF_COPY.accepted,
   on_the_way: NOTIF_COPY.on_the_way,
   in_progress: NOTIF_COPY.in_progress,
-  awaiting_review: NOTIF_COPY.awaiting_review,
-  issue_reported: NOTIF_COPY.issue_reported,
   completed: NOTIF_COPY.completed,
   cancelled: NOTIF_COPY.cancelled,
 };

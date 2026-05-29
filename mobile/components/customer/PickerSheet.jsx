@@ -1,6 +1,7 @@
 import { Modal, View, Text, Pressable, ScrollView, StyleSheet } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../../context/ThemeContext';
+import { getSelectionFill } from '../../lib/selectableCardStyle';
 import AppIcon from './AppIcon';
 
 export default function PickerSheet({
@@ -117,9 +118,10 @@ const styles = (theme) =>
       paddingHorizontal: 12,
       borderRadius: theme.radius.md,
       marginBottom: 4,
+      overflow: 'hidden',
     },
     rowActive: {
-      backgroundColor: theme.customer.primaryBg,
+      backgroundColor: getSelectionFill(theme),
     },
     rowText: {
       fontSize: 15,

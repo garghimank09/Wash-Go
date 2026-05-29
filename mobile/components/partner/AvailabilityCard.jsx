@@ -14,9 +14,9 @@ import { usePartnerStatus } from '../../context/PartnerStatusContext';
 import {
   PARTNER_STATUSES,
   getPartnerStatus,
-  getPartnerShadow,
 } from '../../constants/partnerTheme';
 import { PARTNER_MOTION, partnerTiming } from '../../constants/partnerMotion';
+import CardSurface from '../ui/CardSurface';
 
 const ICONS = { Zap, Hourglass, Coffee, Power };
 
@@ -26,7 +26,6 @@ export default function AvailabilityCard() {
   const { isDark } = useTheme();
   const { status, setStatus } = usePartnerStatus();
   const tokens = getPartnerStatus(status, isDark);
-  const shadows = getPartnerShadow(isDark);
 
   const [baseStatus, setBaseStatus] = useState(status);
   const baseTokens = getPartnerStatus(baseStatus, isDark);
@@ -74,7 +73,14 @@ export default function AvailabilityCard() {
 
   return (
     <View style={styles.outer}>
-      <View style={[styles.card, shadows.soft]}>
+      <CardSurface
+        borderRadius={26}
+        shadow="soft"
+        portal="partner"
+        withBorder={false}
+        backgroundColor={baseTokens.gradient[0]}
+        style={styles.card}
+      >
         <LinearGradient
           colors={baseTokens.gradient}
           start={{ x: 0, y: 0 }}
@@ -144,7 +150,7 @@ export default function AvailabilityCard() {
             </View>
           </View>
         </View>
-      </View>
+      </CardSurface>
     </View>
   );
 }
@@ -155,8 +161,6 @@ const styles = StyleSheet.create({
     marginTop: 14,
   },
   card: {
-    borderRadius: 26,
-    overflow: 'hidden',
     minHeight: 156,
   },
   inner: {

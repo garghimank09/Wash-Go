@@ -26,7 +26,7 @@ const EARNINGS_TOKENS = {
     },
     payoutStatus: {
       paid: { fg: '#047857', bg: 'rgba(16,185,129,0.14)', label: 'Paid' },
-      pending: { fg: '#b45309', bg: 'rgba(245,158,11,0.14)', label: 'Pending' },
+      pending: { fg: '#b45309', bg: 'rgba(245,158,11,0.14)', label: 'Pending payout' },
       failed: { fg: '#b91c1c', bg: 'rgba(248,113,113,0.14)', label: 'Failed' },
       processing: { fg: '#1d4ed8', bg: 'rgba(59,130,246,0.14)', label: 'Processing' },
     },
@@ -62,6 +62,10 @@ const EARNINGS_TOKENS = {
       base: 'rgba(15,23,42,0.06)',
       shimmer: 'rgba(15,23,42,0.10)',
     },
+    pendingCard: {
+      fill: '#fffbeb',
+      border: '#fde68a',
+    },
   },
   dark: {
     hero: {
@@ -84,7 +88,7 @@ const EARNINGS_TOKENS = {
     },
     payoutStatus: {
       paid: { fg: '#34d399', bg: 'rgba(52,211,153,0.18)', label: 'Paid' },
-      pending: { fg: '#fbbf24', bg: 'rgba(245,158,11,0.18)', label: 'Pending' },
+      pending: { fg: '#fbbf24', bg: 'rgba(245,158,11,0.18)', label: 'Pending payout' },
       failed: { fg: '#fca5a5', bg: 'rgba(248,113,113,0.18)', label: 'Failed' },
       processing: { fg: '#93c5fd', bg: 'rgba(59,130,246,0.18)', label: 'Processing' },
     },
@@ -119,6 +123,10 @@ const EARNINGS_TOKENS = {
     skeleton: {
       base: 'rgba(255,255,255,0.06)',
       shimmer: 'rgba(255,255,255,0.10)',
+    },
+    pendingCard: {
+      fill: '#2a2010',
+      border: 'rgba(251,191,36,0.35)',
     },
   },
 };

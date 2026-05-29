@@ -1,11 +1,28 @@
-import { createContext, useContext, useMemo } from 'react';
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+} from 'react';
 import usePartnerBookings from '../hooks/usePartnerBookings';
+import { onPartnerBookingsSync } from '../lib/partnerSyncEvents';
+import {
+  computePartnerEarningsFromBookings,
+  PARTNER_EARNINGS_PERCENT,
+  partnerEarningsCents,
+} from '../lib/partnerEarnings';
+import {
+  historyPayoutCents,
+  selectCompletedWashHistory,
+} from '../lib/partnerWashHistory';
 import { buildWeeklySeries } from '../lib/partnerMappers';
+import { partnerEarningsService } from '../services/partnerEarningsService';
 
 const PartnerEarningsContext = createContext(null);
 
-const HOUR = 60 * 60 * 1000;
-const DAY = 24 * HOUR;
+const DAY = 24 * 60 * 60 * 1000;
 
 function startOfDay(date) {
   const d = new Date(date);
@@ -13,100 +30,155 @@ function startOfDay(date) {
   return d.getTime();
 }
 
+function mapApiSummary(summary) {
+  if (!summary) return null;
+  const series = (summary.series || []).map((d) => ({
+    day: d.day,
+    cents: d.cents ?? 0,
+    jobs: d.jobs ?? 0,
+  }));
+  return {
+    sharePercent: summary.share_percent ?? PARTNER_EARNINGS_PERCENT,
+    weekPartnerCents: summary.week_partner_cents ?? 0,
+    lifetimePartnerCents: summary.lifetime_partner_cents ?? 0,
+    pendingWeeklyCents: summary.pending_weekly_cents ?? 0,
+    weekJobs: summary.week_jobs ?? 0,
+    lifetimeJobs: summary.lifetime_jobs ?? 0,
+    series,
+  };
+}
+
+function computeWeekGrowth(bookings) {
+  const todayMs = startOfDay(new Date());
+  const startOfWeekMs = todayMs - 6 * DAY;
+  const prevWeekStartMs = startOfWeekMs - 7 * DAY;
+  const prevWeekEndMs = startOfWeekMs - 1;
+
+  let thisWeekCents = 0;
+  let prevWeekCents = 0;
+
+  for (const b of bookings) {
+    if (b.status !== 'completed') continue;
+    const ts = new Date(b.updated_at || b.scheduled_at).getTime();
+    if (!Number.isFinite(ts)) continue;
+    const cents = partnerEarningsCents(b.price_cents);
+    if (ts >= startOfWeekMs) thisWeekCents += cents;
+    else if (ts >= prevWeekStartMs && ts <= prevWeekEndMs) prevWeekCents += cents;
+  }
+
+  if (prevWeekCents <= 0) return thisWeekCents > 0 ? 100 : 0;
+  return ((thisWeekCents - prevWeekCents) / prevWeekCents) * 100;
+}
+
 /**
- * Aggregate earnings statistics from the partner's completed bookings.
- *
- * The backend has no dedicated `/earnings` or `/payouts` endpoint yet, so we
- * derive everything from the booking list with full transparency: figures
- * that cannot be computed from the available data (acceptance rate, average
- * rating, scheduled payout date) are surfaced as `null` and the UI renders
- * a neutral placeholder rather than fabricating a number.
+ * Partner earnings from GET /partner/earnings (90% share), with booking-list
+ * fallback and refresh on booking sync.
  */
 export function PartnerEarningsProvider({ children }) {
-  const { items, loading, refreshing, reload } = usePartnerBookings();
+  const { items, loading: bookingsLoading, refreshing, reload: reloadBookings } =
+    usePartnerBookings();
+  const [apiSummary, setApiSummary] = useState(null);
+  const [earningsLoading, setEarningsLoading] = useState(true);
+  const [earningsError, setEarningsError] = useState(null);
+
+  const reloadEarnings = useCallback(async (silent = false) => {
+    if (!silent) setEarningsLoading(true);
+    setEarningsError(null);
+    try {
+      const data = await partnerEarningsService.getSummary();
+      setApiSummary(mapApiSummary(data));
+    } catch (e) {
+      setEarningsError(e?.message || 'Could not load earnings');
+      setApiSummary(mapApiSummary(computePartnerEarningsFromBookings(items)));
+    } finally {
+      if (!silent) setEarningsLoading(false);
+    }
+  }, [items]);
+
+  useEffect(() => {
+    void reloadEarnings(false);
+  }, [reloadEarnings]);
+
+  useEffect(() => onPartnerBookingsSync(() => void reloadEarnings(true)), [reloadEarnings]);
+
+  const reload = useCallback(async () => {
+    await Promise.all([reloadBookings(), reloadEarnings(true)]);
+  }, [reloadBookings, reloadEarnings]);
 
   const value = useMemo(() => {
-    const todayMs = startOfDay(new Date());
-    const startOfWeekMs = todayMs - 6 * DAY;
-    const prevWeekStartMs = startOfWeekMs - 7 * DAY;
-    const prevWeekEndMs = startOfWeekMs - 1;
+    const summary =
+      apiSummary || mapApiSummary(computePartnerEarningsFromBookings(items));
+    const weeklySeries =
+      summary.series?.length > 0 ? summary.series : buildWeeklySeries(items);
 
-    let thisWeekCents = 0;
-    let thisWeekJobs = 0;
-    let prevWeekCents = 0;
-    let lifetimeCents = 0;
-    let lifetimeJobs = 0;
-    let activeCount = 0;
-    const completedPayouts = [];
-
-    for (const b of items) {
-      const ts = b.scheduled_at ? new Date(b.scheduled_at).getTime() : null;
-      if (b.status === 'completed' && ts != null) {
-        lifetimeCents += b.price_cents || 0;
-        lifetimeJobs += 1;
-        if (ts >= startOfWeekMs) {
-          thisWeekCents += b.price_cents || 0;
-          thisWeekJobs += 1;
-        } else if (ts >= prevWeekStartMs && ts <= prevWeekEndMs) {
-          prevWeekCents += b.price_cents || 0;
-        }
-        completedPayouts.push({
-          id: b.id,
-          customer: b.customer_name || 'Customer',
-          amountCents: b.price_cents || 0,
-          currency: b.currency || 'USD',
-          date: ts,
-          status: 'paid',
-          method: 'Booking',
-        });
-      }
-      if (b.status === 'confirmed' || b.status === 'in_progress') activeCount += 1;
-    }
-
-    const weeklySeries = buildWeeklySeries(items);
     const bestDayEntry =
-      weeklySeries.reduce((best, day) => (day.cents > (best?.cents ?? 0) ? day : best), null) || null;
+      weeklySeries.reduce(
+        (best, day) => (day.cents > (best?.cents ?? 0) ? day : best),
+        null,
+      ) || null;
 
-    const growthPct = (() => {
-      if (prevWeekCents <= 0) return thisWeekCents > 0 ? 100 : 0;
-      return ((thisWeekCents - prevWeekCents) / prevWeekCents) * 100;
-    })();
+    const growthPct = computeWeekGrowth(items);
 
     const thisWeek = {
-      totalCents: thisWeekCents,
-      jobs: thisWeekJobs,
+      totalCents: summary.weekPartnerCents,
+      jobs: summary.weekJobs,
       growthPct,
-      prevWeekCents,
       bestDay: bestDayEntry?.day || weeklySeries[0]?.day || '—',
     };
 
     const lifetime = {
-      totalCents: lifetimeCents,
-      jobs: lifetimeJobs,
+      totalCents: summary.lifetimePartnerCents,
+      jobs: summary.lifetimeJobs,
     };
 
+    const pending = {
+      totalCents: summary.pendingWeeklyCents,
+    };
+
+    let activeCount = 0;
+    for (const b of items) {
+      if (b.status === 'confirmed' || b.status === 'in_progress') activeCount += 1;
+    }
+
     const stats = {
-      completedJobs: lifetimeJobs,
-      // No dispatch-decision API yet — surface as null and the UI shows a dash.
+      completedJobs: summary.lifetimeJobs,
       acceptanceRate: null,
       activeJobs: activeCount,
-      // Backend has no ratings endpoint either.
       averageRating: null,
     };
 
-    completedPayouts.sort((a, b) => b.date - a.date);
+    const completedPayouts = selectCompletedWashHistory(items).map((b) => ({
+      id: b.id,
+      customer: b.customer_name || 'Customer',
+      amountCents: historyPayoutCents(b),
+      currency: b.currency || 'INR',
+      date: new Date(b.updated_at || b.scheduled_at).getTime(),
+      status: 'pending',
+      method: 'Weekly partner payout',
+    }));
 
     return {
-      loading,
+      loading: earningsLoading || bookingsLoading,
       refreshing,
       reload,
+      error: earningsError,
+      sharePercent: summary.sharePercent,
       thisWeek,
       lifetime,
+      pending,
       weeklySeries,
       stats,
       payouts: completedPayouts.slice(0, 12),
     };
-  }, [items, loading, refreshing, reload]);
+  }, [
+    apiSummary,
+    items,
+    earningsLoading,
+    bookingsLoading,
+    refreshing,
+    reload,
+    earningsError,
+  ]);
 
   return (
     <PartnerEarningsContext.Provider value={value}>

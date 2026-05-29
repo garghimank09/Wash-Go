@@ -11,7 +11,6 @@ import Animated, {
   useSharedValue,
   useAnimatedStyle,
   withTiming,
-  runOnJS,
 } from 'react-native-reanimated';
 import { CUSTOMER_MOTION, CUSTOMER_EASE } from '../../constants/customerMotion';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
@@ -69,9 +68,8 @@ export default function NotificationPanel() {
   }));
 
   const dismissPanel = () => {
-    translateX.value = withTiming(panelWidth, panelTiming, () => {
-      runOnJS(closePanel)();
-    });
+    closePanel();
+    translateX.value = withTiming(panelWidth, panelTiming);
     backdropOpacity.value = withTiming(0, backdropTiming);
   };
 
@@ -161,6 +159,7 @@ export default function NotificationPanel() {
                 <NotificationCard
                   item={item}
                   isUnread={isNotificationUnread(item, readCutoff)}
+                  onNavigate={dismissPanel}
                 />
               )}
             />

@@ -6,7 +6,6 @@ import {
   StyleSheet,
   ScrollView,
   Linking,
-  Platform,
   Share,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -27,7 +26,8 @@ import { useTheme } from '../../../context/ThemeContext';
 import { getJobTokens } from '../../../constants/jobTheme';
 import { formatPayoutCurrency, formatCustomerTrustLine } from '../../../lib/partnerFormatters';
 import { formatScheduledTime } from '../../../lib/jobPhases';
-import { canDialPhone, normalizeForTel } from '../../../lib/partnerPhone';
+import { canDialPhone, openPhoneCall } from '../../../lib/partnerPhone';
+import { openMapPin } from '../../../lib/openExternalMaps';
 
 function DetailRow({ icon: Icon, label, value, sub, tokens, theme }) {
   if (!value) return null;
@@ -70,9 +70,7 @@ export default function CustomerJobDetailSheet({ visible, job, onClose }) {
     : null;
 
   const openTel = () => {
-    if (!hasPhone) return;
-    const n = normalizeForTel(customer.phone);
-    if (n) Linking.openURL(`tel:${n}`).catch(() => {});
+    openPhoneCall(customer?.phone);
   };
 
   const openSms = () => {
@@ -81,15 +79,13 @@ export default function CustomerJobDetailSheet({ visible, job, onClose }) {
     if (n) Linking.openURL(`sms:${n}`).catch(() => {});
   };
 
-  const openMaps = () => {
+  const openMaps = async () => {
     const { latitude, longitude } = address?.coords || {};
-    if (latitude == null || longitude == null) return;
-    const label = encodeURIComponent(customer?.name || 'Customer');
-    const url =
-      Platform.OS === 'ios'
-        ? `maps:0,0?q=${label}@${latitude},${longitude}`
-        : `geo:${latitude},${longitude}?q=${latitude},${longitude}(${label})`;
-    Linking.openURL(url).catch(() => {});
+    await openMapPin({
+      latitude,
+      longitude,
+      label: customer?.name || address?.full || address?.line1 || 'Customer',
+    });
   };
 
   const copyAddress = () => {
@@ -237,7 +233,7 @@ export default function CustomerJobDetailSheet({ visible, job, onClose }) {
             />
           </View>
 
-          {briefing?.notes ? (
+          {briefing?.customerInstructions ? (
             <View
               style={[
                 styles.notesCard,
@@ -247,9 +243,11 @@ export default function CustomerJobDetailSheet({ visible, job, onClose }) {
                 },
               ]}
             >
-              <Text style={[styles.notesTitle, { color: theme.text.primary }]}>Customer notes</Text>
+              <Text style={[styles.notesTitle, { color: theme.text.primary }]}>
+                Customer instructions
+              </Text>
               <Text style={[styles.notesBody, { color: theme.text.secondary }]}>
-                {briefing.notes}
+                {briefing.customerInstructions}
               </Text>
             </View>
           ) : null}

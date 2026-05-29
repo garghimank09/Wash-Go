@@ -18,10 +18,10 @@ import Animated, {
 import * as Haptics from 'expo-haptics';
 import { useTheme } from '../../../context/ThemeContext';
 import { getEarningsTokens } from '../../../constants/earningsTheme';
-import { getPartnerShadow } from '../../../constants/partnerTheme';
 import { formatPayoutCurrency } from '../../../lib/partnerFormatters';
 import { usePartnerEarnings } from '../../../context/PartnerEarningsContext';
 import { buildSmoothChartPath } from './chartPath';
+import CardSurface from '../../ui/CardSurface';
 
 const AnimatedPath = Animated.createAnimatedComponent(Path);
 
@@ -33,7 +33,6 @@ const LABEL_HEIGHT = 22;
 export default function WeeklyChartCard() {
   const { theme, isDark } = useTheme();
   const tokens = getEarningsTokens(isDark);
-  const shadows = getPartnerShadow(isDark);
   const { weeklySeries, thisWeek } = usePartnerEarnings();
 
   const [chartWidth, setChartWidth] = useState(0);
@@ -125,15 +124,12 @@ export default function WeeklyChartCard() {
       transition={{ type: 'timing', duration: 280, delay: 80 }}
       style={styles.outer}
     >
-      <View
-        style={[
-          styles.card,
-          {
-            backgroundColor: theme.customer.surfaceContainerLowest,
-            borderColor: theme.customer.outlineVariant,
-          },
-          shadows.rim,
-        ]}
+      <CardSurface
+        borderRadius={22}
+        backgroundColor={theme.customer.surfaceContainerLowest}
+        shadow="rim"
+        portal="partner"
+        style={styles.card}
       >
         <View style={styles.headerRow}>
           <View>
@@ -272,7 +268,7 @@ export default function WeeklyChartCard() {
             );
           })}
         </View>
-      </View>
+      </CardSurface>
     </MotiView>
   );
 }
@@ -283,8 +279,6 @@ const styles = StyleSheet.create({
     marginTop: 18,
   },
   card: {
-    borderRadius: 22,
-    borderWidth: 1,
     paddingHorizontal: CARD_PADDING_X,
     paddingVertical: CARD_PADDING_Y,
   },

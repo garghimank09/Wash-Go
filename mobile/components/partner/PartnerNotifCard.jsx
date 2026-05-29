@@ -39,13 +39,13 @@ export default function PartnerNotifCard({ item, isUnread, onDismiss, onNavigate
   const Icon = ICONS[tokens.icon] || Sparkles;
 
   const handlePress = async () => {
+    onNavigate?.();
     try {
       await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     } catch {
       /* ignore */
     }
-    await markAsRead(item.id);
-    onNavigate?.();
+    markAsRead(item.id);
     if (item.path) {
       router.push(item.path);
       return;

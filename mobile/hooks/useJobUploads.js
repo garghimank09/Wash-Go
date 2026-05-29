@@ -14,7 +14,7 @@ function genId() {
 }
 
 function initialState() {
-  return { before: [], after: [] };
+  return { arrival: [], before: [], after: [] };
 }
 
 function inferMime(uri) {
@@ -39,6 +39,7 @@ export default function useJobUploads(bookingId, options = {}) {
   const [buckets, setBuckets] = useState(() => {
     if (options.initial) {
       return {
+        arrival: options.initial.arrival || [],
         before: options.initial.before || [],
         after: options.initial.after || [],
       };
@@ -282,8 +283,10 @@ export default function useJobUploads(bookingId, options = {}) {
 
   const counts = useMemo(
     () => ({
+      arrival: buckets.arrival.length,
       before: buckets.before.length,
       after: buckets.after.length,
+      arrivalSuccess: buckets.arrival.filter((i) => i.status === 'success').length,
       beforeSuccess: buckets.before.filter((i) => i.status === 'success').length,
       afterSuccess: buckets.after.filter((i) => i.status === 'success').length,
     }),

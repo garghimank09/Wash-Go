@@ -1,70 +1,45 @@
 /**
  * Pure formatting helpers used across partner UI.
  *
- * Lives in `lib/` (not `data/`) so screens can keep using familiar helpers
- * without pulling in any mock dataset.
+ * Currency defaults to INR (en-IN) — matches backend + web frontend.
  */
+
+import { DEFAULT_CURRENCY, formatCents } from './formatCurrency';
 
 const HOUR = 60 * 60 * 1000;
 const DAY = 24 * HOUR;
 
-function localeForCurrency(code) {
-  const c = String(code || 'USD').toUpperCase();
-  if (c === 'INR') return 'en-IN';
-  return 'en-US';
-}
-
 /**
- * Partner payout display: always two fraction digits (e.g. 4500 cents → $45.00).
- * Uses backend ISO currency code; invalid codes fall back to USD formatting.
+ * Partner payout display (2 fraction digits). Uses backend ISO currency; defaults to INR.
  */
-export function formatPayoutCurrency(cents, currency = 'USD') {
-  const code = String(currency || 'USD')
+export function formatPayoutCurrency(cents, currency = DEFAULT_CURRENCY) {
+  const code = String(currency || DEFAULT_CURRENCY)
     .trim()
     .toUpperCase()
     .slice(0, 3);
-  const safeCode = /^[A-Z]{3}$/.test(code) ? code : 'USD';
-  const amount = (Number(cents) || 0) / 100;
-  try {
-    return new Intl.NumberFormat(localeForCurrency(safeCode), {
-      style: 'currency',
-      currency: safeCode,
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    }).format(amount);
-  } catch {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    }).format(amount);
-  }
+  const safeCode = /^[A-Z]{3}$/.test(code) ? code : DEFAULT_CURRENCY;
+  return formatCents(cents, safeCode);
 }
 
-/** USD helper; 2dp by default. Prefer {@link formatPayoutCurrency} for booking currency. */
+/** @deprecated Use formatPayoutCurrency — kept for call sites that referenced USD helper. */
 export function formatCurrencyUSD(cents, { fractionDigits = 2 } = {}) {
   if (fractionDigits !== 2) {
     const amount = (Number(cents) || 0) / 100;
-    return new Intl.NumberFormat('en-US', {
+    return new Intl.NumberFormat('en-IN', {
       style: 'currency',
-      currency: 'USD',
+      currency: DEFAULT_CURRENCY,
       maximumFractionDigits: fractionDigits,
       minimumFractionDigits: fractionDigits,
     }).format(amount);
   }
-  return formatPayoutCurrency(cents, 'USD');
+  return formatPayoutCurrency(cents, DEFAULT_CURRENCY);
 }
 
 export function formatCurrencyINR(cents) {
-  return formatPayoutCurrency(cents, 'INR');
+  return formatPayoutCurrency(cents, DEFAULT_CURRENCY);
 }
 
-/**
- * Format an amount stored as cents using whatever currency the backend
- * tagged on the booking (`booking.currency`). Falls back to USD.
- */
-export function formatCurrency(cents, currency = 'USD') {
+export function formatCurrency(cents, currency = DEFAULT_CURRENCY) {
   return formatPayoutCurrency(cents, currency);
 }
 

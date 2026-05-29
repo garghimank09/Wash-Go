@@ -11,6 +11,7 @@ import {
   Platform,
 } from 'react-native';
 import { useRouter } from 'expo-router';
+import { goBackToRoleSelection } from '../../lib/authNavigation';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../../context/ThemeContext';
 import { usePartnerAuth } from '../../context/PartnerAuthContext';
@@ -72,7 +73,7 @@ export default function PartnerLogin() {
           keyboardShouldPersistTaps="handled"
         >
           <View style={s.header}>
-            <TouchableOpacity onPress={() => router.back()} style={s.backBtn}>
+            <TouchableOpacity onPress={() => goBackToRoleSelection(router)} style={s.backBtn}>
               <Text style={s.backText}>← Back</Text>
             </TouchableOpacity>
             <Text style={s.logo}>

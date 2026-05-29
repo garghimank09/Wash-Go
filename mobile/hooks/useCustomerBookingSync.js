@@ -6,7 +6,7 @@ import { emitNotificationsSync } from '../lib/notificationSyncEvents';
 import { bookingService } from '../services/bookingService';
 import { useAuth } from '../context/AuthContext';
 
-const POLL_MS = 12_000;
+const POLL_MS = 4_000;
 
 /**
  * Polls `GET /bookings/sync` while the customer is signed in (same contract as web SSE fallback).

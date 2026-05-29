@@ -26,14 +26,6 @@ export const NOTIF_COPY = {
     title: 'Wash in progress',
     message: 'Your vehicle is being cleaned right now.',
   },
-  awaiting_review: {
-    title: 'Ready for your review',
-    message: 'Your washer finished — confirm completion or report an issue.',
-  },
-  issue_reported: {
-    title: 'Issue reported',
-    message: 'We received your report and will follow up shortly.',
-  },
   completed: {
     title: 'Wash complete',
     message: 'Your booking has been completed.',

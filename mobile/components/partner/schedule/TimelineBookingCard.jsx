@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { View, Text, Pressable, StyleSheet, Linking } from 'react-native';
+import { View, Text, Pressable, StyleSheet, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
 import { MotiView } from 'moti';
 import Animated, {
@@ -22,6 +22,7 @@ import { getPartnerShadow } from '../../../constants/partnerTheme';
 import { getScheduleTokens, getScheduleStatus } from '../../../constants/scheduleTheme';
 import { formatPayoutCurrency, formatBookingTime } from '../../../lib/partnerFormatters';
 import { formatPartnerServiceDescriptor } from '../../../lib/partnerServiceDescriptor';
+import { navigateToAddress } from '../../../lib/openExternalMaps';
 import ScheduleStatusPill from './ScheduleStatusPill';
 
 /** Navigation labels — opens the shared job workspace, not a lifecycle action. */
@@ -43,6 +44,7 @@ export default function TimelineBookingCard({ booking, index = 0 }) {
   const statusTokens = getScheduleStatus(booking.status, isDark);
 
   const [expanded, setExpanded] = useState(false);
+  const [navigating, setNavigating] = useState(false);
   const rotate = useSharedValue(0);
 
   const toggleExpanded = () => {
@@ -59,12 +61,19 @@ export default function TimelineBookingCard({ booking, index = 0 }) {
     transform: [{ rotate: `${rotate.value * 180}deg` }],
   }));
 
-  const handleNavigate = () => {
+  const handleNavigate = async () => {
+    if (navigating) return;
     Haptics.selectionAsync().catch(() => {});
-    const { lat, lng } = booking.coords || {};
-    if (lat == null || lng == null) return;
-    const url = `https://maps.google.com/?q=${lat},${lng}`;
-    Linking.openURL(url).catch(() => {});
+    setNavigating(true);
+    try {
+      await navigateToAddress({
+        coords: booking.coords,
+        address: booking.address,
+        label: booking.address || booking.customer?.name || 'Customer',
+      });
+    } finally {
+      setNavigating(false);
+    }
   };
 
   const handlePrimaryAction = () => {
@@ -108,72 +117,78 @@ export default function TimelineBookingCard({ booking, index = 0 }) {
         ) : null}
       </View>
 
-      <Pressable
-        onPress={toggleExpanded}
-        style={({ pressed }) => [
+      <View
+        style={[
           styles.card,
           {
             backgroundColor: theme.customer.surfaceContainerLowest,
             borderColor: theme.customer.outlineVariant,
           },
           shadows.rim,
-          pressed && { opacity: 0.94 },
         ]}
       >
-        <View style={styles.headerRow}>
-          <View style={styles.headerLeft}>
-            <Text style={[styles.customer, { color: theme.text.primary }]} numberOfLines={1}>
-              {booking.customer.name}
-            </Text>
-            {booking.vehicleLabel ? (
-              <Text style={[styles.package, { color: theme.text.secondary }]} numberOfLines={1}>
-                {booking.vehicleLabel}
+        <Pressable
+          onPress={toggleExpanded}
+          style={({ pressed }) => [pressed && { opacity: 0.94 }]}
+        >
+          <View style={styles.headerRow}>
+            <View style={styles.headerLeft}>
+              <Text style={[styles.customer, { color: theme.text.primary }]} numberOfLines={1}>
+                {booking.customer.name}
               </Text>
-            ) : null}
-          </View>
-          <Animated.View style={chevronStyle}>
-            <ChevronDown size={16} color={theme.text.muted} strokeWidth={2.4} />
-          </Animated.View>
-        </View>
-
-        <View style={styles.addressRow}>
-          <MapPin size={12} color={theme.text.muted} strokeWidth={2.4} />
-          <Text style={[styles.address, { color: theme.text.secondary }]} numberOfLines={1}>
-            {booking.address}
-          </Text>
-        </View>
-
-        <View style={styles.metaRow}>
-          <ScheduleStatusPill status={booking.status} />
-          {booking.etaMins ? (
-            <View style={[styles.metaChip, { backgroundColor: theme.customer.primaryBg }]}>
-              <Timer size={11} color={theme.accent.primary} strokeWidth={2.4} />
-              <Text style={[styles.metaText, { color: theme.accent.primary }]}>
-                {booking.etaMins}m ETA
-              </Text>
-            </View>
-          ) : null}
-          {booking.distanceKm ? (
-            <View style={[styles.metaChip, { backgroundColor: theme.customer.surfaceContainerLow }]}>
-              <Route size={11} color={theme.text.secondary} strokeWidth={2.4} />
-              <Text style={[styles.metaText, { color: theme.text.secondary }]}>
-                {booking.distanceKm} km
-              </Text>
-            </View>
-          ) : null}
-          <View style={styles.metaSpacer} />
-          <View style={styles.payoutBlock}>
-            <Text style={[styles.payout, { color: theme.text.primary }]} numberOfLines={1}>
-              {formatPayoutCurrency(booking.priceCents, booking.currency)}
-              {serviceDescriptor ? (
-                <Text style={[styles.payoutDescriptor, { color: theme.text.secondary }]}>
-                  {' · '}
-                  {serviceDescriptor}
+              {booking.vehicleLabel ? (
+                <Text style={[styles.package, { color: theme.text.secondary }]} numberOfLines={1}>
+                  {booking.vehicleLabel}
                 </Text>
               ) : null}
+            </View>
+            <Animated.View style={chevronStyle}>
+              <ChevronDown size={16} color={theme.text.muted} strokeWidth={2.4} />
+            </Animated.View>
+          </View>
+
+          <View style={styles.addressRow}>
+            <MapPin size={12} color={theme.text.muted} strokeWidth={2.4} />
+            <Text style={[styles.address, { color: theme.text.secondary }]} numberOfLines={1}>
+              {booking.address}
             </Text>
           </View>
-        </View>
+
+          <View style={styles.metaRow}>
+            <ScheduleStatusPill status={booking.status} />
+            {booking.etaMins ? (
+              <View style={[styles.metaChip, { backgroundColor: theme.customer.primaryBg }]}>
+                <Timer size={11} color={theme.accent.primary} strokeWidth={2.4} />
+                <Text style={[styles.metaText, { color: theme.accent.primary }]}>
+                  {booking.etaMins}m ETA
+                </Text>
+              </View>
+            ) : null}
+            {booking.distanceKm ? (
+              <View style={[styles.metaChip, { backgroundColor: theme.customer.surfaceContainerLow }]}>
+                <Route size={11} color={theme.text.secondary} strokeWidth={2.4} />
+                <Text style={[styles.metaText, { color: theme.text.secondary }]}>
+                  {booking.distanceKm} km
+                </Text>
+              </View>
+            ) : null}
+            <View style={styles.metaSpacer} />
+            <View style={styles.payoutBlock}>
+              <Text style={[styles.payout, { color: theme.text.primary }]} numberOfLines={1}>
+                {formatPayoutCurrency(
+                  booking.partnerPayoutCents ?? booking.priceCents,
+                  booking.currency,
+                )}
+                {serviceDescriptor ? (
+                  <Text style={[styles.payoutDescriptor, { color: theme.text.secondary }]}>
+                    {' · '}
+                    {serviceDescriptor}
+                  </Text>
+                ) : null}
+              </Text>
+            </View>
+          </View>
+        </Pressable>
 
         {expanded ? (
           <MotiView
@@ -206,19 +221,24 @@ export default function TimelineBookingCard({ booking, index = 0 }) {
             <View style={styles.actions}>
               <Pressable
                 onPress={handleNavigate}
+                disabled={navigating}
                 style={[
                   styles.actionChip,
                   { backgroundColor: tokens.actionChip.bg },
+                  navigating && { opacity: 0.7 },
                 ]}
               >
-                <Navigation size={14} color={tokens.actionChip.fg} strokeWidth={2.4} />
+                {navigating ? (
+                  <ActivityIndicator size="small" color={tokens.actionChip.fg} />
+                ) : (
+                  <Navigation size={14} color={tokens.actionChip.fg} strokeWidth={2.4} />
+                )}
                 <Text style={[styles.actionLabel, { color: tokens.actionChip.fg }]}>
                   Navigate
                 </Text>
               </Pressable>
               <Pressable
                 onPress={handlePrimaryAction}
-                disabled={isCompleted}
                 style={[
                   styles.actionChip,
                   styles.actionChipPrimary,
@@ -250,7 +270,7 @@ export default function TimelineBookingCard({ booking, index = 0 }) {
             </View>
           </MotiView>
         ) : null}
-      </Pressable>
+      </View>
     </MotiView>
   );
 }
@@ -306,6 +326,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     padding: 14,
     gap: 8,
+    overflow: 'hidden',
   },
   headerRow: {
     flexDirection: 'row',

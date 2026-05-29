@@ -61,15 +61,8 @@ export const JOB_PHASES = [
     id: 'qc_complete',
     label: 'QC complete',
     description: 'All checklist items confirmed.',
-    ctaLabel: 'Send to customer for approval',
+    ctaLabel: 'Mark service completed',
     icon: 'ClipboardCheck',
-  },
-  {
-    id: 'approval_pending',
-    label: 'Awaiting customer approval',
-    description: 'Customer is reviewing the result.',
-    ctaLabel: 'Waiting for customer',
-    icon: 'Hourglass',
   },
   {
     id: 'completed',
@@ -106,7 +99,7 @@ export const CHECKLIST_TEMPLATE = [
   { id: 'c3', label: 'Trim & badge protection applied', done: false },
   { id: 'c4', label: 'Interior dust + vacuum', done: false },
   { id: 'c5', label: 'Final QC inspection', done: false },
-  { id: 'c6', label: 'Customer handoff confirmation', done: false },
+  { id: 'c6', label: 'Service signed off', done: false },
 ];
 
 export const TIMELINE_TEMPLATE = JOB_PHASES.map((p) => ({

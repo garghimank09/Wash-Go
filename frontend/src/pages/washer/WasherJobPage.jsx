@@ -41,7 +41,7 @@ const DEFAULT_CHECKLIST = [
   { id: 'c2', label: 'Pre-wash walkaround', done: false },
   { id: 'c3', label: 'Waterless safe on trim', done: false },
   { id: 'c4', label: 'Tire dressing consent', done: false },
-  { id: 'c5', label: 'Final QC + keys handoff', done: false },
+  { id: 'c5', label: 'Final QC sign-off', done: false },
 ];
 
 function loadChecklist(jobId) {

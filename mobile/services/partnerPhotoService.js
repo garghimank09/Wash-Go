@@ -12,7 +12,7 @@ export const partnerPhotoService = {
 
   /**
    * @param {string} bookingId
-   * @param {'before'|'after'} kind
+   * @param {'arrival'|'before'|'after'} kind
    * @param {{ uri: string, name?: string, type?: string }} file
    * @param {{ onProgress?: (n: number) => void, signal?: AbortSignal }} [options]
    */

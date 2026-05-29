@@ -39,6 +39,15 @@ export const partnerBookingsService = {
     });
   },
 
+  /** PATCH /bookings/{id}/milestone — advance service_phase (customer-visible). */
+  updateMilestone(id, servicePhase) {
+    return partnerApiFetch(`/bookings/${id}/milestone`, {
+      method: 'PATCH',
+      auth: true,
+      body: { service_phase: servicePhase },
+    });
+  },
+
   /** POST /bookings/{id}/handoff/request — notify customer for review. */
   requestHandoff(id) {
     return partnerApiFetch(`/bookings/${id}/handoff/request`, {

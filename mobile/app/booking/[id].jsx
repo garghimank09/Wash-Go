@@ -12,10 +12,12 @@ import {
   RefreshControl,
   TouchableOpacity,
 } from 'react-native';
-import MapView, { Marker, PROVIDER_DEFAULT, Polyline } from 'react-native-maps';
+import MapView, { Marker, Polyline } from 'react-native-maps';
+import { MAP_PROVIDER } from '../../lib/mapProvider';
 import { useLocalSearchParams, useRouter, useFocusEffect } from 'expo-router';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../../context/ThemeContext';
+import { getSelectionFill } from '../../lib/selectableCardStyle';
 import {
   bookingService,
   CANCEL_REASONS,
@@ -29,15 +31,19 @@ import {
   PHASE_SUBTITLE,
   canCancelPhase,
   canRescheduleBooking,
-  shouldTrackLive,
   isPhaseTerminal,
 } from '../../lib/customerBookingPhase';
+import {
+  deriveCustomerMilestone,
+  currentMilestoneStatusPhrase,
+} from '../../lib/customerServiceMilestones';
 import { onBookingsSync } from '../../lib/bookingSyncEvents';
-import WashCompletionReviewCard from '../../components/customer/WashCompletionReviewCard';
 import AppIcon from '../../components/customer/AppIcon';
 import StepHeader from '../../components/customer/StepHeader';
 import PhasePill from '../../components/customer/PhasePill';
-import ServiceTimeline from '../../components/customer/ServiceTimeline';
+import CustomerMilestoneTimeline from '../../components/customer/CustomerMilestoneTimeline';
+import ArrivalApprovalCard from '../../components/customer/ArrivalApprovalCard';
+import BookingReviewCard from '../../components/customer/BookingReviewCard';
 import CustomerSkeleton from '../../components/customer/ui/CustomerSkeleton';
 import { CUSTOMER_LAYOUT } from '../../constants/customerTheme';
 import DateTimeField, { formatScheduledLabel } from '../../components/customer/DateTimeField';
@@ -96,14 +102,19 @@ export default function BookingDetail() {
     useCallback(() => {
       focusedRef.current = true;
       loadBooking();
+      const unsubSync = onBookingsSync(() => {
+        if (focusedRef.current) loadBooking();
+      });
       const sub = AppState.addEventListener('change', (state) => {
         appActiveRef.current = state === 'active';
+        if (state === 'active' && focusedRef.current) loadBooking();
       });
       const interval = setInterval(() => {
         if (focusedRef.current && appActiveRef.current) loadBooking();
       }, DETAIL_POLL_MS);
       return () => {
         focusedRef.current = false;
+        unsubSync();
         sub.remove();
         clearInterval(interval);
       };
@@ -111,7 +122,17 @@ export default function BookingDetail() {
   );
 
   const phase = booking ? deriveCustomerPhase(booking) : null;
-  const trackLive = phase && shouldTrackLive(phase);
+  const milestone = booking ? deriveCustomerMilestone(booking, tracking) : null;
+  const trackLive =
+    milestone &&
+    !isPhaseTerminal(phase) &&
+    [
+      'heading_to_you',
+      'arrived_onsite',
+      'awaiting_arrival_approval',
+      'arrival_approved',
+      'wash_in_progress',
+    ].includes(milestone);
 
   const loadTracking = useCallback(async () => {
     if (!id || !trackLive) return;
@@ -195,18 +216,12 @@ export default function BookingDetail() {
             </Text>
           </View>
           <Text style={s.heroTitle}>{pkg?.label || 'Wash'}</Text>
-          {phase !== 'awaiting_review' ? (
-            <Text style={s.heroSub}>{PHASE_SUBTITLE[phase]}</Text>
-          ) : null}
+          <Text style={s.heroSub}>
+            {currentMilestoneStatusPhrase(milestone) || PHASE_SUBTITLE[phase]}
+          </Text>
         </View>
 
-        {phase === 'awaiting_review' ? (
-          <WashCompletionReviewCard
-            booking={booking}
-            vehicle={vehicle}
-            onUpdated={loadBooking}
-          />
-        ) : null}
+        <ArrivalApprovalCard booking={booking} onApproved={loadBooking} />
 
         {trackLive ? (
           <TrackingCard tracking={tracking} theme={theme} />
@@ -214,7 +229,7 @@ export default function BookingDetail() {
 
         <SectionTitle theme={theme}>Service progress</SectionTitle>
         <View style={s.card}>
-          <ServiceTimeline phase={phase} />
+          <CustomerMilestoneTimeline booking={booking} tracking={tracking} />
         </View>
 
         {booking.washer ? (
@@ -243,6 +258,18 @@ export default function BookingDetail() {
                 </View>
               </View>
             </View>
+          </>
+        ) : null}
+
+        {booking.status === 'completed' && booking.washer ? (
+          <>
+            <SectionTitle theme={theme}>Feedback</SectionTitle>
+            <BookingReviewCard
+              bookingId={booking.id}
+              washerName={booking.washer?.full_name}
+              review={booking.review}
+              onSubmitted={loadBooking}
+            />
           </>
         ) : null}
 
@@ -426,7 +453,7 @@ function TrackingCard({ tracking, theme }) {
       {hasMap ? (
         <View style={s.mapBox}>
           <MapView
-            provider={PROVIDER_DEFAULT}
+            provider={MAP_PROVIDER}
             style={StyleSheet.absoluteFill}
             initialRegion={initialRegion}
             pitchEnabled={false}
@@ -532,7 +559,7 @@ function CancelSheet({ visible, theme, onClose, onConfirm }) {
                 onPress={() => setSelected(r.key)}
                 style={({ pressed }) => [
                   s.reasonRow,
-                  sel && { backgroundColor: c.primaryBg },
+                  sel && { backgroundColor: getSelectionFill(theme) },
                   pressed && { opacity: 0.92 },
                 ]}
               >
@@ -866,6 +893,7 @@ const sheetStyles = (theme) => {
       gap: 12,
       padding: 12,
       borderRadius: 12,
+      overflow: 'hidden',
     },
     radio: {
       width: 22,

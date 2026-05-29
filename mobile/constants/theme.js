@@ -106,6 +106,8 @@ export const lightTheme = {
     primaryBg: 'rgba(6,182,212,0.1)',
     primaryBgStrong: 'rgba(6,182,212,0.2)',
     plusBg: 'rgba(6,182,212,0.1)',
+    selectionFill: palette.cyan[50],
+    selectionBorder: palette.cyan[500],
     error: '#dc2626',
   },
 
@@ -246,6 +248,8 @@ export const darkTheme = {
     primaryBg: 'rgba(34,211,238,0.10)',
     primaryBgStrong: 'rgba(34,211,238,0.18)',
     plusBg: 'rgba(34,211,238,0.08)',
+    selectionFill: '#0c2430',
+    selectionBorder: palette.cyan[400],
     error: '#f87171',
   },
 

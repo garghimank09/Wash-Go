@@ -3,6 +3,8 @@
  * Use `getPartnerStatus(statusId, isDark)` to grab gradient + label + glow + icon for a status.
  */
 
+import { Platform } from 'react-native';
+
 export const PARTNER_STATUSES = [
   'online_accepting',
   'online_busy',
@@ -220,26 +222,36 @@ export function getPartnerContentPadding(insetsBottom = 0) {
 
 export function getPartnerShadow(isDark = false) {
   return {
-    soft: {
-      shadowColor: '#000',
-      shadowOffset: { width: 0, height: 8 },
-      shadowOpacity: isDark ? 0.35 : 0.10,
-      shadowRadius: 18,
-      elevation: 6,
-    },
-    rim: {
-      shadowColor: '#000',
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: isDark ? 0.30 : 0.06,
-      shadowRadius: 8,
-      elevation: 3,
-    },
-    glow: (color) => ({
-      shadowColor: color,
-      shadowOffset: { width: 0, height: 0 },
-      shadowOpacity: 0.9,
-      shadowRadius: 16,
-      elevation: 8,
+    soft: Platform.select({
+      android: { elevation: 0 },
+      default: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 8 },
+        shadowOpacity: isDark ? 0.35 : 0.10,
+        shadowRadius: 18,
+        elevation: 6,
+      },
     }),
+    rim: Platform.select({
+      android: { elevation: 0 },
+      default: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: isDark ? 0.30 : 0.06,
+        shadowRadius: 8,
+        elevation: 3,
+      },
+    }),
+    glow: (color) =>
+      Platform.select({
+        android: { elevation: 0 },
+        default: {
+          shadowColor: color,
+          shadowOffset: { width: 0, height: 0 },
+          shadowOpacity: 0.9,
+          shadowRadius: 16,
+          elevation: 8,
+        },
+      }),
   };
 }

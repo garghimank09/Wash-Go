@@ -7,7 +7,6 @@ const DEFAULTS = {
   bookingReminders: true,
   marketingEmails: false,
   language: 'English',
-  darkMode: 'system',
 };
 
 export async function loadProfilePreferences() {

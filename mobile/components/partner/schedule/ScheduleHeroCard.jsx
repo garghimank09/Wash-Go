@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { MotiView } from 'moti';
@@ -6,8 +7,21 @@ import { useTheme } from '../../../context/ThemeContext';
 import { getPartnerShadow } from '../../../constants/partnerTheme';
 import { getScheduleTokens, getScheduleStatus } from '../../../constants/scheduleTheme';
 import { formatPayoutCurrency, formatBookingTime } from '../../../lib/partnerFormatters';
+import { isPartnerEarningBooking } from '../../../lib/partnerEarnings';
 import { usePartnerSchedule } from '../../../context/PartnerScheduleContext';
 import AnimatedCounter from '../AnimatedCounter';
+
+function scheduleHeroTitle(isToday, dateKey) {
+  if (isToday) return "Today's schedule";
+  const d = new Date(`${dateKey}T12:00:00`);
+  if (Number.isNaN(d.getTime())) return 'Day schedule';
+  const label = d.toLocaleDateString('en-IN', {
+    weekday: 'short',
+    day: 'numeric',
+    month: 'short',
+  });
+  return `Schedule · ${label}`;
+}
 
 export default function ScheduleHeroCard({ dateKey }) {
   const { isDark } = useTheme();
@@ -16,10 +30,20 @@ export default function ScheduleHeroCard({ dateKey }) {
   const { getBookingsForDate } = usePartnerSchedule();
 
   const bookings = getBookingsForDate(dateKey);
+  const isToday = useMemo(() => {
+    const t = new Date();
+    t.setHours(0, 0, 0, 0);
+    const key = `${t.getFullYear()}-${String(t.getMonth() + 1).padStart(2, '0')}-${String(t.getDate()).padStart(2, '0')}`;
+    return dateKey === key;
+  }, [dateKey]);
   const completed = bookings.filter((b) => b.status === 'completed').length;
   const active = bookings.filter((b) => b.status === 'en_route' || b.status === 'in_progress').length;
-  const upcoming = bookings.filter((b) => b.status === 'scheduled');
-  const projected = bookings.reduce((sum, b) => sum + b.priceCents, 0);
+  const upcoming = bookings.filter(
+    (b) => b.status === 'confirmed' || b.status === 'scheduled',
+  );
+  const projected = bookings
+    .filter((b) => isPartnerEarningBooking({ status: b.status }))
+    .reduce((sum, b) => sum + (b.partnerPayoutCents ?? 0), 0);
 
   return (
     <MotiView
@@ -49,7 +73,7 @@ export default function ScheduleHeroCard({ dateKey }) {
               <View style={styles.eyebrowIcon}>
                 <CalendarDays size={12} color="#ffffff" strokeWidth={2.6} />
               </View>
-              <Text style={styles.eyebrow}>Today’s schedule</Text>
+              <Text style={styles.eyebrow}>{scheduleHeroTitle(isToday, dateKey)}</Text>
             </View>
             <View style={styles.activeChip}>
               <View style={styles.activeDot} />
@@ -61,7 +85,7 @@ export default function ScheduleHeroCard({ dateKey }) {
 
           <View style={styles.amountRow}>
             <View style={{ flex: 1 }}>
-              <Text style={styles.amountLabel}>Projected</Text>
+              <Text style={styles.amountLabel}>Projected (90%)</Text>
               <AnimatedCounter
                 value={projected}
                 duration={700}

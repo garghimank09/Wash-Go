@@ -1,5 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { PHASE_INDEX } from './jobPhases';
+import { uiPhaseFromServicePhase } from './jobPhaseMilestones';
 
 /**
  * Washer-side job phase ladder + UI phase bridging.
@@ -20,7 +21,6 @@ export const WASHER_PHASE_ORDER = [
   'arrived',
   'wash_started',
   'qc_review',
-  'awaiting_approval',
   'completed',
 ];
 
@@ -32,7 +32,6 @@ const UI_TO_CANONICAL = {
   washing: 'wash_started',
   after_uploaded: 'qc_review',
   qc_complete: 'qc_review',
-  approval_pending: 'awaiting_approval',
 };
 
 const IN_PROGRESS_UI = new Set([
@@ -41,10 +40,8 @@ const IN_PROGRESS_UI = new Set([
   'washing',
   'after_uploaded',
   'qc_complete',
-  'approval_pending',
   'wash_started',
   'qc_review',
-  'awaiting_approval',
 ]);
 
 const CONFIRMED_UI = new Set(['accepted', 'heading', 'on_the_way', 'arrived']);
@@ -93,7 +90,7 @@ export function apiStatusForPhase(phase) {
   if (IN_PROGRESS_UI.has(phase)) return 'in_progress';
 
   const canonical = normalizeJobPhase(phase);
-  if (canonical && ['wash_started', 'qc_review', 'awaiting_approval'].includes(canonical)) {
+  if (canonical && ['wash_started', 'qc_review'].includes(canonical)) {
     return 'in_progress';
   }
 
@@ -145,12 +142,22 @@ export async function clearStoredPhase(bookingId) {
 }
 
 /**
- * Effective UI phase = max(stored progression, floor from API).
+ * Effective UI phase = max(stored progression, floor from API status, service_phase).
  * Stored values use `jobPhases.js` ids (`heading`, `service_started`, …).
  */
-export async function effectiveWasherPhase(bookingId, apiStatus) {
+export async function effectiveWasherPhase(
+  bookingId,
+  apiStatus,
+  servicePhase = null,
+  _handoffStatus = null,
+) {
   const floor = minUiPhaseFromApiStatus(apiStatus);
+  const fromService = uiPhaseFromServicePhase(servicePhase);
+  let base = floor;
+  if (fromService && uiPhaseRank(fromService) > uiPhaseRank(base)) {
+    base = fromService;
+  }
   const raw = await getStoredPhase(bookingId);
-  if (!isValidStoredUiPhase(raw)) return floor;
-  return uiPhaseRank(raw) >= uiPhaseRank(floor) ? raw : floor;
+  if (!isValidStoredUiPhase(raw)) return base;
+  return uiPhaseRank(raw) >= uiPhaseRank(base) ? raw : base;
 }

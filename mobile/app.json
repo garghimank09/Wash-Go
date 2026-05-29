@@ -8,6 +8,7 @@
     "userInterfaceStyle": "automatic",
     "scheme": "washgo",
     "splash": {
+      "image": "./assets/splash-icon.png",
       "backgroundColor": "#ffffff",
       "resizeMode": "contain"
     },
@@ -26,7 +27,7 @@
       ],
       "config": {
         "googleMaps": {
-          "apiKey": ""
+          "apiKey": "SET_VIA_APP_CONFIG_JS_FROM_ENV"
         }
       },
       "adaptiveIcon": {
@@ -40,6 +41,15 @@
       "favicon": "./assets/favicon.png"
     },
     "plugins": [
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/splash-icon.png",
+          "imageWidth": 200,
+          "resizeMode": "contain",
+          "backgroundColor": "#ffffff"
+        }
+      ],
       "expo-router",
       "expo-secure-store",
       "@react-native-community/datetimepicker",

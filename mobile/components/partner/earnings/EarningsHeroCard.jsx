@@ -4,16 +4,15 @@ import { MotiView } from 'moti';
 import { TrendingUp, TrendingDown } from 'lucide-react-native';
 import { useTheme } from '../../../context/ThemeContext';
 import { getEarningsTokens } from '../../../constants/earningsTheme';
-import { getPartnerShadow } from '../../../constants/partnerTheme';
 import { formatPayoutCurrency, formatPercent } from '../../../lib/partnerFormatters';
 import { usePartnerEarnings } from '../../../context/PartnerEarningsContext';
 import AnimatedCounter from '../AnimatedCounter';
 import MiniSparkline from './MiniSparkline';
+import CardSurface from '../../ui/CardSurface';
 
 export default function EarningsHeroCard() {
   const { isDark } = useTheme();
   const tokens = getEarningsTokens(isDark);
-  const shadows = getPartnerShadow(isDark);
   const { thisWeek, weeklySeries } = usePartnerEarnings();
   const seriesValues = weeklySeries.map((d) => d.cents);
   const isPositive = (thisWeek.growthPct ?? 0) >= 0;
@@ -26,7 +25,14 @@ export default function EarningsHeroCard() {
       transition={{ type: 'timing', duration: 280 }}
       style={styles.outer}
     >
-      <View style={[styles.card, shadows.soft]}>
+      <CardSurface
+        borderRadius={28}
+        backgroundColor={tokens.hero.gradient[0]}
+        shadow="soft"
+        portal="partner"
+        withBorder={false}
+        style={styles.card}
+      >
         <LinearGradient
           colors={tokens.hero.gradient}
           start={{ x: 0, y: 0 }}
@@ -43,7 +49,7 @@ export default function EarningsHeroCard() {
 
         <View style={styles.inner}>
           <View style={styles.topRow}>
-            <Text style={styles.eyebrow}>This week earnings</Text>
+            <Text style={styles.eyebrow}>This week · your 90% share</Text>
             <View style={styles.growthChip}>
               <Trend size={12} color="#ffffff" strokeWidth={2.6} />
               <Text style={styles.growthText}>
@@ -85,7 +91,7 @@ export default function EarningsHeroCard() {
             </View>
           </View>
         </View>
-      </View>
+      </CardSurface>
     </MotiView>
   );
 }
@@ -95,10 +101,7 @@ const styles = StyleSheet.create({
     marginHorizontal: 20,
     marginTop: 14,
   },
-  card: {
-    borderRadius: 28,
-    overflow: 'hidden',
-  },
+  card: {},
   inner: {
     padding: 20,
     gap: 16,

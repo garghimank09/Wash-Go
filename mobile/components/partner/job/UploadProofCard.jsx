@@ -25,6 +25,7 @@ import * as Haptics from 'expo-haptics';
 import { useTheme } from '../../../context/ThemeContext';
 import { getPartnerShadow } from '../../../constants/partnerTheme';
 import { getJobTokens } from '../../../constants/jobTheme';
+import { getSelectionFill, getSelectionBorder } from '../../../lib/selectableCardStyle';
 import UploadPreviewModal from './UploadPreviewModal';
 
 const RING_SIZE = 36;
@@ -56,13 +57,17 @@ export default function UploadProofCard({
 
   const activeImages = buckets[activeBucket] || [];
 
-  const tabs = useMemo(
-    () => [
-      { id: 'before', label: 'Before wash', count: counts.before },
-      { id: 'after', label: 'After wash', count: counts.after },
-    ],
-    [counts.before, counts.after]
-  );
+  const tabs = useMemo(() => {
+    const list = [];
+    if (visibleBucketProp === 'arrival' || (counts.arrival ?? 0) > 0) {
+      list.push({ id: 'arrival', label: 'Condition', count: counts.arrival ?? 0 });
+    }
+    list.push(
+      { id: 'before', label: 'Before wash', count: counts.before ?? 0 },
+      { id: 'after', label: 'After wash', count: counts.after ?? 0 },
+    );
+    return list;
+  }, [counts.arrival, counts.before, counts.after, visibleBucketProp]);
 
   const openAddMenu = () => {
     Haptics.selectionAsync().catch(() => {});
@@ -130,8 +135,9 @@ export default function UploadProofCard({
               style={({ pressed }) => [
                 styles.tab,
                 active && {
-                  backgroundColor: theme.customer.surfaceContainerLowest,
-                  borderColor: theme.customer.outlineVariant,
+                  backgroundColor: getSelectionFill(theme),
+                  borderColor: getSelectionBorder(theme),
+                  borderWidth: 1.5,
                 },
                 pressed && !active && { opacity: 0.85 },
               ]}
@@ -147,17 +153,23 @@ export default function UploadProofCard({
               <View
                 style={[
                   styles.tabBadge,
-                  {
-                    backgroundColor: active
-                      ? theme.customer.primaryBg
-                      : theme.customer.surfaceContainerLowest,
-                  },
+                  active
+                    ? {
+                        backgroundColor: theme.accent.primary,
+                        borderWidth: StyleSheet.hairlineWidth,
+                        borderColor: theme.accent.primary,
+                      }
+                    : {
+                        backgroundColor: theme.customer.surfaceContainerLowest,
+                        borderWidth: StyleSheet.hairlineWidth,
+                        borderColor: theme.customer.outlineVariant,
+                      },
                 ]}
               >
                 <Text
                   style={[
                     styles.tabBadgeText,
-                    { color: active ? theme.accent.primary : theme.text.muted },
+                    { color: active ? '#ffffff' : theme.text.muted },
                   ]}
                 >
                   {tab.count}
@@ -392,23 +404,26 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 6,
-    paddingHorizontal: 10,
+    paddingHorizontal: 8,
     paddingVertical: 8,
     borderRadius: 10,
     borderWidth: 1,
     borderColor: 'transparent',
   },
   tabText: {
+    flexShrink: 1,
     fontSize: 12,
     fontWeight: '800',
     letterSpacing: -0.1,
   },
   tabBadge: {
+    flexShrink: 0,
     paddingHorizontal: 7,
-    paddingVertical: 1,
+    paddingVertical: 2,
     borderRadius: 999,
     minWidth: 22,
     alignItems: 'center',
+    justifyContent: 'center',
   },
   tabBadgeText: {
     fontSize: 10,

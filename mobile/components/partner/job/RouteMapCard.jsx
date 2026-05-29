@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef } from 'react';
 import { View, StyleSheet, Platform } from 'react-native';
 import MapView, { Marker, Polyline } from 'react-native-maps';
+import { MAP_PROVIDER } from '../../../lib/mapProvider';
 import { LinearGradient } from 'expo-linear-gradient';
 import { MotiView } from 'moti';
 import { useTheme } from '../../../context/ThemeContext';
@@ -95,6 +96,7 @@ export default function RouteMapCard({
       <View style={[styles.mapWrap, { backgroundColor: tokens.map.mapBg }]}>
         <MapView
           ref={mapRef}
+          provider={MAP_PROVIDER}
           style={styles.map}
           initialRegion={region}
           pitchEnabled={false}

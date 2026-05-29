@@ -48,7 +48,7 @@ function buildCards(isDark, stats) {
       value: stats.activeJobs ?? 0,
       icon: Activity,
       suffix: '',
-      pad: true,
+      pad: false,
       accent: isDark ? '#fbbf24' : '#b45309',
       accentBg: isDark ? 'rgba(251,191,36,0.18)' : 'rgba(245,158,11,0.14)',
       cornerGradient: isDark

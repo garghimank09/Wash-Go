@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { View, StyleSheet, RefreshControl, Linking } from 'react-native';
+import { View, StyleSheet, RefreshControl } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useToast } from '../../../context/ToastContext';
 import Animated, {
@@ -13,6 +13,7 @@ import RouteMapCard from '../../../components/partner/job/RouteMapCard';
 import CustomerInfoCard from '../../../components/partner/job/CustomerInfoCard';
 import CustomerJobDetailSheet from '../../../components/partner/job/CustomerJobDetailSheet';
 import FieldBriefingCard from '../../../components/partner/job/FieldBriefingCard';
+import { hasBriefingContent } from '../../../lib/parseBookingBriefing';
 import UploadProofCard from '../../../components/partner/job/UploadProofCard';
 import WashChecklistCard from '../../../components/partner/job/WashChecklistCard';
 import WashTimeline from '../../../components/partner/job/WashTimeline';
@@ -29,8 +30,10 @@ import useJobUploads from '../../../hooks/useJobUploads';
 import usePartnerJob from '../../../hooks/usePartnerJob';
 import usePartnerLocationReporter from '../../../hooks/usePartnerLocationReporter';
 import { isPhaseAtLeast } from '../../../lib/jobPhases';
-import { canDialPhone, normalizeForTel } from '../../../lib/partnerPhone';
+import { advanceBlockedReason, canAdvanceUiPhase } from '../../../lib/jobPhaseMilestones';
+import { canDialPhone, openPhoneCall } from '../../../lib/partnerPhone';
 import { formatJobAdvanceError } from '../../../lib/partnerJobErrors';
+import { emitPartnerBookingsSync } from '../../../lib/partnerSyncEvents';
 
 /**
  * Single partner job workspace — opened from Home (active card), Schedule (Open job),
@@ -57,9 +60,16 @@ export default function PartnerJobScreen() {
     await refetchDetail();
   }, [refetchDetail]);
 
+  const servicePhase = detail?.service_phase ?? null;
+  const handoffStatus = detail?.handoff_status ?? null;
+  const hasArrivalPhoto = Boolean(detail?.photos?.some((p) => p.kind === 'arrival'));
+
   const realtime = useJobRealtime({
     bookingId,
     apiStatus: detail?.status,
+    servicePhase,
+    handoffStatus,
+    hasArrivalPhoto,
     tracking,
     onStatusSynced: handleStatusSynced,
   });
@@ -76,8 +86,16 @@ export default function PartnerJobScreen() {
     !!bookingId &&
     !!detail &&
     detail.status !== 'completed' &&
-    detail.status !== 'cancelled';
+    detail.status !== 'cancelled' &&
+    (realtime.phase === 'accepted' || realtime.phase === 'heading');
   usePartnerLocationReporter(reportingEnabled);
+
+  useEffect(() => {
+    if (uploads.counts.arrivalSuccess > 0) {
+      emitPartnerBookingsSync({ source: 'arrival_photo', bookingId });
+      refetchDetail().catch(() => {});
+    }
+  }, [uploads.counts.arrivalSuccess, bookingId, refetchDetail]);
 
   useEffect(() => {
     if (realtime.phase === 'service_started' && uploads.counts.beforeSuccess > 0) {
@@ -130,26 +148,28 @@ export default function PartnerJobScreen() {
   }, [advancing, realtime, router, toast]);
 
   const handleCall = useCallback(async () => {
-    const raw = detail?.customer?.phone;
-    if (!canDialPhone(raw)) {
-      toast.error('No valid phone number for this customer.');
-      return;
-    }
-    const num = normalizeForTel(raw);
-    const url = `tel:${num}`;
-    try {
-      const supported = await Linking.canOpenURL(url);
-      if (!supported) {
-        toast.error('Calls are not supported on this device.');
-        return;
-      }
-      await Linking.openURL(url);
-    } catch {
-      toast.error('Could not start the call. Try again.');
-    }
+    await openPhoneCall(detail?.customer?.phone, {
+      onError: (message) => toast.error(message),
+    });
   }, [detail, toast]);
 
   const { footerDisabled, footerHint } = useMemo(() => {
+    if (realtime.phase === 'arrived') {
+      if (!hasArrivalPhoto) {
+        return {
+          footerDisabled: true,
+          footerHint: 'Upload the vehicle condition photo above',
+        };
+      }
+      const blocked = advanceBlockedReason('arrived', { hasArrivalPhoto, servicePhase });
+      if (blocked) {
+        return { footerDisabled: true, footerHint: blocked };
+      }
+    }
+    if (!canAdvanceUiPhase(realtime.phase, { hasArrivalPhoto, servicePhase })) {
+      const reason = advanceBlockedReason(realtime.phase, { hasArrivalPhoto, servicePhase });
+      if (reason) return { footerDisabled: true, footerHint: reason };
+    }
     if (realtime.phase === 'service_started') {
       const need = uploads.counts.beforeSuccess === 0;
       return {
@@ -173,35 +193,33 @@ export default function PartnerJobScreen() {
           : null,
       };
     }
-    if (realtime.phase === 'approval_pending') {
-      const handoff = detail?.handoff_status || detail?.handoffStatus;
-      if (handoff === 'issue_reported') {
-        return {
-          footerDisabled: true,
-          footerHint: 'Customer reported an issue — support will follow up',
-        };
-      }
-      return { footerDisabled: true, footerHint: 'Awaiting customer confirmation' };
-    }
     return { footerDisabled: false, footerHint: null };
   }, [
     realtime.phase,
-    detail?.handoff_status,
-    detail?.handoffStatus,
+    hasArrivalPhoto,
+    servicePhase,
     uploads.counts,
     checklist.progress,
     checklist.total,
     checklist.completed,
   ]);
 
-  const showBriefing = !isPhaseAtLeast(realtime.phase, 'completed') && detail?.briefing?.notes;
+  const showBriefing =
+    !isPhaseAtLeast(realtime.phase, 'completed') && hasBriefingContent(detail?.briefing);
+  const showArrivalUpload =
+    realtime.phase === 'arrived' &&
+    !hasArrivalPhoto &&
+    servicePhase !== 'arrival_approved' &&
+    servicePhase !== 'wash_in_progress';
   const showUploads = isPhaseAtLeast(realtime.phase, 'arrived');
   const uploadBucket =
-    realtime.phase === 'washing' ||
-    realtime.phase === 'after_uploaded' ||
-    realtime.phase === 'qc_complete'
-      ? 'after'
-      : 'before';
+    showArrivalUpload || realtime.phase === 'arrived'
+      ? 'arrival'
+      : realtime.phase === 'washing' ||
+          realtime.phase === 'after_uploaded' ||
+          realtime.phase === 'qc_complete'
+        ? 'after'
+        : 'before';
   const showChecklist = isPhaseAtLeast(realtime.phase, 'before_uploaded');
 
   const topPadding = insets.top + HEADER_HEIGHT + 4;

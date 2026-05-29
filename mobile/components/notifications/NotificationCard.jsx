@@ -6,7 +6,7 @@ import { useNotifications } from '../../context/NotificationContext';
 import { formatRelativeTime } from '../../lib/notificationDerivation';
 import AppIcon from '../customer/AppIcon';
 
-export default function NotificationCard({ item, isUnread }) {
+export default function NotificationCard({ item, isUnread, onNavigate }) {
   const { theme } = useTheme();
   const router = useRouter();
   const { dismiss, markAsRead } = useNotifications();
@@ -18,6 +18,7 @@ export default function NotificationCard({ item, isUnread }) {
   };
 
   const onPress = () => {
+    onNavigate?.();
     markAsRead(item.id);
     if (item.path && typeof item.path === 'string') {
       router.push(item.path);

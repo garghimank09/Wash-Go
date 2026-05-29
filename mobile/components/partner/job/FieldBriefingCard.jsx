@@ -1,28 +1,64 @@
 import { View, Text, StyleSheet } from 'react-native';
 import { MotiView } from 'moti';
-import { AlertTriangle, FileText, Info } from 'lucide-react-native';
+import {
+  AlertTriangle,
+  Car,
+  ClipboardList,
+  FileText,
+  Info,
+  Sparkles,
+} from 'lucide-react-native';
 import { useTheme } from '../../../context/ThemeContext';
 import { getPartnerShadow } from '../../../constants/partnerTheme';
 import { getBriefingTokens } from '../../../constants/jobTheme';
+import { hasBriefingContent } from '../../../lib/parseBookingBriefing';
 
 const TONE_ICON = {
   critical: AlertTriangle,
   warning: AlertTriangle,
   info: Info,
-  premium: Info,
+  premium: Sparkles,
   neutral: Info,
 };
 
+const TAG_ICON = {
+  package: Sparkles,
+  vehicle: Car,
+};
+
+function BriefingSection({ label, children, theme }) {
+  return (
+    <View
+      style={[
+        styles.section,
+        {
+          backgroundColor: theme.customer.surface,
+          borderColor: theme.customer.outlineVariant,
+        },
+      ]}
+    >
+      <Text style={[styles.sectionLabel, { color: theme.text.muted }]}>{label}</Text>
+      {children}
+    </View>
+  );
+}
+
 /**
- * Operational field briefing. Surfaces special handling tags, customer notes,
- * and one-line alerts so the washer can scan the brief in seconds.
+ * Operational field briefing. Surfaces package/vehicle chips, customer
+ * instructions, arrival notes, and alerts — never raw WashGo metadata.
  */
 export default function FieldBriefingCard({ briefing }) {
   const { theme, isDark } = useTheme();
   const shadows = getPartnerShadow(isDark);
 
-  if (!briefing) return null;
-  const { tags = [], notes, alerts = [] } = briefing;
+  if (!hasBriefingContent(briefing)) return null;
+
+  const { tags = [], customerInstructions, arrivalNotes, alerts = [] } = briefing;
+  const itemCount =
+    tags.length +
+    alerts.length +
+    (customerInstructions ? 1 : 0) +
+    (arrivalNotes ? 1 : 0);
 
   return (
     <MotiView
@@ -47,7 +83,7 @@ export default function FieldBriefingCard({ briefing }) {
         </Text>
         <View style={{ flex: 1 }} />
         <Text style={[styles.tagCount, { color: theme.text.muted }]}>
-          {tags.length + alerts.length} items
+          {itemCount} {itemCount === 1 ? 'item' : 'items'}
         </Text>
       </View>
 
@@ -55,6 +91,7 @@ export default function FieldBriefingCard({ briefing }) {
         <View style={styles.tagWrap}>
           {tags.map((tag) => {
             const tokens = getBriefingTokens(tag.tone, isDark);
+            const Icon = TAG_ICON[tag.id] || TONE_ICON[tag.tone] || Info;
             return (
               <View
                 key={tag.id}
@@ -66,7 +103,7 @@ export default function FieldBriefingCard({ briefing }) {
                   },
                 ]}
               >
-                <View style={[styles.tagDot, { backgroundColor: tokens.fg }]} />
+                <Icon size={12} color={tokens.fg} strokeWidth={2.4} />
                 <Text style={[styles.tagText, { color: tokens.fg }]} numberOfLines={1}>
                   {tag.label}
                 </Text>
@@ -76,23 +113,23 @@ export default function FieldBriefingCard({ briefing }) {
         </View>
       ) : null}
 
-      {notes ? (
-        <View
-          style={[
-            styles.notesWrap,
-            {
-              backgroundColor: theme.customer.surface,
-              borderColor: theme.customer.outlineVariant,
-            },
-          ]}
-        >
-          <Text style={[styles.notesLabel, { color: theme.text.muted }]}>
-            Customer notes
+      {customerInstructions ? (
+        <BriefingSection label="Customer instructions" theme={theme}>
+          <Text style={[styles.instructionBody, { color: theme.text.primary }]}>
+            {customerInstructions}
           </Text>
-          <Text style={[styles.notesBody, { color: theme.text.primary }]}>
-            {notes}
-          </Text>
-        </View>
+        </BriefingSection>
+      ) : null}
+
+      {arrivalNotes ? (
+        <BriefingSection label="Arrival condition" theme={theme}>
+          <View style={styles.arrivalRow}>
+            <ClipboardList size={14} color={theme.text.secondary} strokeWidth={2.3} />
+            <Text style={[styles.instructionBody, { color: theme.text.primary, flex: 1 }]}>
+              {arrivalNotes}
+            </Text>
+          </View>
+        </BriefingSection>
       ) : null}
 
       {alerts.length > 0 ? (
@@ -112,7 +149,7 @@ export default function FieldBriefingCard({ briefing }) {
                 ]}
               >
                 <Icon size={13} color={tokens.fg} strokeWidth={2.4} />
-                <Text style={[styles.alertText, { color: tokens.fg }]} numberOfLines={2}>
+                <Text style={[styles.alertText, { color: tokens.fg }]} numberOfLines={3}>
                   {alert.label}
                 </Text>
               </View>
@@ -132,6 +169,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     padding: 16,
     gap: 12,
+    overflow: 'hidden',
   },
   headerRow: {
     flexDirection: 'row',
@@ -161,39 +199,39 @@ const styles = StyleSheet.create({
     borderRadius: 999,
     borderWidth: 1,
   },
-  tagDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-  },
   tagText: {
     fontSize: 11,
     fontWeight: '800',
     letterSpacing: 0.1,
   },
-  notesWrap: {
+  section: {
     borderRadius: 14,
     borderWidth: 1,
     padding: 12,
-    gap: 4,
+    gap: 6,
   },
-  notesLabel: {
+  sectionLabel: {
     fontSize: 10,
     fontWeight: '700',
     letterSpacing: 0.4,
     textTransform: 'uppercase',
   },
-  notesBody: {
+  instructionBody: {
     fontSize: 13,
-    fontWeight: '500',
-    lineHeight: 18,
+    fontWeight: '600',
+    lineHeight: 19,
+  },
+  arrivalRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 8,
   },
   alertWrap: {
     gap: 6,
   },
   alertRow: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     gap: 8,
     paddingHorizontal: 10,
     paddingVertical: 8,
@@ -205,5 +243,6 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     flex: 1,
     letterSpacing: 0.1,
+    lineHeight: 17,
   },
 });

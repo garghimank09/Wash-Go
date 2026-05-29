@@ -11,6 +11,7 @@ import { NotificationProvider } from '../context/NotificationContext';
 import { PartnerStatusProvider } from '../context/PartnerStatusContext';
 import { PartnerNotificationProvider } from '../context/PartnerNotificationContext';
 import { ToastProvider } from '../context/ToastContext';
+import ThemeScopeSync from '../components/ThemeScopeSync';
 
 function RootLayoutNav() {
   const { theme, isDark } = useTheme();
@@ -63,6 +64,7 @@ export default function RootLayout() {
               <PartnerNotificationProvider>
                 <AddVehicleProvider>
                   <NewBookingProvider>
+                    <ThemeScopeSync />
                     <RootLayoutNav />
                   </NewBookingProvider>
                 </AddVehicleProvider>
@@ -74,3 +76,5 @@ export default function RootLayout() {
     </ThemeProvider>
   );
 }
+
+

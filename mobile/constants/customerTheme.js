@@ -3,6 +3,7 @@
  * Mirrors partnerTheme geometry and shadow patterns for visual parity.
  */
 
+import { Platform } from 'react-native';
 import { lightTheme, darkTheme } from './theme';
 
 export const CUSTOMER_LAYOUT = {
@@ -81,26 +82,36 @@ export function getCustomerContentPadding(insetsBottom = 0) {
 
 export function getCustomerShadow(isDark = false) {
   return {
-    soft: {
-      shadowColor: '#000',
-      shadowOffset: { width: 0, height: 8 },
-      shadowOpacity: isDark ? 0.35 : 0.10,
-      shadowRadius: 18,
-      elevation: 6,
-    },
-    rim: {
-      shadowColor: '#000',
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: isDark ? 0.30 : 0.06,
-      shadowRadius: 8,
-      elevation: 3,
-    },
-    glow: (color) => ({
-      shadowColor: color,
-      shadowOffset: { width: 0, height: 0 },
-      shadowOpacity: 0.9,
-      shadowRadius: 16,
-      elevation: 8,
+    soft: Platform.select({
+      android: { elevation: 0 },
+      default: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 8 },
+        shadowOpacity: isDark ? 0.35 : 0.10,
+        shadowRadius: 18,
+        elevation: 6,
+      },
     }),
+    rim: Platform.select({
+      android: { elevation: 0 },
+      default: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: isDark ? 0.30 : 0.06,
+        shadowRadius: 8,
+        elevation: 3,
+      },
+    }),
+    glow: (color) =>
+      Platform.select({
+        android: { elevation: 0 },
+        default: {
+          shadowColor: color,
+          shadowOffset: { width: 0, height: 0 },
+          shadowOpacity: 0.9,
+          shadowRadius: 16,
+          elevation: 8,
+        },
+      }),
   };
 }

@@ -140,7 +140,7 @@ export default function ActiveJobCard({ job, index = 0, onPress }) {
               style={[styles.price, { color: theme.text.primary }]}
               numberOfLines={1}
             >
-              {formatPayoutCurrency(job.priceCents, job.currency)}
+              {formatPayoutCurrency(job.partnerPayoutCents ?? job.priceCents, job.currency)}
               {serviceDescriptor ? (
                 <Text style={[styles.serviceDescriptor, { color: theme.text.secondary }]}>
                   {' · '}
@@ -180,6 +180,7 @@ const styles = StyleSheet.create({
     marginHorizontal: 20,
     marginBottom: 12,
     gap: 12,
+    overflow: 'hidden',
   },
   headerRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   avatar: {

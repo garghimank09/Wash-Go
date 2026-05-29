@@ -28,6 +28,9 @@ import AppIcon from '../../components/customer/AppIcon';
 import BookingCard from '../../components/customer/BookingCard';
 import NewBookingFab from '../../components/customer/NewBookingFab';
 import BookingFilterMenu from '../../components/customer/BookingFilterSheet';
+import ListPaginationBar from '../../components/ui/ListPaginationBar';
+import { useClientPagination } from '../../hooks/useClientPagination';
+import { BOOKINGS_PAGE_SIZE } from '../../constants/listPagination';
 
 const LIST_POLL_MS = 30000;
 
@@ -51,6 +54,7 @@ export default function Bookings() {
   const [activeFilter, setActiveFilter] = useState('All');
   const focusedRef = useRef(false);
   const appActiveRef = useRef(true);
+  const scrollRef = useRef(null);
 
   const load = useCallback(async () => {
     try {
@@ -110,6 +114,34 @@ export default function Bookings() {
     return true;
   });
 
+  const {
+    pageItems,
+    showPagination,
+    rangeLabel,
+    pageLabel,
+    canPrev,
+    canNext,
+    goPrev,
+    goNext,
+  } = useClientPagination(filteredBookings, {
+    pageSize: BOOKINGS_PAGE_SIZE,
+    resetKey: activeFilter,
+  });
+
+  const scrollToTop = useCallback(() => {
+    scrollRef.current?.scrollTo({ y: 0, animated: true });
+  }, []);
+
+  const handlePaginationPrev = useCallback(() => {
+    goPrev();
+    scrollToTop();
+  }, [goPrev, scrollToTop]);
+
+  const handlePaginationNext = useCallback(() => {
+    goNext();
+    scrollToTop();
+  }, [goNext, scrollToTop]);
+
   const s = styles(theme);
 
   if (loading) {
@@ -144,6 +176,7 @@ export default function Bookings() {
       </View>
 
       <ScrollView
+        ref={scrollRef}
         contentContainerStyle={[s.scroll, { paddingBottom: scrollEndPadding + 24 }]}
         refreshControl={
           <RefreshControl
@@ -196,13 +229,26 @@ export default function Bookings() {
             }
           />
         ) : (
-          filteredBookings.map((b) => (
-            <BookingCard
-              key={b.id}
-              booking={b}
-              onPress={() => router.push(`/booking/${b.id}`)}
-            />
-          ))
+          <>
+            {pageItems.map((b) => (
+              <BookingCard
+                key={b.id}
+                booking={b}
+                onPress={() => router.push(`/booking/${b.id}`)}
+              />
+            ))}
+            {showPagination ? (
+              <ListPaginationBar
+                rangeLabel={rangeLabel}
+                pageLabel={pageLabel}
+                canPrev={canPrev}
+                canNext={canNext}
+                onPrev={handlePaginationPrev}
+                onNext={handlePaginationNext}
+                itemNoun="bookings"
+              />
+            ) : null}
+          </>
         )}
       </ScrollView>
     </SafeAreaView>

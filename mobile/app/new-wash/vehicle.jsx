@@ -19,6 +19,7 @@ import CustomerStepProgress from '../../components/customer/CustomerStepProgress
 import CustomerFooterBar from '../../components/customer/ui/CustomerFooterBar';
 import CustomerPrimaryButton from '../../components/customer/ui/CustomerPrimaryButton';
 import CustomerSkeleton from '../../components/customer/ui/CustomerSkeleton';
+import SelectableCard from '../../components/ui/SelectableCard';
 import { CUSTOMER_LAYOUT } from '../../constants/customerTheme';
 import VehicleArt, { resolveBodyColor } from '../../components/customer/VehicleArt';
 
@@ -110,14 +111,13 @@ export default function NewWashVehicle() {
               const selected = form.carId === v.id;
               const bodyColor = resolveBodyColor(v.color, '#a5d4e6');
               return (
-                <Pressable
+                <SelectableCard
                   key={v.id}
+                  selected={selected}
                   onPress={() => setField('carId', v.id)}
-                  style={({ pressed }) => [
-                    s.vehicleCard,
-                    selected && s.vehicleCardSelected,
-                    pressed && { opacity: 0.95 },
-                  ]}
+                  borderRadius={theme.radius.lg}
+                  contentStyle={s.vehicleCardInner}
+                  accessibilityLabel={`${v.make} ${v.model}`}
                 >
                   <View style={s.vehicleArt}>
                     <VehicleArt
@@ -144,7 +144,7 @@ export default function NewWashVehicle() {
                       <AppIcon name="check" size={14} color={theme.button.primary.text} />
                     ) : null}
                   </View>
-                </Pressable>
+                </SelectableCard>
               );
             })}
 
@@ -224,20 +224,11 @@ const styles = (theme) => {
       fontWeight: '700',
       fontSize: 14,
     },
-    vehicleCard: {
+    vehicleCardInner: {
       flexDirection: 'row',
       alignItems: 'center',
       gap: 14,
       padding: 14,
-      borderRadius: theme.radius.lg,
-      borderWidth: 1.5,
-      borderColor: c.outlineVariant,
-      backgroundColor: c.surfaceContainerLowest,
-    },
-    vehicleCardSelected: {
-      borderColor: theme.accent.primary,
-      backgroundColor: c.primaryBg,
-      ...theme.shadow.sm,
     },
     vehicleArt: {
       width: 96,

@@ -62,7 +62,7 @@ export default function OfferCard({ offer, index = 0, onAccept }) {
             ) : null}
           </View>
           <Text style={[styles.price, { color: theme.text.primary }]}>
-            {formatPayoutCurrency(offer.priceCents, offer.currency)}
+            {formatPayoutCurrency(offer.partnerPayoutCents ?? offer.priceCents, offer.currency)}
           </Text>
         </View>
 
@@ -112,6 +112,7 @@ const styles = StyleSheet.create({
     marginHorizontal: 20,
     marginBottom: 12,
     gap: 12,
+    overflow: 'hidden',
   },
   headerRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   avatar: {

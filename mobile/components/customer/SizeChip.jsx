@@ -4,6 +4,7 @@ import { useTheme } from '../../context/ThemeContext';
 export default function SizeChip({ label, selected, onPress }) {
   const { theme } = useTheme();
   const c = theme.customer;
+
   return (
     <Pressable
       onPress={onPress}
@@ -38,6 +39,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     minHeight: 44,
+    overflow: 'hidden',
   },
   label: { fontSize: 13, fontWeight: '700', letterSpacing: 0.2 },
 });

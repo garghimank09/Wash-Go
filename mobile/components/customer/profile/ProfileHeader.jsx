@@ -4,9 +4,15 @@ import { BlurView } from 'expo-blur';
 import { Image } from 'expo-image';
 import { MotiView } from 'moti';
 import { useTheme } from '../../../context/ThemeContext';
-import { getCustomerGradients, getCustomerShadow } from '../../../constants/customerTheme';
+import { getCustomerGradients } from '../../../constants/customerTheme';
+import CardSurface from '../../ui/CardSurface';
 import AppIcon from '../AppIcon';
 import { initialOf } from '../../../lib/profileHelpers';
+
+const HERO_BASE = {
+  light: '#e0f2fe',
+  dark: '#0c1929',
+};
 
 export default function ProfileHeader({
   fullName,
@@ -19,97 +25,108 @@ export default function ProfileHeader({
 }) {
   const { theme, isDark } = useTheme();
   const gradients = getCustomerGradients(isDark);
-  const shadows = getCustomerShadow(isDark);
   const c = theme.customer;
+  const heroBase = isDark ? HERO_BASE.dark : HERO_BASE.light;
 
   return (
     <MotiView
       from={{ opacity: 0, translateY: 12 }}
       animate={{ opacity: 1, translateY: 0 }}
       transition={{ type: 'timing', duration: 320 }}
-      style={[styles.wrap, shadows.soft]}
+      style={styles.outer}
     >
-      <LinearGradient
-        colors={[...gradients.hero, 'transparent']}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={StyleSheet.absoluteFill}
-      />
-      <BlurView intensity={isDark ? 24 : 40} tint={isDark ? 'dark' : 'light'} style={StyleSheet.absoluteFill} />
+      <CardSurface
+        borderRadius={28}
+        backgroundColor={heroBase}
+        shadow="soft"
+        portal="customer"
+        withBorder
+        style={styles.wrap}
+      >
+        <LinearGradient
+          colors={[gradients.hero[0], gradients.hero[1], heroBase]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={StyleSheet.absoluteFill}
+        />
+        <BlurView
+          intensity={isDark ? 24 : 40}
+          tint={isDark ? 'dark' : 'light'}
+          style={StyleSheet.absoluteFill}
+        />
 
-      <View style={styles.content}>
-        <Pressable
-          onPress={onEditPhoto}
-          disabled={!onEditPhoto || uploading}
-          style={({ pressed }) => [styles.avatarRing, pressed && { opacity: 0.92 }]}
-          accessibilityLabel="Change profile photo"
-        >
-          <LinearGradient colors={gradients.hero} style={styles.avatarGradient}>
-            {avatarUrl ? (
-              <Image source={{ uri: avatarUrl }} style={styles.avatarImage} contentFit="cover" />
+        <View style={styles.content}>
+          <Pressable
+            onPress={onEditPhoto}
+            disabled={!onEditPhoto || uploading}
+            style={({ pressed }) => [styles.avatarRing, pressed && { opacity: 0.92 }]}
+            accessibilityLabel="Change profile photo"
+          >
+            <LinearGradient colors={gradients.hero} style={styles.avatarGradient}>
+              {avatarUrl ? (
+                <Image source={{ uri: avatarUrl }} style={styles.avatarImage} contentFit="cover" />
+              ) : (
+                <Text style={styles.avatarInitial}>{initialOf(fullName)}</Text>
+              )}
+            </LinearGradient>
+            {uploading ? (
+              <View style={styles.uploadOverlay}>
+                <ActivityIndicator color="#fff" size="small" />
+              </View>
             ) : (
-              <Text style={styles.avatarInitial}>{initialOf(fullName)}</Text>
+              <View style={[styles.cameraBadge, { backgroundColor: c.surfaceContainerLowest }]}>
+                <AppIcon name="photo-camera" size={14} color={theme.accent.primary} />
+              </View>
             )}
-          </LinearGradient>
-          {uploading ? (
-            <View style={styles.uploadOverlay}>
-              <ActivityIndicator color="#fff" size="small" />
-            </View>
-          ) : (
-            <View style={[styles.cameraBadge, { backgroundColor: c.surfaceContainerLowest }]}>
-              <AppIcon name="photo-camera" size={14} color={theme.accent.primary} />
-            </View>
-          )}
-        </Pressable>
+          </Pressable>
 
-        <Text style={[styles.name, { color: theme.text.primary }]} numberOfLines={2}>
-          {fullName || 'Your profile'}
-        </Text>
-        {email ? (
-          <Text style={[styles.email, { color: theme.text.secondary }]} numberOfLines={1}>
-            {email}
+          <Text style={[styles.name, { color: theme.text.primary }]} numberOfLines={2}>
+            {fullName || 'Your profile'}
           </Text>
-        ) : null}
+          {email ? (
+            <Text style={[styles.email, { color: theme.text.secondary }]} numberOfLines={1}>
+              {email}
+            </Text>
+          ) : null}
 
-        <View style={styles.badgeRow}>
-          <View style={[styles.memberPill, { backgroundColor: 'rgba(6,182,212,0.14)' }]}>
+          <View style={styles.badgeRow}>
+            <View style={[styles.memberPill, { backgroundColor: 'rgba(6,182,212,0.14)' }]}>
               <AppIcon name="verified-user" size={14} color={theme.accent.primary} />
-            <Text style={[styles.memberText, { color: theme.accent.dark }]}>{memberLabel}</Text>
+              <Text style={[styles.memberText, { color: theme.accent.dark }]}>{memberLabel}</Text>
+            </View>
           </View>
-        </View>
 
-        <View style={styles.completionWrap}>
-          <View style={styles.completionLabels}>
-            <Text style={[styles.completionLabel, { color: theme.text.muted }]}>
-              Profile strength
-            </Text>
-            <Text style={[styles.completionPct, { color: theme.accent.primary }]}>
-              {completionPercent}%
-            </Text>
-          </View>
-          <View style={[styles.progressTrack, { backgroundColor: c.outlineVariant }]}>
-            <View
-              style={[
-                styles.progressFill,
-                {
-                  width: `${completionPercent}%`,
-                  backgroundColor: theme.accent.primary,
-                },
-              ]}
-            />
+          <View style={styles.completionWrap}>
+            <View style={styles.completionLabels}>
+              <Text style={[styles.completionLabel, { color: theme.text.muted }]}>
+                Profile strength
+              </Text>
+              <Text style={[styles.completionPct, { color: theme.accent.primary }]}>
+                {completionPercent}%
+              </Text>
+            </View>
+            <View style={[styles.progressTrack, { backgroundColor: c.outlineVariant }]}>
+              <View
+                style={[
+                  styles.progressFill,
+                  {
+                    width: `${completionPercent}%`,
+                    backgroundColor: theme.accent.primary,
+                  },
+                ]}
+              />
+            </View>
           </View>
         </View>
-      </View>
+      </CardSurface>
     </MotiView>
   );
 }
 
 const styles = StyleSheet.create({
+  outer: { marginBottom: 8 },
   wrap: {
-    borderRadius: 28,
-    overflow: 'hidden',
     minHeight: 220,
-    marginBottom: 8,
   },
   content: {
     paddingHorizontal: 22,

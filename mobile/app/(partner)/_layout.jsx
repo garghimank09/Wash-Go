@@ -5,6 +5,7 @@ import PartnerTabBar from '../../components/partner/PartnerTabBar';
 import PartnerAuthGate from '../../components/partner/PartnerAuthGate';
 import { usePartnerTabBarInset } from '../../hooks/usePartnerContentPadding';
 import { usePartnerBookingSync } from '../../hooks/usePartnerBookingSync';
+import { PartnerEarningsProvider } from '../../context/PartnerEarningsContext';
 
 function PartnerShell({ children }) {
   // Single source of truth for booking-sync polling — lives at the layout so
@@ -23,14 +24,16 @@ export default function PartnerLayout() {
 
   return (
     <PartnerAuthGate>
-      <PartnerShell>
-        <View style={{ flex: 1, backgroundColor: theme.customer.surface }}>
-          <View style={{ flex: 1, paddingBottom: hideTabBar ? 0 : tabBarInset }}>
-            <Slot />
+      <PartnerEarningsProvider>
+        <PartnerShell>
+          <View style={{ flex: 1, backgroundColor: theme.customer.surface }}>
+            <View style={{ flex: 1, paddingBottom: hideTabBar ? 0 : tabBarInset }}>
+              <Slot />
+            </View>
+            {!hideTabBar ? <PartnerTabBar /> : null}
           </View>
-          {!hideTabBar ? <PartnerTabBar /> : null}
-        </View>
-      </PartnerShell>
+        </PartnerShell>
+      </PartnerEarningsProvider>
     </PartnerAuthGate>
   );
 }

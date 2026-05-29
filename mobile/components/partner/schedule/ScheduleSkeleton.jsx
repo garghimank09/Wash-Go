@@ -19,7 +19,7 @@ function Shimmer({ width, height, radius = 12, style }) {
     opacity.value = withRepeat(
       withTiming(0.85, { duration: 850, easing: Easing.inOut(Easing.quad) }),
       -1,
-      true
+      true,
     );
   }, [opacity]);
 
@@ -55,9 +55,18 @@ export default function ScheduleSkeleton() {
         </View>
       </View>
 
+      <View style={styles.monthHeader}>
+        <Shimmer width={40} height={40} radius={20} />
+        <View style={styles.monthCenter}>
+          <Shimmer width={140} height={16} />
+          <Shimmer width={100} height={10} style={{ marginTop: 6 }} />
+        </View>
+        <Shimmer width={40} height={40} radius={20} />
+      </View>
+
       <View style={styles.daysRow}>
-        {Array.from({ length: 6 }).map((_, i) => (
-          <Shimmer key={i} width={60} height={72} radius={18} />
+        {Array.from({ length: 10 }).map((_, i) => (
+          <Shimmer key={i} width={54} height={68} radius={16} />
         ))}
       </View>
 
@@ -91,11 +100,23 @@ const styles = StyleSheet.create({
     gap: 8,
     marginTop: 16,
   },
+  monthHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    marginTop: 12,
+    gap: 12,
+  },
+  monthCenter: {
+    flex: 1,
+    alignItems: 'center',
+  },
   daysRow: {
     flexDirection: 'row',
     paddingHorizontal: 20,
-    marginTop: 14,
-    gap: 8,
+    marginTop: 10,
+    gap: 6,
   },
   timeline: {
     marginTop: 18,

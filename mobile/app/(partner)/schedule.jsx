@@ -1,4 +1,4 @@
-import { useCallback } from 'react';
+import { useCallback, useMemo } from 'react';
 import { View, StyleSheet, RefreshControl } from 'react-native';
 import Animated, {
   useSharedValue,
@@ -13,7 +13,7 @@ import {
 } from '../../context/PartnerScheduleContext';
 import ScheduleHeader from '../../components/partner/schedule/ScheduleHeader';
 import ScheduleHeroCard from '../../components/partner/schedule/ScheduleHeroCard';
-import DaySelector from '../../components/partner/schedule/DaySelector';
+import ScheduleDatePicker from '../../components/partner/schedule/ScheduleDatePicker';
 import ScheduleTimeline from '../../components/partner/schedule/ScheduleTimeline';
 import RouteSummaryCard from '../../components/partner/schedule/RouteSummaryCard';
 import ScheduleInsightCard from '../../components/partner/schedule/ScheduleInsightCard';
@@ -22,7 +22,7 @@ import ScheduleSkeleton from '../../components/partner/schedule/ScheduleSkeleton
 import PartnerNotifPanel from '../../components/partner/PartnerNotifPanel';
 
 const HEADER_HEIGHT = 60;
-const DAY_SELECTOR_INDEX = 1;
+const DATE_PICKER_INDEX = 1;
 
 function ScheduleContent() {
   const { theme } = useTheme();
@@ -37,10 +37,15 @@ function ScheduleContent() {
     loading,
     refreshing,
     reload,
+    countBookingsForDate,
   } = usePartnerSchedule();
 
-  const selectedDay =
-    days.find((d) => d.key === selectedKey) || days[0] || null;
+  const selectedDay = useMemo(() => {
+    const found = days.find((d) => d.key === selectedKey);
+    return found || days[0] || null;
+  }, [days, selectedKey]);
+
+  const showRoute = countBookingsForDate(selectedKey) > 0;
 
   const onScroll = useAnimatedScrollHandler({
     onScroll: (e) => {
@@ -63,7 +68,7 @@ function ScheduleContent() {
         showsVerticalScrollIndicator={false}
         onScroll={onScroll}
         scrollEventThrottle={16}
-        stickyHeaderIndices={ready ? [DAY_SELECTOR_INDEX] : undefined}
+        stickyHeaderIndices={ready ? [DATE_PICKER_INDEX] : undefined}
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
@@ -77,11 +82,14 @@ function ScheduleContent() {
         ) : (
           <>
             <ScheduleHeroCard dateKey={selectedDay.key} />
-            <DaySelector selectedKey={selectedKey} onSelect={setSelectedKey} />
+            <ScheduleDatePicker selectedKey={selectedKey} onSelect={setSelectedKey} />
             <ScheduleTimeline dateKey={selectedDay.key} isToday={selectedDay.isToday} />
-            {selectedDay.isToday ? <RouteSummaryCard /> : null}
+            {showRoute ? <RouteSummaryCard /> : null}
             <ScheduleInsightCard />
-            <EarningsPreviewCard />
+            <EarningsPreviewCard
+              dateKey={selectedDay.key}
+              isToday={selectedDay.isToday}
+            />
           </>
         )}
       </Animated.ScrollView>

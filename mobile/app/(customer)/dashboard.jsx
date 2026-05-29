@@ -252,18 +252,13 @@ export default function Dashboard() {
               style={({ pressed }) => [
                 s.card,
                 s.activeCard,
-                deriveCustomerPhase(activeBooking) === 'awaiting_review' && s.activeCardReview,
                 pressed && { opacity: 0.94 },
               ]}
               onPress={() => router.push(`/booking/${activeBooking.id}`)}
             >
               <View style={s.activeIconWrap}>
                 <AppIcon
-                  name={
-                    deriveCustomerPhase(activeBooking) === 'awaiting_review'
-                      ? 'rate-review'
-                      : 'local-car-wash'
-                  }
+                  name="local-car-wash"
                   size={22}
                   color={theme.accent.primary}
                 />
@@ -279,7 +274,7 @@ export default function Dashboard() {
               </View>
               <View style={s.trackChip}>
                 <Text style={s.trackChipText}>
-                  {deriveCustomerPhase(activeBooking) === 'awaiting_review' ? 'Review' : 'Track'}
+                  Track
                 </Text>
                 <AppIcon name="chevron-right" size={14} color={theme.accent.primary} />
               </View>
@@ -350,7 +345,7 @@ export default function Dashboard() {
             </View>
             <Text style={[s.sectionTitle, { color: theme.accent.primary }]}>WashGo Plus</Text>
             <View style={s.priceRow}>
-              <Text style={s.priceBig}>$39</Text>
+              <Text style={s.priceBig}>₹399</Text>
               <Text style={s.priceUnit}>/mo</Text>
             </View>
             {['Priority scheduling', 'AI wash recap', 'Member pricing'].map((item) => (

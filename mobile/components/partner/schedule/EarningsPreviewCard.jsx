@@ -8,23 +8,25 @@ import Animated, {
   withTiming,
   Easing,
 } from 'react-native-reanimated';
-import { Wallet, CheckCircle2, ListChecks } from 'lucide-react-native';
+import { Banknote, CheckCircle2, ListChecks } from 'lucide-react-native';
 import { useTheme } from '../../../context/ThemeContext';
 import { getPartnerShadow } from '../../../constants/partnerTheme';
 import { getScheduleTokens } from '../../../constants/scheduleTheme';
 import { formatPayoutCurrency } from '../../../lib/partnerFormatters';
 import { usePartnerSchedule } from '../../../context/PartnerScheduleContext';
+import { PARTNER_EARNINGS_PERCENT } from '../../../lib/partnerEarnings';
 import AnimatedCounter from '../AnimatedCounter';
 
-export default function EarningsPreviewCard() {
-  const { theme, isDark } = useTheme();
+export default function EarningsPreviewCard({ dateKey, isToday = true }) {
+  const { isDark } = useTheme();
   const shadows = getPartnerShadow(isDark);
   const tokens = getScheduleTokens(isDark);
-  const { todaySummary } = usePartnerSchedule();
+  const { getDaySummary } = usePartnerSchedule();
+  const summary = getDaySummary(dateKey);
 
-  const total = Math.max(1, todaySummary.totalCount);
-  const targetPct = Math.max(0, Math.min(1, todaySummary.completedCount / total));
-  const remaining = Math.max(0, todaySummary.totalCount - todaySummary.completedCount);
+  const total = Math.max(1, summary.totalCount);
+  const targetPct = Math.max(0, Math.min(1, summary.completedCount / total));
+  const remaining = Math.max(0, summary.totalCount - summary.completedCount);
 
   const progress = useSharedValue(0);
   const [trackWidth, setTrackWidth] = useState(0);
@@ -41,6 +43,9 @@ export default function EarningsPreviewCard() {
   const fillStyle = useAnimatedStyle(() => ({
     width: progress.value * trackWidth,
   }));
+
+  const title = isToday ? 'Earned today' : 'Earned this day';
+  const empty = summary.totalCount === 0;
 
   return (
     <MotiView
@@ -68,21 +73,35 @@ export default function EarningsPreviewCard() {
           <View style={styles.topRow}>
             <View style={styles.eyebrowRow}>
               <View style={styles.eyebrowIcon}>
-                <Wallet size={12} color="#ffffff" strokeWidth={2.6} />
+                <Banknote size={12} color="#ffffff" strokeWidth={2.6} />
               </View>
-              <Text style={styles.eyebrow}>Projected today</Text>
+              <Text style={styles.eyebrow}>{title}</Text>
             </View>
             <Text style={styles.percent}>
-              {Math.round(targetPct * 100)}%
+              {empty ? '—' : `${Math.round(targetPct * 100)}%`}
             </Text>
           </View>
 
-          <AnimatedCounter
-            value={todaySummary.projectedCents}
-            duration={700}
-            format={(n) => formatPayoutCurrency(n)}
-            style={styles.amount}
-          />
+          {empty ? (
+            <View style={styles.emptyBlock}>
+              <Text style={styles.amount}>₹0.00</Text>
+              <Text style={styles.emptyHint}>
+                Complete accepted jobs to see your {PARTNER_EARNINGS_PERCENT}% share here.
+              </Text>
+            </View>
+          ) : (
+            <>
+              <AnimatedCounter
+                value={summary.earnedCents}
+                duration={700}
+                format={(n) => formatPayoutCurrency(n)}
+                style={styles.amount}
+              />
+              <Text style={styles.shareHint}>
+                Your {PARTNER_EARNINGS_PERCENT}% share from completed washes
+              </Text>
+            </>
+          )}
 
           <View
             style={[styles.track, { backgroundColor: tokens.hero.progressTrack }]}
@@ -98,7 +117,7 @@ export default function EarningsPreviewCard() {
               <View style={styles.metricIcon}>
                 <CheckCircle2 size={12} color="#ffffff" strokeWidth={2.6} />
               </View>
-              <Text style={styles.metricValue}>{todaySummary.completedCount}</Text>
+              <Text style={styles.metricValue}>{summary.completedCount}</Text>
               <Text style={styles.metricLabel}>Done</Text>
             </View>
             <View style={styles.metricDivider} />
@@ -112,10 +131,10 @@ export default function EarningsPreviewCard() {
             <View style={styles.metricDivider} />
             <View style={styles.metric}>
               <View style={styles.metricIcon}>
-                <Wallet size={12} color="#ffffff" strokeWidth={2.6} />
+                <Banknote size={12} color="#ffffff" strokeWidth={2.6} />
               </View>
-              <Text style={styles.metricValue}>{todaySummary.totalCount}</Text>
-              <Text style={styles.metricLabel}>Total</Text>
+              <Text style={styles.metricValue}>{summary.totalCount}</Text>
+              <Text style={styles.metricLabel}>Accepted</Text>
             </View>
           </View>
         </View>
@@ -135,7 +154,7 @@ const styles = StyleSheet.create({
   },
   inner: {
     padding: 18,
-    gap: 12,
+    gap: 10,
   },
   topRow: {
     flexDirection: 'row',
@@ -172,11 +191,24 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     letterSpacing: -0.8,
   },
+  shareHint: {
+    color: 'rgba(255,255,255,0.78)',
+    fontSize: 11,
+    fontWeight: '600',
+    marginTop: -4,
+  },
+  emptyBlock: { gap: 6 },
+  emptyHint: {
+    color: 'rgba(255,255,255,0.82)',
+    fontSize: 12,
+    fontWeight: '600',
+    lineHeight: 17,
+  },
   track: {
     height: 8,
     borderRadius: 999,
     overflow: 'hidden',
-    marginTop: 2,
+    marginTop: 4,
   },
   fill: {
     height: '100%',

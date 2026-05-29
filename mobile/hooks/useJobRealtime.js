@@ -6,20 +6,25 @@ import {
   effectiveWasherPhase,
   setStoredPhase,
 } from '../lib/washerJobPhase';
+import {
+  advanceBlockedReason,
+  canAdvanceUiPhase,
+  servicePhaseForUiAdvance,
+} from '../lib/jobPhaseMilestones';
 import { getNextPhase, buildInitialTimelineEvents, findPhase } from '../lib/jobPhases';
 import { emitPartnerBookingsSync } from '../lib/partnerSyncEvents';
 import { emitNotificationsSync } from '../lib/notificationSyncEvents';
 
 /**
- * Drives the active-job screen.
- *
- * Bridges the local washer-side phase ladder (granular UX states) with the
- * backend booking status (5 coarse states). Matches web `WasherJobPage.onAdvance`:
- * only PATCH when `apiStatusForPhase(next)` differs from the current API status.
+ * Drives the active-job screen — mirrors web WasherJobPage.onAdvance:
+ * PATCH milestone (service_phase) + status when needed.
  */
 export default function useJobRealtime({
   bookingId,
   apiStatus,
+  servicePhase = null,
+  handoffStatus: _handoffStatus = null,
+  hasArrivalPhoto = false,
   tracking,
   initialPhase,
   onStatusSynced,
@@ -32,7 +37,7 @@ export default function useJobRealtime({
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      const next = await effectiveWasherPhase(bookingId, apiStatus);
+      const next = await effectiveWasherPhase(bookingId, apiStatus, servicePhase);
       if (cancelled) return;
       setPhase((current) => (next !== current ? next : current));
       setEvents((prev) => {
@@ -44,7 +49,7 @@ export default function useJobRealtime({
     return () => {
       cancelled = true;
     };
-  }, [bookingId, apiStatus]);
+  }, [bookingId, apiStatus, servicePhase]);
 
   useEffect(() => {
     const sub = AppState.addEventListener('change', (s) => {
@@ -64,27 +69,27 @@ export default function useJobRealtime({
       const next = targetPhase || getNextPhase(phase).id;
       if (!next || next === phase) return phase;
 
-      const prevPhase = phase;
+      if (!canAdvanceUiPhase(phase, { hasArrivalPhoto, servicePhase })) {
+        const reason = advanceBlockedReason(phase, { hasArrivalPhoto, servicePhase });
+        throw new Error(reason || 'Complete the step above first');
+      }
+
       advancingRef.current = true;
 
-      const targetStatus = apiStatusForPhase(next);
-      const needsApiWrite =
-        Boolean(targetStatus) &&
-        Boolean(apiStatus) &&
-        targetStatus !== apiStatus;
-      const needsHandoffRequest = next === 'approval_pending';
-
       try {
-        if (needsHandoffRequest) {
-          await partnerBookingsService.requestHandoff(bookingId);
-          emitPartnerBookingsSync({ source: 'handoff_request', bookingId });
-          emitNotificationsSync({ source: 'handoff_request', bookingId });
-        } else if (needsApiWrite) {
+        const targetStatus = apiStatusForPhase(next);
+        if (targetStatus && apiStatus && targetStatus !== apiStatus) {
           await partnerBookingsService.updateStatus(bookingId, targetStatus);
-          emitPartnerBookingsSync({ source: 'status_update', bookingId });
-          emitNotificationsSync({ source: 'status_update', bookingId });
-          await onStatusSynced?.();
         }
+
+        const milestonePhase = servicePhaseForUiAdvance(next);
+        if (milestonePhase) {
+          await partnerBookingsService.updateMilestone(bookingId, milestonePhase);
+        }
+
+        emitPartnerBookingsSync({ source: 'milestone', bookingId, phase: milestonePhase });
+        emitNotificationsSync({ source: 'milestone', bookingId });
+        await onStatusSynced?.();
 
         setPhase(next);
         setEvents((evts) => [
@@ -93,14 +98,21 @@ export default function useJobRealtime({
         ]);
         await setStoredPhase(bookingId, next);
       } catch (err) {
-        advancingRef.current = false;
         throw err;
+      } finally {
+        advancingRef.current = false;
       }
 
-      advancingRef.current = false;
       return next;
     },
-    [bookingId, phase, apiStatus, onStatusSynced],
+    [
+      bookingId,
+      phase,
+      apiStatus,
+      servicePhase,
+      hasArrivalPhoto,
+      onStatusSynced,
+    ],
   );
 
   const api = useMemo(

@@ -14,6 +14,7 @@ import { ClipboardCheck, Cloud, CloudOff } from 'lucide-react-native';
 import { useTheme } from '../../../context/ThemeContext';
 import { getPartnerShadow } from '../../../constants/partnerTheme';
 import { getJobTokens } from '../../../constants/jobTheme';
+import { getSelectionFill, getSelectionBorder } from '../../../lib/selectableCardStyle';
 
 const PARTNER_EASE = Easing.bezier(0.25, 0.1, 0.25, 1);
 const AnimatedPath = Animated.createAnimatedComponent(Path);
@@ -136,11 +137,12 @@ export default function WashChecklistCard({ rows, toggle, progress, saveStatus }
               styles.row,
               {
                 backgroundColor: row.done
-                  ? theme.customer.primaryBg
+                  ? getSelectionFill(theme)
                   : theme.customer.surface,
                 borderColor: row.done
-                  ? theme.customer.primaryBg
+                  ? getSelectionBorder(theme)
                   : theme.customer.outlineVariant,
+                borderWidth: row.done ? 1.5 : StyleSheet.hairlineWidth,
               },
               pressed && { opacity: 0.94 },
             ]}
@@ -210,6 +212,7 @@ const styles = StyleSheet.create({
     padding: 12,
     borderRadius: 14,
     borderWidth: 1,
+    overflow: 'hidden',
   },
   checkbox: {
     width: 22,

@@ -34,16 +34,13 @@ UI phases in `jobPhases.js` (`heading`, `service_started`, …) are mapped in `l
 
 **“Start heading to customer”** (`accepted` → `heading`) is **local-only** while the booking is already `confirmed` after accept — same as web. Never send `pending` from the washer app.
 
-### Customer handoff (server-backed)
+### Completing the job
 
-When the washer taps **Send to customer for approval** (`qc_complete` → `approval_pending`):
+After QC, the washer taps **Mark service completed** (`qc_complete` → `completed`):
 
-1. `POST /bookings/{id}/handoff/request` sets `handoff_status=awaiting_customer`
-2. Customer app shows **Confirm & Complete** on booking detail
-3. Customer `POST /bookings/{id}/handoff/confirm` sets `status=completed`
-4. Washer job reconciles to **Service completed** via sync (no manual refresh)
-
-Washer **cannot** `PATCH` `completed` while `handoff_status=awaiting_customer`.
+1. `PATCH /bookings/{id}/status` → `completed`
+2. `PATCH /bookings/{id}/milestone` → `service_phase=completed`
+3. Customer sees **Service completed** on their timeline (no separate review step).
 
 ## Partner availability (account-wide)
 
