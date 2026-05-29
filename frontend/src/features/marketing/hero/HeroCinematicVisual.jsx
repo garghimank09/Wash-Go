@@ -102,7 +102,7 @@ export function HeroCinematicVisual({ animate = true }) {
   return (
     <div
       ref={stageRef}
-      className={`wg-hero-visual relative mx-auto w-full max-w-[26rem] lg:max-w-none ${motionOn ? 'wg-hero-visual--motion' : ''}`}
+      className={`wg-hero-visual wg-hero-visual--studio relative mx-auto w-full max-w-[26rem] lg:max-w-none ${motionOn ? 'wg-hero-visual--motion' : ''}`}
       onPointerMove={pointerOn ? handlePointerMove : undefined}
       onPointerLeave={pointerOn ? handlePointerLeave : undefined}
       style={{ '--wg-hero-glow': glow }}

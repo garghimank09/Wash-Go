@@ -37,7 +37,7 @@ export function EcoTrustSection() {
       id="eco"
       className="scroll-mt-20 border-y border-emerald-500/15 bg-gradient-to-b from-emerald-500/[0.06] via-wg-surface to-wg-surface py-14 dark:from-emerald-500/[0.04] sm:py-16"
     >
-      <div className="mx-auto max-w-6xl px-4 sm:px-6">
+      <div className="wg-marketing-container">
         <div className="grid gap-10 lg:grid-cols-[0.9fr_1.1fr] lg:items-center">
           <MarketingReveal>
             <p className="inline-flex items-center gap-2 rounded-full border border-emerald-500/25 bg-emerald-500/10 px-3 py-1 text-xs font-bold uppercase tracking-wide text-emerald-900 dark:text-emerald-100">

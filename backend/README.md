@@ -11,9 +11,19 @@ FastAPI + PostgreSQL (`washgo`) foundation with JWT auth, SQLAlchemy 2 async ORM
 ## Configuration
 
 1. Copy `.env.example` to `.env` if you do not already have `.env`.
-2. Set **`DATABASE_URL`** to your user/password/host/port and database `washgo`.
-   - Async SQLAlchemy uses the **`asyncpg`** driver. Example:
-     `postgresql+asyncpg://postgres:yourpassword@localhost:5432/washgo`
+2. **Database (local + Render)** — keep both URLs in `.env` and switch with **`DATABASE_TARGET`**:
+   - `DATABASE_TARGET=local` — API uses **`DATABASE_URL_LOCAL`** (default)
+   - `DATABASE_TARGET=render` — API uses **`DATABASE_URL_RENDER`**
+   - Example:
+     ```env
+     DATABASE_TARGET=local
+     DATABASE_URL_LOCAL=postgresql://postgres:12345@localhost:5432/washgo
+     DATABASE_URL_RENDER=postgresql://user:pass@host.render.com/washgo_le1l
+     ```
+   - Bootstrap **both** DBs (tables + demo users):  
+     `.\.venv\Scripts\python.exe scripts\bootstrap_databases.py --both`
+   - Do **not** set a bare `DATABASE_URL` in `.env` when using dual mode (it overrides the target).
+   - Async driver is **`asyncpg`** (added automatically from `postgresql://` URLs).
 3. Set **`SECRET_KEY`** to a random string of at least 32 characters.
 4. Optional: **`ACCESS_TOKEN_EXPIRE_MINUTES`** (default `10080` = 7 days). Login sets a JWT plus HttpOnly cookies; sessions persist until logout or expiry. Use **`CORS_ORIGINS`** as a comma list (not `*`) when using cookies in production.
 5. Optional: **`AUTH_COOKIE_SECURE`** / **`AUTH_COOKIE_SAMESITE`** — cookie flags for HTTPS deployments (`samesite=none` requires `secure=true`).

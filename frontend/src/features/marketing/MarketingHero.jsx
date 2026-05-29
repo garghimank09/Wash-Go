@@ -16,7 +16,7 @@ export function MarketingHero() {
     <section className="wg-marketing-noise relative overflow-hidden border-b border-wg-border">
       <HeroAmbientBackground />
 
-      <div className="relative z-10 mx-auto max-w-6xl px-4 py-16 sm:px-6 sm:py-20 lg:py-[5.5rem]">
+      <div className="relative z-10 mx-auto max-w-6xl px-4 py-12 sm:px-6 sm:py-20 lg:py-[5.5rem]">
         <div className="grid items-center gap-10 lg:grid-cols-2 lg:gap-10 xl:gap-12">
           <m.div
             variants={marketingContainer(reduced)}
@@ -43,6 +43,13 @@ export function MarketingHero() {
               gentle on your car, kinder to the planet.
             </span>
           </m.h1>
+
+          <m.div
+            variants={marketingItem(reduced)}
+            className="wg-hero-visual-slot--mobile-below-headline relative mx-auto mt-4 max-w-md lg:hidden"
+          >
+            <HeroCinematicVisual animate={!reduced} />
+          </m.div>
 
           <m.p
             variants={marketingItem(reduced)}
@@ -83,14 +90,14 @@ export function MarketingHero() {
 
           <m.ul
             variants={marketingItem(reduced)}
-            className="relative mt-10 grid gap-2 sm:grid-cols-2 sm:mt-11"
+            className="relative mt-10 grid grid-cols-4 gap-1.5 sm:mt-11 lg:grid-cols-2 lg:gap-2"
             aria-label="Trust indicators"
           >
             {HERO_TRUST.map(({ label, sub }) => (
-              <li key={label}>
-                <span className="wg-hero-glass-pill block rounded-2xl border border-white/50 px-4 py-3 backdrop-blur-sm">
-                  <span className="block text-sm font-bold text-wg-text">{label}</span>
-                  <span className="block text-xs text-wg-muted">{sub}</span>
+              <li key={label} className="min-w-0">
+                <span className="wg-hero-glass-pill flex h-full flex-col items-center justify-center rounded-xl border border-white/50 px-1.5 py-2.5 text-center backdrop-blur-sm sm:px-2 lg:block lg:rounded-2xl lg:px-4 lg:py-3 lg:text-left">
+                  <span className="text-[11px] font-bold leading-tight text-wg-text sm:text-sm">{label}</span>
+                  <span className="mt-0.5 text-[9px] leading-snug text-wg-muted sm:text-xs">{sub}</span>
                 </span>
               </li>
             ))}
@@ -106,15 +113,6 @@ export function MarketingHero() {
             <HeroCinematicVisual animate={!reduced} />
           </m.div>
         </div>
-
-        <m.div
-          variants={marketingItem(reduced)}
-          initial="hidden"
-          animate="show"
-          className="relative mt-10 lg:hidden"
-        >
-          <HeroCinematicVisual animate={!reduced} />
-        </m.div>
       </div>
     </section>
   );

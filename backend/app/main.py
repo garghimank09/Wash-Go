@@ -37,6 +37,8 @@ from app.utils.exceptions import register_exception_handlers
 
 @asynccontextmanager
 async def lifespan(_: FastAPI):
+    db_host = settings.DATABASE_URL.split("@")[-1] if "@" in settings.DATABASE_URL else settings.DATABASE_URL
+    logger.info("Database target=%s (%s)", settings.DATABASE_TARGET, db_host)
     if settings.ENVIRONMENT == "development":
         async with engine.begin() as conn:
             await conn.run_sync(Base.metadata.create_all)

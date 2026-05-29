@@ -1,7 +1,10 @@
 from functools import lru_cache
+from typing import Literal
 
-from pydantic import Field, field_validator, model_validator
+from pydantic import Field, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+from app.config.database_url import normalize_database_url
 
 
 class Settings(BaseSettings):
@@ -11,9 +14,19 @@ class Settings(BaseSettings):
         extra="ignore",
     )
 
+    # Active DB: set DATABASE_TARGET=local|render, or override with DATABASE_URL directly.
+    DATABASE_TARGET: Literal["local", "render"] = "local"
+    DATABASE_URL_LOCAL: str = Field(
+        default="postgresql://postgres:12345@localhost:5432/washgo",
+        description="Local Postgres (dev)",
+    )
+    DATABASE_URL_RENDER: str | None = Field(
+        default=None,
+        description="Render Postgres (production / remote dev)",
+    )
     DATABASE_URL: str = Field(
-        ...,
-        description="Async SQLAlchemy URL, e.g. postgresql+asyncpg://user:pass@localhost:5432/washgo",
+        default="",
+        description="Resolved async URL — set explicitly or derived from DATABASE_TARGET",
     )
     SECRET_KEY: str = Field(..., min_length=32)
     ALGORITHM: str = "HS256"
@@ -51,12 +64,21 @@ class Settings(BaseSettings):
     # Google Maps Platform — Geocoding on server; Maps/Places use VITE_* on frontend.
     GOOGLE_MAPS_API_KEY: str | None = None
 
-    @field_validator("DATABASE_URL")
-    @classmethod
-    def ensure_async_driver(cls, v: str) -> str:
-        if v.startswith("postgresql://") and "+asyncpg" not in v:
-            return v.replace("postgresql://", "postgresql+asyncpg://", 1)
-        return v
+    @model_validator(mode="after")
+    def resolve_database_url(self) -> "Settings":
+        explicit = (self.DATABASE_URL or "").strip()
+        if explicit:
+            self.DATABASE_URL = normalize_database_url(explicit)
+        elif self.DATABASE_TARGET == "render":
+            if not (self.DATABASE_URL_RENDER or "").strip():
+                raise ValueError("DATABASE_URL_RENDER is required when DATABASE_TARGET=render")
+            self.DATABASE_URL = normalize_database_url(self.DATABASE_URL_RENDER)  # type: ignore[arg-type]
+        else:
+            self.DATABASE_URL = normalize_database_url(self.DATABASE_URL_LOCAL)
+        self.DATABASE_URL_LOCAL = normalize_database_url(self.DATABASE_URL_LOCAL)
+        if self.DATABASE_URL_RENDER:
+            self.DATABASE_URL_RENDER = normalize_database_url(self.DATABASE_URL_RENDER)
+        return self
 
     @model_validator(mode="after")
     def prefer_openai_when_key_present(self) -> "Settings":

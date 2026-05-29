@@ -666,8 +666,26 @@
 .wg-hero-visual__car {
   display: block;
   background: transparent;
-  mix-blend-mode: screen;
-  filter: saturate(1.05) contrast(1.04);
+  filter: saturate(1.02) contrast(1.02);
+}
+
+/* Studio hero photo (built-in background + shadow) */
+.wg-hero-visual--studio .wg-hero-visual__underglow,
+.wg-hero-visual--studio .wg-hero-visual__shadow {
+  display: none;
+}
+
+.wg-hero-visual--studio .wg-hero-visual__ambience {
+  opacity: 0.35;
+}
+
+.wg-hero-visual-slot--mobile-below-headline .wg-hero-visual__stage {
+  max-width: min(100%, 20rem);
+  aspect-ratio: 16 / 10;
+}
+
+.wg-hero-visual-slot--mobile-below-headline .wg-hero-visual {
+  max-width: 100%;
 }
 
 .wg-hero-visual__ripple {
