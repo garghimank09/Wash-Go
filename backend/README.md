@@ -18,12 +18,12 @@ FastAPI + PostgreSQL (`washgo`) foundation with JWT auth, SQLAlchemy 2 async ORM
 4. Optional: **`ACCESS_TOKEN_EXPIRE_MINUTES`** (default `10080` = 7 days). Login sets a JWT plus HttpOnly cookies; sessions persist until logout or expiry. Use **`CORS_ORIGINS`** as a comma list (not `*`) when using cookies in production.
 5. Optional: **`AUTH_COOKIE_SECURE`** / **`AUTH_COOKIE_SAMESITE`** — cookie flags for HTTPS deployments (`samesite=none` requires `secure=true`).
 6. For partner signup place suggestions, set **`GOOGLE_MAPS_API_KEY`** and enable **Places API (New)** (not the legacy Places API) in Google Cloud Console.
-7. For **email OTP** on signup and login (all roles except demo accounts), configure SMTP in `.env`:
-   - `SMTP_HOST` (e.g. `smtp.gmail.com`)
-   - `SMTP_PORT` (default `587`)
-   - `SMTP_USER` / `SMTP_PASSWORD` (app password for Gmail)
-   - `SMTP_FROM` (e.g. `noreply@yourdomain.com`)
-   - If `SMTP_HOST` is unset, OTP codes are **printed in the API server log** (development only).
+7. For **SMS OTP** (all roles except demo accounts) via Twilio:
+   - `TWILIO_ACCOUNT_SID`
+   - `TWILIO_AUTH_TOKEN`
+   - `TWILIO_FROM_NUMBER` (E.164, e.g. `+15005550006`)
+   - If Twilio is unset, codes are **printed in the API server log** (development only).
+   - **Sign-in uses mobile number only** (10-digit India). Signup still collects email + phone; OTP is sent to phone.
 
 ## Virtual environment and install (Windows PowerShell)
 
@@ -38,11 +38,11 @@ pip install -r app\requirements.txt
 
 On startup in **`ENVIRONMENT=development`**, these users are created or refreshed in the database:
 
-| Role | Email | Password | Sign in at |
-|------|-------|----------|------------|
-| Admin | `admin@washgo.demo` | `Demo1234` | [http://127.0.0.1:5173/login](http://127.0.0.1:5173/login) → **Admin console** (`/admin`) |
-| Customer | `customer@washgo.demo` | `Demo1234` | [http://127.0.0.1:5173/login](http://127.0.0.1:5173/login) → **Dashboard** (`/dashboard`) |
-| Partner (washer) | `partner@washgo.demo` | `Demo1234` | [http://127.0.0.1:5173/partner/login](http://127.0.0.1:5173/partner/login) → **Partner console** (`/partner`) |
+| Role | Mobile | Password | Sign in at |
+|------|--------|----------|------------|
+| Admin | `9876543210` | `Demo1234` | `/admin/login` |
+| Customer | `9876543211` | `Demo1234` | `/login` |
+| Partner (washer) | `9876543212` | `Demo1234` | `/partner/login` |
 
 Restart the API after pulling changes so `seed_demo_users` runs.
 
@@ -52,7 +52,8 @@ Demo accounts (`*@washgo.demo`) **skip OTP** — use them for quick testing with
 
 | Step | Endpoint | Notes |
 |------|----------|--------|
-| Send code | `POST /auth/otp/send` | Body: `{ "email", "purpose": "signup" \| "login" \| "password_reset", "role_hint": "customer" \| "partner" \| "admin" }` |
+| Send code | `POST /auth/otp/send` | Body: `{ "phone", "purpose", "role_hint" }` — signup also requires `"email"` |
+| Login | `POST /auth/login` | Body: `{ "phone", "password", "otp_code" }` |
 | Reset password | `POST /auth/password/reset` | Body: `{ "email", "otp_code", "new_password" }` |
 
 ## Membership plans (landing preview)

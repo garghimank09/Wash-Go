@@ -31,6 +31,7 @@ export function SignupPage() {
   const [otp, setOtp] = useState('');
   const [otpError, setOtpError] = useState('');
   const [otpInfo, setOtpInfo] = useState('');
+  const [otpDestination, setOtpDestination] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [resendLoading, setResendLoading] = useState(false);
@@ -50,8 +51,14 @@ export function SignupPage() {
   };
 
   const sendSignupOtp = async () => {
-    const res = await authService.sendOtp(email.trim().toLowerCase(), 'signup', 'customer');
-    setOtpInfo(res.message || 'Check your email for the code.');
+    const res = await authService.sendOtp({
+      email: email.trim().toLowerCase(),
+      phone: normalizeIndianPhoneDigits(phone),
+      purpose: 'signup',
+      roleHint: 'customer',
+    });
+    setOtpDestination(res.delivery_target || '');
+    setOtpInfo(res.message || 'Check your phone for the code.');
     setStep('otp');
   };
 
@@ -115,8 +122,14 @@ export function SignupPage() {
     setResendLoading(true);
     setError('');
     try {
-      const res = await authService.sendOtp(email.trim().toLowerCase(), 'signup', 'customer');
-      setOtpInfo(res.message || 'A new code was sent.');
+      const res = await authService.sendOtp({
+        email: email.trim().toLowerCase(),
+        phone: normalizeIndianPhoneDigits(phone),
+        purpose: 'signup',
+        roleHint: 'customer',
+      });
+      setOtpDestination(res.delivery_target || otpDestination);
+      setOtpInfo(res.message || 'A new code was sent to your phone.');
       setOtp('');
       setOtpError('');
     } catch (err) {
@@ -131,8 +144,8 @@ export function SignupPage() {
       <h1 className="text-2xl font-black tracking-tight text-white">Create account</h1>
       <p className="mt-1 text-sm text-white/65">
         {step === 'otp'
-          ? 'Enter the code we sent to verify your email.'
-          : 'All fields are required. We will email you a verification code.'}
+          ? 'Enter the code we sent to your mobile.'
+          : 'All fields are required. We will text a verification code to your phone.'}
       </p>
       <form className="mt-8 space-y-4" onSubmit={step === 'otp' ? submitOtp : submitDetails} noValidate>
         <Input
@@ -196,7 +209,7 @@ export function SignupPage() {
         />
         {step === 'otp' ? (
           <OtpVerificationFields
-            email={email.trim().toLowerCase()}
+            destination={otpDestination || `+91 •••••${phone.slice(-4)}`}
             otp={otp}
             onOtpChange={(e) => {
               const v = e.target.value.replace(/\D/g, '').slice(0, 6);

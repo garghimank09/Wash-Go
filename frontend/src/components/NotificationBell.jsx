@@ -78,10 +78,10 @@ export function NotificationBell({ service, defaultPath = '/dashboard' }) {
 
       {open ? (
         <div
-          className="absolute right-0 top-[calc(100%+0.5rem)] z-50 w-[min(100vw-2rem,22rem)] overflow-hidden rounded-2xl border border-white/25 bg-[color:var(--wg-glass-bg)] shadow-xl backdrop-blur-xl dark:border-white/10"
+          className="absolute right-0 top-[calc(100%+0.5rem)] z-[200] isolate w-[min(100vw-2rem,22rem)] overflow-hidden rounded-2xl border border-wg-border/90 bg-wg-surface-elevated shadow-2xl dark:border-white/15 dark:bg-slate-900"
           role="menu"
         >
-          <div className="flex items-center justify-between gap-2 border-b border-wg-border/80 px-4 py-3">
+          <div className="flex items-center justify-between gap-2 border-b border-wg-border/80 bg-wg-surface-elevated px-4 py-3 dark:border-white/10 dark:bg-slate-900">
             <p className="text-sm font-bold text-wg-text">Notifications</p>
             {unreadCount > 0 ? (
               <button
@@ -94,7 +94,7 @@ export function NotificationBell({ service, defaultPath = '/dashboard' }) {
               </button>
             ) : null}
           </div>
-          <ul className="max-h-[min(60vh,20rem)] overflow-y-auto">
+          <ul className="max-h-[min(60vh,20rem)] overflow-y-auto bg-wg-surface-elevated dark:bg-slate-900">
             {loading && items.length === 0 ? (
               <li className="px-4 py-6 text-center text-sm text-wg-muted">Loading…</li>
             ) : items.length === 0 ? (

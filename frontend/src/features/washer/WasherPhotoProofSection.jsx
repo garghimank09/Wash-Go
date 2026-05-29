@@ -8,6 +8,7 @@ import { dispatchBookingsSync } from '../../lib/bookingSyncEvents';
 import { getErrorMessage } from '../../services/api';
 import { partnerPhotoService, photoUrl } from '../../services/partnerPhotoService';
 import { cn } from '../../lib/cn';
+import { demoPhotoProofKey, readDemoPhotoProof } from '../../lib/washerPhotoProof';
 import { phaseRank } from '../../lib/washerJobPhase';
 
 const MOCK_BEFORE =
@@ -17,34 +18,17 @@ const MOCK_AFTER =
 const MOCK_ARRIVAL =
   'https://images.unsplash.com/photo-1503376780353-7e6692767b70?auto=format&fit=crop&w=600&q=70';
 
-function demoKey(kind, jobId) {
-  return `washgo:washer:photoProof:${kind}:${jobId || 'demo'}`;
-}
+const BEFORE_WASH_DEF = {
+  kind: 'before',
+  title: 'Before wash',
+  subtitle: 'Required before you start service',
+};
 
-function readDemo(jobId) {
-  try {
-    return {
-      arrival: sessionStorage.getItem(demoKey('arrival', jobId)) === '1',
-      before: sessionStorage.getItem(demoKey('before', jobId)) === '1',
-      after: sessionStorage.getItem(demoKey('after', jobId)) === '1',
-    };
-  } catch {
-    return { arrival: false, before: false, after: false };
-  }
-}
-
-const WASH_CARD_DEFS = [
-  {
-    kind: 'before',
-    title: 'Before wash',
-    subtitle: 'Vehicle condition before service starts',
-  },
-  {
-    kind: 'after',
-    title: 'After wash',
-    subtitle: 'Finished result — shine & handoff proof',
-  },
-];
+const AFTER_WASH_DEF = {
+  kind: 'after',
+  title: 'After wash',
+  subtitle: 'Required at QC — finished result & handoff proof',
+};
 
 /** Vehicle condition (customer approval) + before/after wash proof. */
 export function WasherPhotoProofSection({
@@ -54,6 +38,7 @@ export function WasherPhotoProofSection({
   servicePhase = null,
   initialArrivalNotes = '',
   onArrivalUploaded,
+  onPhotosChanged,
   embedded = false,
 }) {
   const reduced = useReducedMotion();
@@ -61,7 +46,7 @@ export function WasherPhotoProofSection({
   const pendingKind = useRef(null);
 
   const [photos, setPhotos] = useState({ arrival: null, before: null, after: null });
-  const [demo, setDemo] = useState(() => (isDemo ? readDemo(jobId) : { arrival: false, before: false, after: false }));
+  const [demo, setDemo] = useState(() => (isDemo ? readDemoPhotoProof(jobId) : { arrival: false, before: false, after: false }));
   const [uploading, setUploading] = useState(null);
   const [loading, setLoading] = useState(!isDemo && Boolean(jobId));
   const [arrivalNotes, setArrivalNotes] = useState(initialArrivalNotes || '');
@@ -86,10 +71,15 @@ export function WasherPhotoProofSection({
     servicePhase &&
     ['arrival_approved', 'wash_in_progress', 'completed'].includes(servicePhase);
 
-  const showWashPhotos =
+  const showBeforeWash =
     isDemo ||
     phaseRank(washerPhase) >= phaseRank('arrival_approved') ||
     ['arrival_approved', 'wash_in_progress', 'completed'].includes(servicePhase || '');
+
+  const showAfterWash =
+    isDemo ||
+    phaseRank(washerPhase) >= phaseRank('wash_started') ||
+    ['wash_in_progress', 'completed'].includes(servicePhase || '');
 
   const loadPhotos = useCallback(async () => {
     if (!jobId || isDemo) {
@@ -118,11 +108,15 @@ export function WasherPhotoProofSection({
   const openPicker = (kind) => {
     if (isDemo) {
       try {
-        sessionStorage.setItem(demoKey(kind, jobId), '1');
+        sessionStorage.setItem(demoPhotoProofKey(kind, jobId), '1');
       } catch {
         /* ignore */
       }
-      setDemo((d) => ({ ...d, [kind]: true }));
+      setDemo((d) => {
+        const next = { ...d, [kind]: true };
+        onPhotosChanged?.(next);
+        return next;
+      });
       if (kind === 'arrival') {
         onArrivalUploaded?.();
         toast.success('Vehicle condition sent — waiting for customer approval (demo)');
@@ -167,10 +161,14 @@ export function WasherPhotoProofSection({
         file,
         kind === 'arrival' ? arrivalNotes : undefined,
       );
-      setPhotos((prev) => ({
-        ...prev,
-        [kind]: { ...saved, displayUrl: photoUrl(saved.url) },
-      }));
+      setPhotos((prev) => {
+        const next = {
+          ...prev,
+          [kind]: { ...saved, displayUrl: photoUrl(saved.url) },
+        };
+        onPhotosChanged?.(next);
+        return next;
+      });
       dispatchBookingsSync();
       if (kind === 'arrival') {
         onArrivalUploaded?.();
@@ -192,7 +190,8 @@ export function WasherPhotoProofSection({
       disabled={
         busy ||
         (def.kind === 'arrival' && arrivalLocked) ||
-        ((def.kind === 'before' || def.kind === 'after') && !showWashPhotos)
+        (def.kind === 'before' && !showBeforeWash) ||
+        (def.kind === 'after' && !showAfterWash)
       }
       onClick={() => !busy && openPicker(def.kind)}
       initial={reduced ? false : { opacity: 0, y: 10 }}
@@ -330,48 +329,51 @@ export function WasherPhotoProofSection({
         </div>
       ) : null}
 
-      {showWashPhotos ? (
-      <div className="space-y-3">
-        <div className="flex items-end justify-between gap-2">
-          <div>
-            <h2 className={sectionTitle}>Wash photos</h2>
-            <p className={sectionSub}>
-              {isDemo
-                ? 'Demo job — tap to simulate before & after captures.'
-                : 'One before and one after — visible to customer and admin (no approval needed).'}
+      {showBeforeWash || showAfterWash ? (
+        <div className="space-y-5">
+          {loading ? (
+            <p className="flex items-center gap-2 text-xs text-wg-muted">
+              <Loader2 className="size-4 animate-spin" aria-hidden />
+              Loading proof photos…
             </p>
-          </div>
-          {!isDemo ? (
-            <span className="shrink-0 rounded-full bg-emerald-500/15 px-2 py-0.5 text-[10px] font-black uppercase tracking-wide text-emerald-800 dark:text-emerald-200">
-              Live
-            </span>
-          ) : (
-            <span className="shrink-0 rounded-full bg-amber-500/15 px-2 py-0.5 text-[10px] font-black uppercase tracking-wide text-amber-900 dark:text-amber-100">
-              Demo
-            </span>
-          )}
-        </div>
+          ) : null}
 
-        {loading ? (
-          <p className="flex items-center gap-2 text-xs text-wg-muted">
-            <Loader2 className="size-4 animate-spin" aria-hidden />
-            Loading proof photos…
-          </p>
-        ) : null}
+          {showBeforeWash ? (
+            <div className="space-y-3">
+              <div>
+                <h2 className={sectionTitle}>Before service</h2>
+                <p className={sectionSub}>
+                  Upload before you tap <span className="font-semibold">Start service</span> on the dock.
+                </p>
+              </div>
+              {renderCard(
+                BEFORE_WASH_DEF,
+                1,
+                isDemo ? MOCK_BEFORE : photos.before?.displayUrl,
+                isDemo ? demo.before : Boolean(photos.before),
+                uploading === 'before',
+              )}
+            </div>
+          ) : null}
 
-        <div className="grid gap-4 sm:grid-cols-2">
-          {WASH_CARD_DEFS.map((def, i) => {
-            const live = photos[def.kind];
-            const done = isDemo ? demo[def.kind] : Boolean(live);
-            const displayUrl = isDemo
-              ? def.kind === 'before'
-                ? MOCK_BEFORE
-                : MOCK_AFTER
-              : live?.displayUrl;
-            return renderCard(def, i + 1, displayUrl, done, uploading === def.kind);
-          })}
+          {showAfterWash ? (
+            <div className="space-y-3">
+              <div>
+                <h2 className={sectionTitle}>After service (QC)</h2>
+                <p className={sectionSub}>
+                  Upload when you run QC — required before you swipe to finish the job.
+                </p>
+              </div>
+              {renderCard(
+                AFTER_WASH_DEF,
+                2,
+                isDemo ? MOCK_AFTER : photos.after?.displayUrl,
+                isDemo ? demo.after : Boolean(photos.after),
+                uploading === 'after',
+              )}
+            </div>
+          ) : null}
         </div>
-      </div>
       ) : null}
     </div>
   );

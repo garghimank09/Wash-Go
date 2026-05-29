@@ -2,7 +2,6 @@ import { Link } from 'react-router-dom';
 import { Sparkles, ToggleLeft, ToggleRight } from 'lucide-react';
 
 import { NotificationBell } from '../../components/NotificationBell';
-import { PartnerNavMenu } from '../../components/PartnerNavMenu';
 import { WasherTrustCompactBar } from '../../features/washer/WasherTrustCompactBar';
 import { partnerNotificationsService } from '../../services/notificationsService';
 import { cn } from '../../lib/cn';
@@ -47,7 +46,6 @@ export function WasherTopBar({ av }) {
             <Sparkles className="size-3 shrink-0" strokeWidth={2} aria-hidden />
             {av.summary}
           </span>
-          <PartnerNavMenu />
         </div>
       </div>
       <WasherTrustCompactBar className="mx-auto mt-2 w-full" />

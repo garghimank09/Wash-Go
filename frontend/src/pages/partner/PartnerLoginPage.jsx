@@ -10,12 +10,12 @@ import { usePartnerAuth } from '../../context/PartnerAuthContext';
 import { Button } from '../../ui/button';
 import { Input } from '../../ui/input';
 import { GlassPanel } from '../../ui/glass-panel';
-import { ADMIN_LOGIN_ONLY_MESSAGE, isAdminDemoEmail, isDemoEmail } from '../../lib/demoAccounts';
-import { clearCustomerSession } from '../../lib/adminLoginGuard';
+import { ADMIN_LOGIN_ONLY_MESSAGE, isDemoPhone } from '../../lib/demoAccounts';
+import { clearCustomerSession, isBlockedAdminPortalPhone } from '../../lib/adminLoginGuard';
 import { authService } from '../../services/authService';
 import { partnerAuthService } from '../../services/partnerAuthService';
 import { getErrorMessage } from '../../services/api';
-import { isValidEmail, validateOtpCode } from '../../utils/validators';
+import { normalizeIndianPhoneDigits, validateIndianPhone10, validateOtpCode } from '../../utils/validators';
 
 export function PartnerLoginPage() {
   const { refreshUser, user: customerUser } = useAuth();
@@ -26,11 +26,13 @@ export function PartnerLoginPage() {
 
   const [view, setView] = useState('login');
   const [step, setStep] = useState('credentials');
-  const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState('');
+  const [phoneError, setPhoneError] = useState('');
   const [password, setPassword] = useState('');
   const [otp, setOtp] = useState('');
   const [otpError, setOtpError] = useState('');
   const [otpInfo, setOtpInfo] = useState('');
+  const [otpDestination, setOtpDestination] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [resendLoading, setResendLoading] = useState(false);
@@ -51,41 +53,45 @@ export function PartnerLoginPage() {
     return <Navigate to="/partner" replace />;
   }
 
-  const normalizedEmail = email.trim().toLowerCase();
-  const demoAccount = isDemoEmail(normalizedEmail) && !isAdminDemoEmail(normalizedEmail);
+  const normalizedPhone = normalizeIndianPhoneDigits(phone);
+  const demoAccount = isDemoPhone(normalizedPhone);
 
   const rejectAdminOnThisPortal = () => {
     setError(ADMIN_LOGIN_ONLY_MESSAGE);
   };
 
+  const safeFrom =
+    typeof from === 'string' && from.startsWith('/partner') && from !== '/partner/login'
+      ? from
+      : '/partner';
+
   const submitCredentials = async (e) => {
     e.preventDefault();
     setError('');
-    if (!isValidEmail(email)) {
-      setError('Enter a valid email');
+    const pErr = validateIndianPhone10(phone, { required: true });
+    setPhoneError(pErr ?? '');
+    if (pErr) {
+      setError(pErr);
       return;
     }
     if (!password) {
       setError('Password is required');
       return;
     }
-    if (isAdminDemoEmail(normalizedEmail)) {
+    if (isBlockedAdminPortalPhone(normalizedPhone)) {
       rejectAdminOnThisPortal();
       return;
     }
     setLoading(true);
     try {
       if (demoAccount) {
-        await loginPartner(normalizedEmail, password);
-        const safeFrom =
-          typeof from === 'string' && from.startsWith('/partner') && from !== '/partner/login'
-            ? from
-            : '/partner';
+        await loginPartner({ phone: normalizedPhone, password });
         navigate(safeFrom, { replace: true });
         return;
       }
-      const res = await partnerAuthService.sendOtp(normalizedEmail, 'login');
-      setOtpInfo(res.message || 'Check your email for the code.');
+      const res = await partnerAuthService.sendOtp({ phone: normalizedPhone, purpose: 'login' });
+      setOtpDestination(res.delivery_target || '');
+      setOtpInfo(res.message || 'Check your phone for the code.');
       setStep('otp');
     } catch (err) {
       if (err?.message === 'ADMIN_ROLE') {
@@ -113,17 +119,9 @@ export function PartnerLoginPage() {
       setError(otpErr);
       return;
     }
-    if (isAdminDemoEmail(normalizedEmail)) {
-      rejectAdminOnThisPortal();
-      return;
-    }
     setLoading(true);
     try {
-      await loginPartner(normalizedEmail, password, otp.trim());
-      const safeFrom =
-        typeof from === 'string' && from.startsWith('/partner') && from !== '/partner/login'
-          ? from
-          : '/partner';
+      await loginPartner({ phone: normalizedPhone, password, otpCode: otp.trim() });
       navigate(safeFrom, { replace: true });
     } catch (err) {
       if (err?.message === 'ADMIN_ROLE') {
@@ -133,7 +131,7 @@ export function PartnerLoginPage() {
         return;
       }
       if (err?.message === 'PARTNER_ROLE') {
-        setError('This portal is for approved WashGo partners only. Use the customer app to book washes.');
+        setError('This portal is for approved WashGo partners only.');
         return;
       }
       setError(getErrorMessage(err));
@@ -146,7 +144,8 @@ export function PartnerLoginPage() {
     setResendLoading(true);
     setError('');
     try {
-      const res = await partnerAuthService.sendOtp(normalizedEmail, 'login');
+      const res = await partnerAuthService.sendOtp({ phone: normalizedPhone, purpose: 'login' });
+      setOtpDestination(res.delivery_target || otpDestination);
       setOtpInfo(res.message || 'A new code was sent.');
       setOtp('');
       setOtpError('');
@@ -177,10 +176,10 @@ export function PartnerLoginPage() {
           </h1>
           <p className="mx-auto mt-2 max-w-sm text-sm leading-relaxed text-white/65">
             {view === 'forgot'
-              ? 'We will email you a verification code.'
+              ? 'Reset with your registered mobile.'
               : step === 'otp'
-                ? 'Enter the verification code we emailed you.'
-                : 'Sign in to manage jobs, availability, and payouts.'}
+                ? 'Enter the SMS verification code.'
+                : 'Sign in with mobile + password.'}
           </p>
         </div>
 
@@ -188,7 +187,7 @@ export function PartnerLoginPage() {
           <div className="mb-6 flex items-start gap-3 rounded-xl border border-emerald-500/20 bg-emerald-500/[0.07] p-3 text-xs text-emerald-50/90">
             <Sparkles className="mt-0.5 size-4 shrink-0 text-emerald-300" strokeWidth={2} aria-hidden />
             <p>
-              <span className="font-bold text-emerald-100">Partner accounts only.</span> Customer bookings stay in the main WashGo app.
+              <span className="font-bold text-emerald-100">Partner accounts only.</span> Customer bookings use the main app.
             </p>
           </div>
 
@@ -196,7 +195,6 @@ export function PartnerLoginPage() {
             <ForgotPasswordForm
               sendOtp={partnerAuthService.sendOtp}
               resetPassword={partnerAuthService.resetPassword}
-              roleHint="partner"
               mutedClassName="text-white/70"
               onBack={() => setView('login')}
               onSuccess={() => {
@@ -207,82 +205,91 @@ export function PartnerLoginPage() {
               }}
             />
           ) : (
-          <form className="space-y-4" onSubmit={step === 'otp' ? submitOtp : submitCredentials} noValidate>
-            <Input
-              label="Work email"
-              name="email"
-              type="email"
-              autoComplete="username"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              disabled={step === 'otp'}
-            />
-            <Input
-              label="Password"
-              name="password"
-              type="password"
-              autoComplete="current-password"
-              passwordToggle
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              disabled={step === 'otp'}
-            />
-            {step === 'credentials' ? (
-              <p className="text-right">
-                <button
+            <form className="space-y-4" onSubmit={step === 'otp' ? submitOtp : submitCredentials} noValidate>
+              <Input
+                label="Mobile number"
+                name="phone"
+                type="tel"
+                inputMode="numeric"
+                autoComplete="tel"
+                maxLength={10}
+                placeholder="10-digit mobile"
+                value={phone}
+                onChange={(e) => {
+                  const digits = normalizeIndianPhoneDigits(e.target.value);
+                  setPhone(digits);
+                  if (phoneError) setPhoneError(validateIndianPhone10(digits, { required: true }) ?? '');
+                }}
+                onBlur={() => setPhoneError(validateIndianPhone10(phone, { required: true }) ?? '')}
+                error={phoneError}
+                disabled={step === 'otp'}
+              />
+              <Input
+                label="Password"
+                name="password"
+                type="password"
+                autoComplete="current-password"
+                passwordToggle
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                disabled={step === 'otp'}
+              />
+              {step === 'credentials' ? (
+                <p className="text-right">
+                  <button
+                    type="button"
+                    className="text-sm font-semibold text-emerald-300 hover:text-emerald-200"
+                    onClick={() => {
+                      setView('forgot');
+                      setError('');
+                    }}
+                  >
+                    Forgot password?
+                  </button>
+                </p>
+              ) : null}
+              {step === 'otp' ? (
+                <OtpVerificationFields
+                  destination={otpDestination}
+                  otp={otp}
+                  onOtpChange={(e) => {
+                    const v = e.target.value.replace(/\D/g, '').slice(0, 6);
+                    setOtp(v);
+                    if (otpError) setOtpError(validateOtpCode(v) ?? '');
+                  }}
+                  otpError={otpError}
+                  onOtpBlur={() => setOtpError(validateOtpCode(otp) ?? '')}
+                  onResend={() => void handleResend()}
+                  resendLoading={resendLoading}
+                  infoMessage={otpInfo}
+                  mutedClassName="text-white/70"
+                />
+              ) : null}
+              {error ? <p className="text-sm text-rose-400">{error}</p> : null}
+              <Button
+                type="submit"
+                className="w-full bg-gradient-to-r from-emerald-600 to-cyan-600 text-white shadow-lg shadow-emerald-900/30"
+                loading={loading}
+              >
+                {step === 'otp' ? 'Verify & enter console' : 'Continue'}
+              </Button>
+              {step === 'otp' ? (
+                <Button
                   type="button"
-                  className="text-sm font-semibold text-emerald-300 hover:text-emerald-200"
+                  variant="ghost"
+                  size="sm"
+                  className="w-full text-white/70"
                   onClick={() => {
-                    setView('forgot');
+                    setStep('credentials');
+                    setOtp('');
+                    setOtpError('');
                     setError('');
                   }}
                 >
-                  Forgot password?
-                </button>
-              </p>
-            ) : null}
-            {step === 'otp' ? (
-              <OtpVerificationFields
-                email={normalizedEmail}
-                otp={otp}
-                onOtpChange={(e) => {
-                  const v = e.target.value.replace(/\D/g, '').slice(0, 6);
-                  setOtp(v);
-                  if (otpError) setOtpError(validateOtpCode(v) ?? '');
-                }}
-                otpError={otpError}
-                onOtpBlur={() => setOtpError(validateOtpCode(otp) ?? '')}
-                onResend={() => void handleResend()}
-                resendLoading={resendLoading}
-                infoMessage={otpInfo}
-                mutedClassName="text-white/70"
-              />
-            ) : null}
-            {error ? <p className="text-sm text-rose-400">{error}</p> : null}
-            <Button
-              type="submit"
-              className="w-full bg-gradient-to-r from-emerald-600 to-cyan-600 text-white shadow-lg shadow-emerald-900/30"
-              loading={loading}
-            >
-              {step === 'otp' ? 'Verify & enter console' : 'Continue'}
-            </Button>
-            {step === 'otp' ? (
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                className="w-full text-white/70"
-                onClick={() => {
-                  setStep('credentials');
-                  setOtp('');
-                  setOtpError('');
-                  setError('');
-                }}
-              >
-                Back
-              </Button>
-            ) : null}
-          </form>
+                  Back
+                </Button>
+              ) : null}
+            </form>
           )}
 
           {view === 'login' ? (
@@ -303,16 +310,21 @@ export function PartnerLoginPage() {
           ) : null}
         </GlassPanel>
 
-        <DemoCredentialsPanel highlight="Partner" excludeLabels={['Admin']} />
+        <DemoCredentialsPanel
+          highlight="Partner"
+          onFillDemo={({ phone: demoPhone, password: demoPassword }) => {
+            setPhone(demoPhone);
+            setPassword(demoPassword);
+            setPhoneError('');
+            setError('');
+            setStep('credentials');
+          }}
+        />
         <p className="mt-4 text-center text-sm text-white/55">
           WashGo admin?{' '}
           <Link to="/admin/login" className="font-semibold text-indigo-300 hover:text-indigo-200">
             Admin console sign in
           </Link>
-        </p>
-
-        <p className="mt-8 text-center text-[11px] text-white/40">
-          Demo partner account skips email verification.
         </p>
       </div>
     </div>

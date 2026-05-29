@@ -29,6 +29,7 @@ import {
   washerAdvanceBlockedReason,
 } from '../../lib/washerJobPhase';
 import { dispatchBookingsSync } from '../../lib/bookingSyncEvents';
+import { hasBookingPhoto } from '../../lib/washerPhotoProof';
 import { useReducedMotion } from '../../lib/useReducedMotion';
 import { cn } from '../../lib/cn';
 import { Card } from '../../ui/card';
@@ -77,6 +78,7 @@ export function WasherJobPage() {
   const [checklist, setChecklist] = useState(() => (id ? loadChecklist(id) : DEFAULT_CHECKLIST.map((c) => ({ ...c }))));
   const [celebrate, setCelebrate] = useState(false);
   const [advancing, setAdvancing] = useState(false);
+  const [photoTick, setPhotoTick] = useState(0);
   const prevPhaseRef = useRef(null);
 
   const reloadPhase = useCallback(() => setPhaseTick((t) => t + 1), []);
@@ -125,14 +127,31 @@ export function WasherJobPage() {
   const apiStatus = job?.status ?? 'pending';
   const servicePhase = job?.service_phase ?? null;
   const displayJob = useMemo(() => enrichPartnerJob(job), [job]);
-  const hasArrivalPhoto = Boolean(job?.photos?.some((p) => p.kind === 'arrival'));
-  // eslint-disable-next-line react-hooks/exhaustive-deps -- phaseTick forces re-read of sessionStorage after advanceWasherPhase
+  const hasArrivalPhoto = useMemo(
+    () => hasBookingPhoto(job, 'arrival', { isDemo, jobId: id }),
+    [job, isDemo, id, photoTick],
+  );
+  const hasBeforePhoto = useMemo(
+    () => hasBookingPhoto(job, 'before', { isDemo, jobId: id }),
+    [job, isDemo, id, photoTick],
+  );
+  const hasAfterPhoto = useMemo(
+    () => hasBookingPhoto(job, 'after', { isDemo, jobId: id }),
+    [job, isDemo, id, photoTick],
+  );
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- phaseTick/photoTick re-read sessionStorage
   const phase = useMemo(
     () => effectiveWasherPhase(id, apiStatus, servicePhase),
     [id, apiStatus, servicePhase, phaseTick],
   );
-  const advanceBlockedReason = washerAdvanceBlockedReason(phase, { hasArrivalPhoto });
-  const advanceDisabled = !canWasherAdvancePhase(phase, { hasArrivalPhoto, servicePhase });
+  const advanceBlockedReason = washerAdvanceBlockedReason(phase, {
+    hasArrivalPhoto,
+    hasBeforePhoto,
+    hasAfterPhoto,
+  });
+  const advanceDisabled =
+    !canWasherAdvancePhase(phase, { hasArrivalPhoto, hasBeforePhoto, hasAfterPhoto, servicePhase }) ||
+    advancing;
   const customerReview = job?.review ?? null;
   const showFeedbackSection = apiStatus === 'completed' || phase === 'completed';
 
@@ -162,7 +181,9 @@ export function WasherJobPage() {
   }, [phase, reduced]);
 
   const toggleCheck = (cid) => {
-    const next = checklist.map((c) => (c.id === cid ? { ...c, done: !c.done } : c));
+    const row = checklist.find((c) => c.id === cid);
+    if (!row || row.done) return;
+    const next = checklist.map((c) => (c.id === cid ? { ...c, done: true } : c));
     setChecklist(next);
     if (id) saveChecklist(id, next);
   };
@@ -176,8 +197,18 @@ export function WasherJobPage() {
       return;
     }
     const current = effectiveWasherPhase(id, apiStatus, job?.service_phase);
-    if (!canWasherAdvancePhase(current, { hasArrivalPhoto, servicePhase: job?.service_phase })) {
-      toast.error(washerAdvanceBlockedReason(current, { hasArrivalPhoto }) || 'Complete the step above first');
+    if (
+      !canWasherAdvancePhase(current, {
+        hasArrivalPhoto,
+        hasBeforePhoto,
+        hasAfterPhoto,
+        servicePhase: job?.service_phase,
+      })
+    ) {
+      toast.error(
+        washerAdvanceBlockedReason(current, { hasArrivalPhoto, hasBeforePhoto, hasAfterPhoto }) ||
+          'Complete the step above first',
+      );
       return;
     }
     const nextPhase = getNextWasherPhase(current);
@@ -284,6 +315,10 @@ export function WasherJobPage() {
             servicePhase={servicePhase}
             initialArrivalNotes={job?.arrival_condition_notes ?? ''}
             onArrivalUploaded={onArrivalUploaded}
+            onPhotosChanged={() => {
+              setPhotoTick((t) => t + 1);
+              void load(true);
+            }}
           />
 
           <div className="grid gap-4 sm:grid-cols-2">
@@ -368,14 +403,15 @@ export function WasherJobPage() {
                   <m.button
                     type="button"
                     onClick={() => toggleCheck(c.id)}
+                    disabled={c.done}
                     initial={reduced ? false : { opacity: 0, y: 4 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: reduced ? 0 : idx * 0.03 }}
-                    whileTap={reduced ? undefined : { scale: 0.99 }}
+                    whileTap={c.done || reduced ? undefined : { scale: 0.99 }}
                     className={cn(
                       'flex min-h-[44px] w-full items-center gap-3 rounded-xl border px-3 py-2.5 text-left text-sm font-semibold transition-colors',
                       c.done
-                        ? 'border-emerald-500/30 bg-emerald-500/10 text-wg-muted line-through dark:border-emerald-500/20'
+                        ? 'cursor-default border-emerald-500/30 bg-emerald-500/10 text-wg-muted line-through dark:border-emerald-500/20'
                         : 'border-wg-border bg-wg-surface-elevated hover:border-cyan-500/40 dark:border-white/15 dark:bg-white/[0.06]',
                     )}
                   >
@@ -403,7 +439,7 @@ export function WasherJobPage() {
         onAdvance={onAdvance}
         showSwipeComplete
         showCelebrationBanner={celebrate}
-        advanceDisabled={advanceDisabled || advancing}
+        advanceDisabled={advanceDisabled}
         advanceHint={advanceBlockedReason}
       />
     </div>

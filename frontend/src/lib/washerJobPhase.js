@@ -115,20 +115,28 @@ export function advanceWasherPhase(bookingId, apiStatus, servicePhase = null) {
 }
 
 /** Whether the dock primary action should be enabled. */
-export function canWasherAdvancePhase(phase, { hasArrivalPhoto, servicePhase }) {
+export function canWasherAdvancePhase(phase, { hasArrivalPhoto, hasBeforePhoto, hasAfterPhoto, servicePhase }) {
   if (phase === 'arrived' && !hasArrivalPhoto) return false;
   if (phase === 'awaiting_approval') return false;
+  if (phase === 'arrival_approved' && !hasBeforePhoto) return false;
+  if (phase === 'qc_review' && !hasAfterPhoto) return false;
   if (phase === 'arrival_approved') return true;
   if (phase === 'wash_started' && servicePhase === 'awaiting_arrival_approval') return false;
   return phase !== 'completed';
 }
 
-export function washerAdvanceBlockedReason(phase, { hasArrivalPhoto }) {
+export function washerAdvanceBlockedReason(phase, { hasArrivalPhoto, hasBeforePhoto, hasAfterPhoto }) {
   if (phase === 'arrived' && !hasArrivalPhoto) {
     return 'Capture the vehicle condition photo (and optional notes) above before continuing';
   }
   if (phase === 'awaiting_approval') {
     return 'Waiting for the customer to approve the vehicle condition';
+  }
+  if (phase === 'arrival_approved' && !hasBeforePhoto) {
+    return 'Upload the before wash photo above, then start service';
+  }
+  if (phase === 'qc_review' && !hasAfterPhoto) {
+    return 'Upload the after wash photo above before finishing the job';
   }
   return null;
 }

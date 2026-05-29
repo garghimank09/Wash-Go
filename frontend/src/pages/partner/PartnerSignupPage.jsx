@@ -37,6 +37,7 @@ export function PartnerSignupPage() {
   const [otp, setOtp] = useState('');
   const [otpError, setOtpError] = useState('');
   const [otpInfo, setOtpInfo] = useState('');
+  const [otpDestination, setOtpDestination] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [resendLoading, setResendLoading] = useState(false);
@@ -89,8 +90,13 @@ export function PartnerSignupPage() {
 
     setLoading(true);
     try {
-      const res = await partnerAuthService.sendOtp(email.trim().toLowerCase(), 'signup');
-      setOtpInfo(res.message || 'Check your email for the code.');
+      const res = await partnerAuthService.sendOtp({
+        email: email.trim().toLowerCase(),
+        phone: normalizeIndianPhoneDigits(phone),
+        purpose: 'signup',
+      });
+      setOtpDestination(res.delivery_target || '');
+      setOtpInfo(res.message || 'Check your phone for the code.');
       setStep('otp');
     } catch (err) {
       setError(getErrorMessage(err));
@@ -135,8 +141,13 @@ export function PartnerSignupPage() {
     setResendLoading(true);
     setError('');
     try {
-      const res = await partnerAuthService.sendOtp(email.trim().toLowerCase(), 'signup');
-      setOtpInfo(res.message || 'A new code was sent.');
+      const res = await partnerAuthService.sendOtp({
+        email: email.trim().toLowerCase(),
+        phone: normalizeIndianPhoneDigits(phone),
+        purpose: 'signup',
+      });
+      setOtpDestination(res.delivery_target || otpDestination);
+      setOtpInfo(res.message || 'A new code was sent to your phone.');
       setOtp('');
       setOtpError('');
     } catch (err) {
@@ -165,7 +176,7 @@ export function PartnerSignupPage() {
           <p className="mx-auto mt-2 max-w-sm text-sm leading-relaxed text-white/65">
             {step === 'otp'
               ? 'Verify your work email to finish registration.'
-              : 'All fields are required. We will email you a verification code.'}
+              : 'All fields are required. We will text a verification code to your phone.'}
           </p>
         </div>
 
@@ -250,7 +261,7 @@ export function PartnerSignupPage() {
             />
             {step === 'otp' ? (
               <OtpVerificationFields
-                email={email.trim().toLowerCase()}
+                destination={otpDestination}
                 otp={otp}
                 onOtpChange={(e) => {
                   const v = e.target.value.replace(/\D/g, '').slice(0, 6);

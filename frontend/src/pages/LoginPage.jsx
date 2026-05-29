@@ -7,12 +7,12 @@ import { OtpVerificationFields } from '../components/OtpVerificationFields';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { useAuth } from '../context/AuthContext';
-import { ADMIN_LOGIN_ONLY_MESSAGE, isAdminDemoEmail, isDemoEmail } from '../lib/demoAccounts';
-import { clearCustomerSession } from '../lib/adminLoginGuard';
+import { ADMIN_LOGIN_ONLY_MESSAGE, isDemoPhone } from '../lib/demoAccounts';
+import { clearCustomerSession, isBlockedAdminPortalPhone } from '../lib/adminLoginGuard';
 import { resolvePostLoginPath } from '../lib/appPaths';
 import { authService } from '../services/authService';
 import { getErrorMessage } from '../services/api';
-import { isValidEmail, validateOtpCode } from '../utils/validators';
+import { normalizeIndianPhoneDigits, validateIndianPhone10, validateOtpCode } from '../utils/validators';
 
 export function LoginPage() {
   const { login, user } = useAuth();
@@ -22,11 +22,13 @@ export function LoginPage() {
 
   const [view, setView] = useState('login');
   const [step, setStep] = useState('credentials');
-  const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState('');
+  const [phoneError, setPhoneError] = useState('');
   const [password, setPassword] = useState('');
   const [otp, setOtp] = useState('');
   const [otpError, setOtpError] = useState('');
   const [otpInfo, setOtpInfo] = useState('');
+  const [otpDestination, setOtpDestination] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [resendLoading, setResendLoading] = useState(false);
@@ -34,8 +36,8 @@ export function LoginPage() {
   if (user?.role === 'admin') return <Navigate to="/admin/login" replace />;
   if (user) return <Navigate to={resolvePostLoginPath(user, from)} replace />;
 
-  const normalizedEmail = email.trim().toLowerCase();
-  const demoAccount = isDemoEmail(normalizedEmail) && !isAdminDemoEmail(normalizedEmail);
+  const normalizedPhone = normalizeIndianPhoneDigits(phone);
+  const demoAccount = isDemoPhone(normalizedPhone);
 
   const rejectAdminOnThisPortal = () => {
     setError(ADMIN_LOGIN_ONLY_MESSAGE);
@@ -44,22 +46,24 @@ export function LoginPage() {
   const submitCredentials = async (e) => {
     e.preventDefault();
     setError('');
-    if (!isValidEmail(email)) {
-      setError('Enter a valid email');
+    const pErr = validateIndianPhone10(phone, { required: true });
+    setPhoneError(pErr ?? '');
+    if (pErr) {
+      setError(pErr);
       return;
     }
     if (!password) {
       setError('Password is required');
       return;
     }
-    if (isAdminDemoEmail(normalizedEmail)) {
+    if (isBlockedAdminPortalPhone(normalizedPhone)) {
       rejectAdminOnThisPortal();
       return;
     }
     setLoading(true);
     try {
       if (demoAccount) {
-        const me = await login(normalizedEmail, password);
+        const me = await login({ phone: normalizedPhone, password });
         if (me.role === 'admin') {
           clearCustomerSession(authService);
           rejectAdminOnThisPortal();
@@ -68,8 +72,9 @@ export function LoginPage() {
         navigate(resolvePostLoginPath(me, from), { replace: true });
         return;
       }
-      const res = await authService.sendOtp(normalizedEmail, 'login', 'customer');
-      setOtpInfo(res.message || 'Check your email for the code.');
+      const res = await authService.sendOtp({ phone: normalizedPhone, purpose: 'login', roleHint: 'customer' });
+      setOtpDestination(res.delivery_target || '');
+      setOtpInfo(res.message || 'Check your phone for the code.');
       setStep('otp');
     } catch (err) {
       setError(getErrorMessage(err));
@@ -87,13 +92,9 @@ export function LoginPage() {
       setError(otpErr);
       return;
     }
-    if (isAdminDemoEmail(normalizedEmail)) {
-      rejectAdminOnThisPortal();
-      return;
-    }
     setLoading(true);
     try {
-      const me = await login(normalizedEmail, password, otp.trim());
+      const me = await login({ phone: normalizedPhone, password, otpCode: otp.trim() });
       if (me.role === 'admin') {
         clearCustomerSession(authService);
         rejectAdminOnThisPortal();
@@ -108,15 +109,12 @@ export function LoginPage() {
   };
 
   const handleResend = async () => {
-    if (isAdminDemoEmail(normalizedEmail)) {
-      rejectAdminOnThisPortal();
-      return;
-    }
     setResendLoading(true);
     setError('');
     try {
-      const res = await authService.sendOtp(normalizedEmail, 'login', 'customer');
-      setOtpInfo(res.message || 'A new code was sent.');
+      const res = await authService.sendOtp({ phone: normalizedPhone, purpose: 'login', roleHint: 'customer' });
+      setOtpDestination(res.delivery_target || otpDestination);
+      setOtpInfo(res.message || 'A new code was sent to your phone.');
       setOtp('');
       setOtpError('');
     } catch (err) {
@@ -133,10 +131,10 @@ export function LoginPage() {
       </h1>
       <p className="mt-1 text-sm text-white/65">
         {view === 'forgot'
-          ? 'We will email you a verification code.'
+          ? 'Reset with your registered mobile number.'
           : step === 'otp'
-            ? 'Enter the verification code we emailed you.'
-            : 'Welcome back to WashGo.'}
+            ? 'Enter the SMS verification code.'
+            : 'Sign in with mobile + password — we verify via SMS.'}
       </p>
 
       {view === 'forgot' ? (
@@ -144,7 +142,6 @@ export function LoginPage() {
           <ForgotPasswordForm
             sendOtp={authService.sendOtp}
             resetPassword={authService.resetPassword}
-            roleHint="customer"
             onBack={() => setView('login')}
             onSuccess={() => {
               setView('login');
@@ -157,12 +154,21 @@ export function LoginPage() {
       ) : (
         <form className="mt-8 space-y-4" onSubmit={step === 'otp' ? submitOtp : submitCredentials} noValidate>
           <Input
-            label="Email"
-            name="email"
-            type="email"
-            autoComplete="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
+            label="Mobile number"
+            name="phone"
+            type="tel"
+            inputMode="numeric"
+            autoComplete="tel"
+            maxLength={10}
+            placeholder="10-digit mobile"
+            value={phone}
+            onChange={(e) => {
+              const digits = normalizeIndianPhoneDigits(e.target.value);
+              setPhone(digits);
+              if (phoneError) setPhoneError(validateIndianPhone10(digits, { required: true }) ?? '');
+            }}
+            onBlur={() => setPhoneError(validateIndianPhone10(phone, { required: true }) ?? '')}
+            error={phoneError}
             disabled={step === 'otp'}
           />
           <Input
@@ -191,7 +197,7 @@ export function LoginPage() {
           ) : null}
           {step === 'otp' ? (
             <OtpVerificationFields
-              email={normalizedEmail}
+              destination={otpDestination}
               otp={otp}
               onOtpChange={(e) => {
                 const v = e.target.value.replace(/\D/g, '').slice(0, 6);
@@ -237,19 +243,25 @@ export function LoginPage() {
             </Link>
           </p>
           <p className="mt-3 text-center text-sm text-white/55">
-            Approved WashGo partner?{' '}
+            Partner?{' '}
             <Link to="/partner/login" className="font-semibold text-emerald-400 hover:text-emerald-300">
-              Partner sign in
+              Washer sign in
             </Link>
             {' · '}
             <Link to="/admin/login" className="font-semibold text-indigo-300 hover:text-indigo-200">
               Admin console
             </Link>
           </p>
-          <DemoCredentialsPanel highlight="Customer" excludeLabels={['Admin']} />
-          <p className="mt-2 text-center text-[11px] text-white/45">
-            Demo accounts skip email verification on this page.
-          </p>
+          <DemoCredentialsPanel
+            highlight="Customer"
+            onFillDemo={({ phone: demoPhone, password: demoPassword }) => {
+              setPhone(demoPhone);
+              setPassword(demoPassword);
+              setPhoneError('');
+              setError('');
+              setStep('credentials');
+            }}
+          />
         </>
       ) : null}
     </div>

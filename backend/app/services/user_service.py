@@ -20,9 +20,32 @@ async def get_user_by_email(db: AsyncSession, email: str) -> User | None:
     return result.scalar_one_or_none()
 
 
+def _normalize_phone_lookup(value: str) -> str | None:
+    from app.schemas.user_schema import _normalize_indian_phone
+
+    try:
+        return _normalize_indian_phone(value)
+    except ValueError:
+        return None
+
+
+async def get_user_by_phone(db: AsyncSession, phone: str) -> User | None:
+    digits = _normalize_phone_lookup(phone)
+    if not digits:
+        return None
+    result = await db.execute(select(User).where(User.phone == digits))
+    return result.scalar_one_or_none()
+
+
+async def is_phone_registered(db: AsyncSession, phone: str) -> bool:
+    return await get_user_by_phone(db, phone) is not None
+
+
 async def create_user(db: AsyncSession, data: UserCreate) -> User:
     if await get_user_by_email(db, data.email):
         raise ConflictError("Email already registered")
+    if await is_phone_registered(db, data.phone):
+        raise ConflictError("Phone number already registered")
 
     user = User(
         email=data.email.lower(),
@@ -59,6 +82,8 @@ async def reset_password(db: AsyncSession, email: str, new_password: str) -> Use
 async def create_partner_user(db: AsyncSession, data: PartnerSignup) -> User:
     if await get_user_by_email(db, data.email):
         raise ConflictError("Email already registered")
+    if await is_phone_registered(db, data.phone):
+        raise ConflictError("Phone number already registered")
 
     user = User(
         email=data.email.lower(),

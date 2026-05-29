@@ -3,32 +3,32 @@ import { useState } from 'react';
 import { OtpVerificationFields } from './OtpVerificationFields';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
-import { isDemoEmail } from '../lib/demoAccounts';
+import { isDemoPhone } from '../lib/demoAccounts';
 import { getErrorMessage } from '../services/api';
 import {
-  isValidEmail,
-  validateEmail,
+  normalizeIndianPhoneDigits,
+  validateIndianPhone10,
   validateOtpCode,
   validatePassword,
 } from '../utils/validators';
 
 /**
- * Forgot password: email → OTP email → new password.
- * @param {{ sendOtp: Function, resetPassword: Function, roleHint: string, onBack: () => void, onSuccess: () => void, mutedClassName?: string }} props
+ * Forgot password: mobile → SMS OTP → new password.
  */
 export function ForgotPasswordForm({
   sendOtp,
   resetPassword,
-  roleHint = 'customer',
   onBack,
   onSuccess,
   mutedClassName = 'text-white/65',
 }) {
-  const [step, setStep] = useState('email');
-  const [email, setEmail] = useState('');
+  const [step, setStep] = useState('phone');
+  const [phone, setPhone] = useState('');
+  const [phoneError, setPhoneError] = useState('');
   const [otp, setOtp] = useState('');
   const [otpError, setOtpError] = useState('');
   const [otpInfo, setOtpInfo] = useState('');
+  const [otpDestination, setOtpDestination] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [passwordError, setPasswordError] = useState('');
@@ -38,24 +38,26 @@ export function ForgotPasswordForm({
   const [loading, setLoading] = useState(false);
   const [resendLoading, setResendLoading] = useState(false);
 
-  const normalizedEmail = email.trim().toLowerCase();
+  const normalizedPhone = normalizeIndianPhoneDigits(phone);
 
   const sendResetOtp = async () => {
-    if (isDemoEmail(normalizedEmail)) {
+    if (isDemoPhone(normalizedPhone)) {
       throw new Error('Demo accounts cannot reset password. Use Demo1234.');
     }
-    const res = await sendOtp(normalizedEmail, 'password_reset', roleHint);
-    setOtpInfo(res.message || 'Check your email for the reset code.');
+    const res = await sendOtp({ phone: normalizedPhone, purpose: 'password_reset' });
+    setOtpDestination(res.delivery_target || '');
+    setOtpInfo(res.message || 'Check your phone for the reset code.');
     setStep('reset');
   };
 
-  const submitEmail = async (e) => {
+  const submitPhone = async (e) => {
     e.preventDefault();
     setError('');
     setSuccess('');
-    const emailErr = validateEmail(email, { required: true });
-    if (emailErr || !isValidEmail(email)) {
-      setError(emailErr || 'Enter a valid email');
+    const pErr = validateIndianPhone10(phone, { required: true });
+    setPhoneError(pErr ?? '');
+    if (pErr) {
+      setError(pErr);
       return;
     }
     setLoading(true);
@@ -74,8 +76,7 @@ export function ForgotPasswordForm({
     setSuccess('');
     const otpErr = validateOtpCode(otp);
     const pwErr = validatePassword(newPassword);
-    const matchErr =
-      newPassword !== confirmPassword ? 'Passwords do not match' : null;
+    const matchErr = newPassword !== confirmPassword ? 'Passwords do not match' : null;
 
     setOtpError(otpErr ?? '');
     setPasswordError(pwErr ?? '');
@@ -90,7 +91,7 @@ export function ForgotPasswordForm({
     setLoading(true);
     try {
       const res = await resetPassword({
-        email: normalizedEmail,
+        phone: normalizedPhone,
         otp_code: otp.trim(),
         new_password: newPassword,
       });
@@ -107,7 +108,8 @@ export function ForgotPasswordForm({
     setResendLoading(true);
     setError('');
     try {
-      const res = await sendOtp(normalizedEmail, 'password_reset', roleHint);
+      const res = await sendOtp({ phone: normalizedPhone, purpose: 'password_reset' });
+      setOtpDestination(res.delivery_target || otpDestination);
       setOtpInfo(res.message || 'A new code was sent.');
       setOtp('');
       setOtpError('');
@@ -118,19 +120,28 @@ export function ForgotPasswordForm({
     }
   };
 
-  if (step === 'email') {
+  if (step === 'phone') {
     return (
-      <form className="space-y-4" onSubmit={submitEmail} noValidate>
+      <form className="space-y-4" onSubmit={submitPhone} noValidate>
         <p className={`text-sm ${mutedClassName}`}>
-          Enter your account email. We will send a 6-digit code to reset your password.
+          Enter your registered 10-digit mobile. We will text you a code to reset your password.
         </p>
         <Input
-          label="Email"
-          name="reset_email"
-          type="email"
-          autoComplete="email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
+          label="Mobile number"
+          name="reset_phone"
+          type="tel"
+          inputMode="numeric"
+          autoComplete="tel"
+          maxLength={10}
+          placeholder="10-digit mobile"
+          value={phone}
+          onChange={(e) => {
+            const digits = normalizeIndianPhoneDigits(e.target.value);
+            setPhone(digits);
+            if (phoneError) setPhoneError(validateIndianPhone10(digits, { required: true }) ?? '');
+          }}
+          onBlur={() => setPhoneError(validateIndianPhone10(phone, { required: true }) ?? '')}
+          error={phoneError}
         />
         {error ? <p className="text-sm text-rose-400">{error}</p> : null}
         <Button type="submit" className="w-full" loading={loading}>
@@ -146,11 +157,12 @@ export function ForgotPasswordForm({
   return (
     <form className="space-y-4" onSubmit={submitReset} noValidate>
       <p className={`text-sm ${mutedClassName}`}>
-        Enter the code we sent to <span className="font-semibold text-white">{normalizedEmail}</span> and choose a new
+        Enter the code sent to{' '}
+        <span className="font-semibold text-white">{otpDestination || 'your phone'}</span> and choose a new
         password.
       </p>
       <OtpVerificationFields
-        email={normalizedEmail}
+        destination={otpDestination}
         otp={otp}
         onOtpChange={(e) => {
           const v = e.target.value.replace(/\D/g, '').slice(0, 6);
@@ -205,7 +217,7 @@ export function ForgotPasswordForm({
         size="sm"
         className="w-full text-white/70"
         onClick={() => {
-          setStep('email');
+          setStep('phone');
           setOtp('');
           setOtpError('');
           setError('');

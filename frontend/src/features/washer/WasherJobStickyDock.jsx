@@ -12,9 +12,9 @@ const PHASE_PRIMARY = {
   on_the_way: { label: "I've arrived onsite", sub: 'Document vehicle condition at location' },
   arrived: { label: 'Vehicle condition photo', sub: 'Add notes · customer approves before wash' },
   awaiting_approval: { label: 'Waiting for customer', sub: 'They review condition photo & notes' },
-  arrival_approved: { label: 'Start service', sub: 'Condition approved — begin wash' },
-  wash_started: { label: 'Service in progress', sub: 'Quality pass + wash photos' },
-  qc_review: { label: 'Run QC review', sub: 'Checklist + shine verification' },
+  arrival_approved: { label: 'Start service', sub: 'Upload before wash photo, then begin' },
+  wash_started: { label: 'Service in progress', sub: 'Complete wash · move to QC when ready' },
+  qc_review: { label: 'Run QC review', sub: 'Upload after wash photo · checklist · finish' },
   completed: { label: 'Job complete', sub: 'Great work — back to ops' },
 };
 

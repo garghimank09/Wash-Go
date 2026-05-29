@@ -1,5 +1,6 @@
 import { PARTNER_TOKEN_KEY } from '../constants/config';
 import { createAuthSessionStorage } from '../lib/authSession';
+import { normalizeIndianPhoneDigits } from '../utils/validators';
 import { partnerApi } from './partnerApi';
 
 const PARTNER_TOKEN_EXPIRES_KEY = 'washgo_partner_token_expires';
@@ -9,31 +10,36 @@ const session = createAuthSessionStorage(
   PARTNER_TOKEN_KEY,
 );
 
-/** Same `/auth/*` endpoints as customer app — separate token storage. */
 export const partnerAuthService = {
-  async sendOtp(email, purpose = 'login') {
-    const { data } = await partnerApi.post('/auth/otp/send', {
-      email: email.trim().toLowerCase(),
-      purpose,
-      role_hint: 'partner',
-    });
+  async sendOtp({ email, phone, purpose = 'login' }) {
+    const body = { purpose, role_hint: 'partner' };
+    if (email?.trim()) body.email = email.trim().toLowerCase();
+    if (phone?.trim()) body.phone = normalizeIndianPhoneDigits(phone);
+    const { data } = await partnerApi.post('/auth/otp/send', body);
     return data;
   },
-  async login(email, password, otpCode) {
-    const payload = { email: email.trim().toLowerCase(), password };
+  async login({ phone, password, otpCode }) {
+    const payload = {
+      phone: normalizeIndianPhoneDigits(phone),
+      password,
+    };
     if (otpCode) payload.otp_code = otpCode.trim();
     const { data } = await partnerApi.post('/auth/login', payload);
     return data;
   },
   async signup(payload) {
-    const { data } = await partnerApi.post('/auth/partner/signup', payload);
+    const { data } = await partnerApi.post('/auth/partner/signup', {
+      ...payload,
+      email: payload.email.trim().toLowerCase(),
+      phone: normalizeIndianPhoneDigits(payload.phone),
+    });
     return data;
   },
-  async resetPassword(body) {
+  async resetPassword({ phone, otp_code, new_password }) {
     const { data } = await partnerApi.post('/auth/password/reset', {
-      email: body.email.trim().toLowerCase(),
-      otp_code: body.otp_code.trim(),
-      new_password: body.new_password,
+      phone: normalizeIndianPhoneDigits(phone),
+      otp_code: otp_code.trim(),
+      new_password,
     });
     return data;
   },

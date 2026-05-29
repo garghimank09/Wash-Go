@@ -1,7 +1,7 @@
 import re
 from uuid import UUID
 
-from pydantic import BaseModel, EmailStr, Field, field_validator
+from pydantic import BaseModel, EmailStr, Field, field_validator, model_validator
 
 from app.models.user import UserRole
 
@@ -78,15 +78,25 @@ class PartnerSignup(BaseModel):
 
 
 class UserLogin(BaseModel):
-    email: EmailStr
+    phone: str = Field(min_length=10, max_length=32)
     password: str = Field(min_length=1, max_length=128)
     otp_code: str | None = Field(default=None, min_length=6, max_length=6)
 
+    @field_validator("phone")
+    @classmethod
+    def validate_login_phone(cls, v: str) -> str:
+        return _normalize_indian_phone(v)
+
 
 class PasswordResetRequest(BaseModel):
-    email: EmailStr
+    phone: str = Field(min_length=10, max_length=32)
     otp_code: str = Field(min_length=6, max_length=6)
     new_password: str = Field(min_length=8, max_length=128)
+
+    @field_validator("phone")
+    @classmethod
+    def validate_reset_phone(cls, v: str) -> str:
+        return _normalize_indian_phone(v)
 
     @field_validator("new_password")
     @classmethod

@@ -1,7 +1,9 @@
 import { NavLink } from 'react-router-dom';
-import { Calendar, Car, LayoutDashboard, Sparkles, UserCircle } from 'lucide-react';
+import { Calendar, Car, LayoutDashboard, Sparkles } from 'lucide-react';
 import { m } from 'framer-motion';
 
+import { SidebarAccountFooter } from './SidebarAccountFooter';
+import { useAuth } from '../context/AuthContext';
 import {
   expandOnHover,
   railAsideClass,
@@ -18,8 +20,6 @@ const mainLinks = [
   { to: '/cars', label: 'My garage', Icon: Car },
   { to: '/booking', label: 'New wash', Icon: Sparkles },
 ];
-
-const footerLinks = [{ to: '/profile', label: 'Profile', Icon: UserCircle }];
 
 function SidebarNavItem({ to, label, end, Icon, onNavigate, reduced }) {
   return (
@@ -48,13 +48,14 @@ function SidebarNavItem({ to, label, end, Icon, onNavigate, reduced }) {
 
 export function Sidebar({ mobileOpen, onNavigate }) {
   const reduced = useReducedMotion();
+  const { user, logout } = useAuth();
 
   return (
     <aside
       className={railAsideClass({
         mobileOpen,
         surfaceClass:
-          'border-wg-border/80 wg-glass-surface backdrop-blur-2xl dark:border-white/10',
+          'flex flex-col border-wg-border/80 wg-glass-surface backdrop-blur-2xl dark:border-white/10',
       })}
     >
       <div className={cn('flex h-16 shrink-0 items-center border-b border-wg-border', RAIL_BRAND_ROW)}>
@@ -81,24 +82,13 @@ export function Sidebar({ mobileOpen, onNavigate }) {
         ))}
       </nav>
 
-      <div
-        className={cn(
-          'shrink-0 border-t border-wg-border/80 p-3 dark:border-white/10',
-          RAIL_NAV_PAD,
-        )}
-      >
-        {footerLinks.map((link) => (
-          <SidebarNavItem key={link.to} {...link} onNavigate={onNavigate} reduced={reduced} />
-        ))}
-        <p
-          className={cn(
-            'mt-3 hidden px-3 text-xs leading-relaxed text-wg-muted max-md:block',
-            expandOnHover(),
-          )}
-        >
-          Tip: use the floating chat for quick help while you navigate.
-        </p>
-      </div>
+      <SidebarAccountFooter
+        user={user}
+        profileTo="/profile"
+        roleLabel={user?.role === 'admin' ? 'Admin' : 'Member'}
+        onLogout={logout}
+        onNavigate={onNavigate}
+      />
     </aside>
   );
 }

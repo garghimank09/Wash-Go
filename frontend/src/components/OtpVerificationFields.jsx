@@ -1,13 +1,13 @@
-import { Mail } from 'lucide-react';
+import { Smartphone } from 'lucide-react';
 
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 
 /**
- * OTP step shown after credentials are validated and a code was sent.
+ * OTP step — SMS verification only.
  */
 export function OtpVerificationFields({
-  email,
+  destination,
   otp,
   onOtpChange,
   otpError,
@@ -17,12 +17,15 @@ export function OtpVerificationFields({
   infoMessage,
   mutedClassName = 'text-white/65',
 }) {
+  const target = destination || 'your phone';
+
   return (
     <div className="space-y-4 rounded-xl border border-cyan-500/20 bg-cyan-500/[0.06] p-4">
       <div className="flex items-start gap-2 text-sm">
-        <Mail className="mt-0.5 size-4 shrink-0 text-cyan-400" strokeWidth={1.75} aria-hidden />
+        <Smartphone className="mt-0.5 size-4 shrink-0 text-cyan-400" strokeWidth={1.75} aria-hidden />
         <p className={mutedClassName}>
-          We sent a 6-digit code to <span className="font-semibold text-white">{email}</span>.
+          We sent a 6-digit code via SMS to{' '}
+          <span className="font-semibold text-white">{target}</span>.
           {infoMessage ? ` ${infoMessage}` : ''}
         </p>
       </div>

@@ -2,6 +2,7 @@ import { Outlet, useLocation } from 'react-router-dom';
 
 import { PartnerBookingSyncBridge } from '../components/BookingSyncBridge';
 import { useWasherAvailability } from '../hooks/useWasherAvailability';
+import { PartnerMobileAccountBar } from '../features/washer/PartnerMobileAccountBar';
 import { WasherBottomNav } from '../features/washer/WasherBottomNav';
 import { WasherLiveActivityLayer } from '../features/washer/WasherLiveActivityLayer';
 import { WasherPartnerSyncBar } from '../features/washer/WasherPartnerSyncBar';
@@ -37,13 +38,14 @@ export function WasherLayout() {
         <main
           className={cn(
             'mx-auto w-full flex-1 px-4 pt-2 md:px-8 md:pt-4',
-            isJobDetail ? 'pb-52 md:pb-36 xl:pb-32' : 'pb-32 md:pb-8',
+            isJobDetail ? 'pb-60 md:pb-36 xl:pb-32' : 'pb-40 md:pb-8',
           )}
         >
           <PageShell maxWidth="wide" className="space-y-6 md:space-y-8">
             <Outlet context={av} />
           </PageShell>
         </main>
+        <PartnerMobileAccountBar />
         <WasherBottomNav />
       </div>
     </div>

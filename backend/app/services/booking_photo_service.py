@@ -112,11 +112,14 @@ async def upload_booking_photo(
     if booking.status.value in ("cancelled", "completed"):
         raise ValidationError("Cannot upload photos for a finished booking")
 
-    if kind in (BookingPhotoKind.before, BookingPhotoKind.after):
-        if booking.service_phase not in ("arrival_approved", "wash_in_progress"):
+    if kind == BookingPhotoKind.before:
+        if booking.service_phase not in ("arrival_approved", "wash_in_progress", "completed"):
             raise ValidationError(
-                "Customer must approve the vehicle condition before wash photos can be uploaded"
+                "Customer must approve the vehicle condition before the before wash photo"
             )
+    if kind == BookingPhotoKind.after:
+        if booking.service_phase not in ("wash_in_progress", "completed"):
+            raise ValidationError("Start service before uploading the after wash photo")
 
     if kind == BookingPhotoKind.arrival and booking.washer_id is None:
         raise ValidationError("Assign a washer before uploading vehicle condition proof")

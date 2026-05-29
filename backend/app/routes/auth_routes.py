@@ -41,12 +41,13 @@ async def send_otp(
     payload: OtpSendRequest,
     db: Annotated[AsyncSession, Depends(get_db)],
 ) -> OtpSendResponse:
-    """Send a 6-digit OTP to the user's email (skipped for @washgo.demo accounts)."""
+    """Send a 6-digit OTP via email or SMS (skipped for @washgo.demo accounts)."""
     try:
         result = await otp_service.send_otp(
             db,
-            str(payload.email),
             _map_purpose(payload.purpose),
+            email=str(payload.email) if payload.email else None,
+            phone=payload.phone,
             role_hint=payload.role_hint,
         )
         return OtpSendResponse(**result)
@@ -62,7 +63,11 @@ async def signup(
 ) -> Token:
     try:
         await otp_service.require_valid_otp(
-            db, str(payload.email), OtpPurpose.signup, payload.otp_code
+            db,
+            str(payload.email),
+            OtpPurpose.signup,
+            payload.otp_code,
+            phone=payload.phone,
         )
         user = await user_service.create_user(db, payload)
         return _issue_token(response, user)
@@ -79,7 +84,11 @@ async def partner_signup(
     """Public registration for field partners — creates `washer` role user + linked washer profile."""
     try:
         await otp_service.require_valid_otp(
-            db, str(payload.email), OtpPurpose.signup, payload.otp_code
+            db,
+            str(payload.email),
+            OtpPurpose.signup,
+            payload.otp_code,
+            phone=payload.phone,
         )
         user = await user_service.create_partner_user(db, payload)
         return _issue_token(response, user)
@@ -93,18 +102,20 @@ async def login(
     response: Response,
     db: Annotated[AsyncSession, Depends(get_db)],
 ) -> Token:
-    email = str(payload.email).lower()
-    user = await user_service.get_user_by_email(db, email)
+    user = await user_service.get_user_by_phone(db, payload.phone)
     if user is None or not verify_password(payload.password, user.hashed_password):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Incorrect email or password",
+            detail="Incorrect mobile number or password",
         )
     if not user.is_active:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Inactive user")
 
+    email = user.email.lower()
     try:
-        await otp_service.require_valid_otp(db, email, OtpPurpose.login, payload.otp_code)
+        await otp_service.require_valid_otp(
+            db, email, OtpPurpose.login, payload.otp_code, phone=payload.phone
+        )
     except ValidationError as exc:
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=exc.message) from exc
 
@@ -123,10 +134,13 @@ async def reset_password(
     db: Annotated[AsyncSession, Depends(get_db)],
 ) -> dict:
     """Reset password using email OTP (same flow as login/signup verification)."""
-    email = str(payload.email).lower()
+    user = await user_service.get_user_by_phone(db, payload.phone)
+    if user is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No account found for this phone number")
+    email = user.email.lower()
     try:
         await otp_service.require_valid_otp(
-            db, email, OtpPurpose.password_reset, payload.otp_code
+            db, email, OtpPurpose.password_reset, payload.otp_code, phone=payload.phone
         )
         await user_service.reset_password(db, email, payload.new_password)
         return {"message": "Password updated. You can sign in with your new password."}

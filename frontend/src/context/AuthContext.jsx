@@ -16,8 +16,8 @@ export function AuthProvider({ children }) {
     redirectToMarketingHome();
   }, []);
 
-  const login = useCallback(async (email, password, otpCode) => {
-    const data = await authService.login(email, password, otpCode);
+  const login = useCallback(async (credentials) => {
+    const data = await authService.login(credentials);
     authService.saveSession(data);
     const me = await authService.me();
     setUser(me);

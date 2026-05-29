@@ -1,8 +1,8 @@
-import { isAdminDemoEmail } from './demoAccounts';
+import { isAdminDemoPhone } from './demoAccounts';
 
-/** Block admin demo / admin-role sign-in on customer and partner login pages. */
-export function isBlockedAdminPortalEmail(email) {
-  return isAdminDemoEmail(email);
+/** Block admin demo sign-in on customer and partner login pages. */
+export function isBlockedAdminPortalPhone(phone) {
+  return isAdminDemoPhone(phone);
 }
 
 export function clearCustomerSession(authService) {

@@ -12,11 +12,12 @@ import {
   Users,
 } from 'lucide-react';
 
+import { SidebarAccountFooter } from './SidebarAccountFooter';
+import { useAuth } from '../context/AuthContext';
 import {
   expandOnHover,
   railAsideClass,
   RAIL_BRAND_ROW,
-  RAIL_FOOTER,
   RAIL_LINK,
   RAIL_NAV_PAD,
 } from '../lib/collapsibleRailSidebar';
@@ -49,6 +50,7 @@ const GROUPS = [
 
 export function AdminSidebar({ mobileOpen, onNavigate }) {
   const reduced = useReducedMotion();
+  const { user, logout } = useAuth();
 
   return (
     <aside
@@ -56,7 +58,7 @@ export function AdminSidebar({ mobileOpen, onNavigate }) {
         mobileOpen,
         expandedWidth: 'md:[@media(hover:hover)_and_(pointer:fine)]:hover:w-72',
         surfaceClass:
-          'border-indigo-200/30 bg-gradient-to-b from-slate-50/95 via-wg-surface-elevated/98 to-indigo-50/40 backdrop-blur-2xl dark:border-indigo-500/10 dark:from-slate-950/95 dark:via-slate-950/90 dark:to-indigo-950/30',
+          'flex flex-col border-indigo-200/30 bg-gradient-to-b from-slate-50/95 via-wg-surface-elevated/98 to-indigo-50/40 backdrop-blur-2xl dark:border-indigo-500/10 dark:from-slate-950/95 dark:via-slate-950/90 dark:to-indigo-950/30',
       })}
     >
       <div
@@ -124,15 +126,14 @@ export function AdminSidebar({ mobileOpen, onNavigate }) {
         ))}
       </nav>
 
-      <div
-        className={cn(
-          RAIL_FOOTER,
-          'border-t border-indigo-200/25 p-4 text-xs leading-relaxed text-wg-muted dark:border-indigo-500/10',
-          expandOnHover(),
-        )}
-      >
-        Enterprise controls — live bookings, fleet, and analytics sync.
-      </div>
+      <SidebarAccountFooter
+        user={user}
+        profileTo="/profile"
+        roleLabel="Administrator"
+        onLogout={logout}
+        onNavigate={onNavigate}
+        className="border-indigo-200/25 dark:border-indigo-500/10"
+      />
     </aside>
   );
 }

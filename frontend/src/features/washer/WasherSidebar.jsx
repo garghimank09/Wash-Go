@@ -2,6 +2,8 @@ import { NavLink } from 'react-router-dom';
 import { m } from 'framer-motion';
 import { Sparkles } from 'lucide-react';
 
+import { SidebarAccountFooter } from '../../components/SidebarAccountFooter';
+import { usePartnerAuth } from '../../context/PartnerAuthContext';
 import { usePartnerOfferBadge } from '../../hooks/usePartnerOfferBadge';
 import {
   expandOnHover,
@@ -22,6 +24,7 @@ const linkActive =
 export function WasherSidebar() {
   const badge = usePartnerOfferBadge();
   const reduced = useReducedMotion();
+  const { user, logoutPartner } = usePartnerAuth();
 
   return (
     <aside
@@ -29,7 +32,7 @@ export function WasherSidebar() {
         railAsideClass({
           mobileOpen: false,
           surfaceClass:
-            'hidden border-wg-border/80 wg-glass-surface backdrop-blur-xl dark:border-white/10 md:flex',
+            'hidden flex-col border-wg-border/80 wg-glass-surface backdrop-blur-xl dark:border-white/10 md:flex',
         }),
         '-translate-x-0 md:translate-x-0',
       )}
@@ -96,6 +99,13 @@ export function WasherSidebar() {
           </m.div>
         ))}
       </nav>
+
+      <SidebarAccountFooter
+        user={user}
+        profileTo="/partner/profile"
+        roleLabel="Partner"
+        onLogout={logoutPartner}
+      />
     </aside>
   );
 }

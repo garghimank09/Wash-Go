@@ -9,8 +9,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config.settings import settings
 from app.models.auth_otp import AuthOtp, OtpPurpose
-from app.services import email_service, user_service
-from app.utils.demo_accounts import is_demo_email
+from app.services import twilio_service, user_service
+from app.utils.demo_accounts import is_demo_account
 from app.utils.exceptions import ValidationError
 
 logger = logging.getLogger(__name__)
@@ -25,39 +25,70 @@ def _generate_code() -> str:
     return "".join(str(secrets.randbelow(10)) for _ in range(settings.OTP_LENGTH))
 
 
+async def _resolve_otp_context(
+    db: AsyncSession,
+    *,
+    email: str | None,
+    phone: str | None,
+    purpose: OtpPurpose,
+) -> tuple[str, object | None, str]:
+    """Returns (otp_email, account_or_none, sms_phone_digits)."""
+
+    if purpose == OtpPurpose.signup:
+        if not email:
+            raise ValidationError("Email is required for signup")
+        if not phone:
+            raise ValidationError("Phone number is required for signup")
+        normalized = email.strip().lower()
+        if await user_service.get_user_by_email(db, normalized):
+            raise ValidationError("Email already registered")
+        if await user_service.is_phone_registered(db, phone):
+            raise ValidationError("Phone number already registered")
+        return normalized, None, phone
+
+    if not phone:
+        raise ValidationError("Phone number is required")
+
+    account = await user_service.get_user_by_phone(db, phone)
+    if account is None:
+        raise ValidationError("No account found for this phone number")
+    if not (account.phone and str(account.phone).strip()):
+        raise ValidationError("No mobile number on this account.")
+
+    return account.email.lower(), account, account.phone
+
+
 async def send_otp(
     db: AsyncSession,
-    email: str,
     purpose: OtpPurpose,
     *,
+    email: str | None = None,
+    phone: str | None = None,
     role_hint: str | None = None,
 ) -> dict:
-    normalized = email.strip().lower()
+    del role_hint  # reserved for future SMS templates
 
-    if is_demo_email(normalized):
+    otp_email, account, sms_phone = await _resolve_otp_context(
+        db, email=email, phone=phone, purpose=purpose
+    )
+
+    if is_demo_account(email=otp_email, phone=phone):
         if purpose == OtpPurpose.password_reset:
             raise ValidationError("Demo accounts cannot reset password. Use Demo1234.")
         return {
             "sent": False,
             "demo_skip": True,
-            "message": "Demo accounts do not require email verification.",
+            "message": "Demo accounts do not require SMS verification.",
             "expires_in_seconds": 0,
+            "delivery_target": None,
+            "account_email": otp_email,
         }
-
-    if purpose == OtpPurpose.signup:
-        existing = await user_service.get_user_by_email(db, normalized)
-        if existing is not None:
-            raise ValidationError("Email already registered")
-    elif purpose in (OtpPurpose.login, OtpPurpose.password_reset):
-        existing = await user_service.get_user_by_email(db, normalized)
-        if existing is None:
-            raise ValidationError("No account found for this email")
 
     cooldown = timedelta(seconds=settings.OTP_RESEND_COOLDOWN_SECONDS)
     recent = await db.execute(
         select(AuthOtp)
         .where(
-            AuthOtp.email == normalized,
+            AuthOtp.email == otp_email,
             AuthOtp.purpose == purpose,
             AuthOtp.consumed_at.is_(None),
         )
@@ -77,7 +108,7 @@ async def send_otp(
 
     await db.execute(
         delete(AuthOtp).where(
-            AuthOtp.email == normalized,
+            AuthOtp.email == otp_email,
             AuthOtp.purpose == purpose,
             AuthOtp.consumed_at.is_(None),
         )
@@ -85,32 +116,36 @@ async def send_otp(
 
     code = _generate_code()
     expires_at = datetime.now(timezone.utc) + timedelta(minutes=settings.OTP_EXPIRE_MINUTES)
-    row = AuthOtp(
-        email=normalized,
-        purpose=purpose,
-        code_hash=_hash_code(normalized, purpose.value, code),
-        expires_at=expires_at,
+    db.add(
+        AuthOtp(
+            email=otp_email,
+            purpose=purpose,
+            code_hash=_hash_code(otp_email, purpose.value, code),
+            expires_at=expires_at,
+        )
     )
-    db.add(row)
     await db.commit()
 
     try:
-        smtp_sent = await asyncio.to_thread(
-            email_service.send_otp_email,
-            normalized,
+        to_e164 = twilio_service.normalize_phone_e164(sms_phone)
+    except ValueError as exc:
+        raise ValidationError("Invalid phone number. Enter a valid 10-digit mobile.") from exc
+
+    delivery_target = twilio_service.mask_phone_e164(to_e164)
+    try:
+        sms_sent = await asyncio.to_thread(
+            twilio_service.send_otp_sms,
+            to_e164,
             code,
             purpose=purpose.value,
-            role_hint=role_hint,
         )
-    except Exception as exc:
-        logger.exception("OTP email delivery failed for %s", normalized)
-        raise ValidationError(
-            "Could not send verification email. Check SMTP settings or try again later."
-        ) from exc
+    except RuntimeError as exc:
+        raise ValidationError(str(exc)) from exc
+
     message = (
-        "Verification code sent to your email."
-        if smtp_sent
-        else "Verification code generated. Check server logs (SMTP not configured)."
+        f"Verification code sent via SMS to {delivery_target}."
+        if sms_sent
+        else "Verification code generated. Check server logs (Twilio not configured)."
     )
 
     return {
@@ -118,6 +153,8 @@ async def send_otp(
         "demo_skip": False,
         "message": message,
         "expires_in_seconds": settings.OTP_EXPIRE_MINUTES * 60,
+        "delivery_target": delivery_target,
+        "account_email": otp_email,
     }
 
 
@@ -126,10 +163,12 @@ async def require_valid_otp(
     email: str,
     purpose: OtpPurpose,
     otp_code: str | None,
+    *,
+    phone: str | None = None,
 ) -> None:
     normalized = email.strip().lower()
 
-    if is_demo_email(normalized):
+    if is_demo_account(email=normalized, phone=phone):
         return
 
     if not otp_code or not otp_code.strip():
@@ -137,7 +176,7 @@ async def require_valid_otp(
 
     code = otp_code.strip()
     if len(code) != settings.OTP_LENGTH or not code.isdigit():
-        raise ValidationError(f"Enter the {settings.OTP_LENGTH}-digit code from your email")
+        raise ValidationError(f"Enter the {settings.OTP_LENGTH}-digit verification code")
 
     result = await db.execute(
         select(AuthOtp)

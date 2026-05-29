@@ -16,6 +16,7 @@ export function WasherJobVisualPanel({
   servicePhase,
   initialArrivalNotes,
   onArrivalUploaded,
+  onPhotosChanged,
   jobStatus = null,
 }) {
   const isCompleted = phase === 'completed' || jobStatus === 'completed';
@@ -55,6 +56,7 @@ export function WasherJobVisualPanel({
           servicePhase={servicePhase}
           initialArrivalNotes={initialArrivalNotes}
           onArrivalUploaded={onArrivalUploaded}
+          onPhotosChanged={onPhotosChanged}
         />
       </div>
     </Card>

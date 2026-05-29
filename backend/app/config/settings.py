@@ -44,12 +44,10 @@ class Settings(BaseSettings):
     OTP_LENGTH: int = 6
     OTP_EXPIRE_MINUTES: int = 10
     OTP_RESEND_COOLDOWN_SECONDS: int = 60
-    # Optional SMTP — if SMTP_HOST is unset, OTP codes are logged only (dev-friendly).
-    SMTP_HOST: str | None = None
-    SMTP_PORT: int = 587
-    SMTP_USER: str | None = None
-    SMTP_PASSWORD: str | None = None
-    SMTP_FROM: str | None = None
+    # Twilio SMS OTP (all roles — login, signup, password reset).
+    TWILIO_ACCOUNT_SID: str | None = None
+    TWILIO_AUTH_TOKEN: str | None = None
+    TWILIO_FROM_NUMBER: str | None = None
     # Google Maps Platform — Geocoding on server; Maps/Places use VITE_* on frontend.
     GOOGLE_MAPS_API_KEY: str | None = None
 

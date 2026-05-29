@@ -1,12 +1,15 @@
 import { authService } from '../services/authService';
 import { partnerAuthService } from '../services/partnerAuthService';
+import { normalizeIndianPhoneDigits } from '../utils/validators';
 
 /**
  * Partner portal login: washers only. Admin accounts must use /admin/login.
- * @returns {{ kind: 'washer', user: object }}
  */
-export async function loginViaPartnerPortal(email, password) {
-  const data = await authService.login(email.trim(), password);
+export async function loginViaPartnerPortal(phone, password) {
+  const data = await authService.login({
+    phone: normalizeIndianPhoneDigits(phone),
+    password,
+  });
   authService.saveSession(data);
   const me = await authService.me();
 

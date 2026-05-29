@@ -25,9 +25,10 @@ function usePartnerAuthState() {
     redirectToMarketingHome();
   }, []);
 
-  const loginPartner = useCallback(async (email, password, otpCode) => {
+  const loginPartner = useCallback(async ({ phone, password, otpCode }) => {
+    const normalizedPhone = typeof phone === 'string' ? phone : '';
     if (otpCode) {
-      const data = await partnerAuthService.login(email, password, otpCode);
+      const data = await partnerAuthService.login({ phone: normalizedPhone, password, otpCode });
       partnerAuthService.saveSession(data);
       const me = await partnerAuthService.me();
       if (me.role === 'admin') {
@@ -45,7 +46,7 @@ function usePartnerAuthState() {
       return me;
     }
 
-    const result = await loginViaPartnerPortal(email, password);
+    const result = await loginViaPartnerPortal(normalizedPhone, password);
     setUser(result.user);
     return result.user;
   }, []);

@@ -497,7 +497,11 @@ async def update_booking_status_for_washer(
     db: AsyncSession, user: User, booking_id: UUID, payload: BookingStatusUpdate
 ) -> Booking:
     washer = await _get_washer_for_user(db, user)
-    result = await db.execute(select(Booking).where(Booking.id == booking_id))
+    from app.models.booking_photo import BookingPhotoKind
+
+    result = await db.execute(
+        select(Booking).where(Booking.id == booking_id).options(selectinload(Booking.photos))
+    )
     booking = result.scalar_one_or_none()
     if booking is None:
         raise NotFoundError("Booking not found")
@@ -520,6 +524,12 @@ async def update_booking_status_for_washer(
             raise ValidationError(
                 "Customer must approve the vehicle condition before you can start the wash"
             )
+        if not any(p.kind == BookingPhotoKind.before for p in booking.photos):
+            raise ValidationError("Upload the before wash photo before starting service")
+
+    if target == BookingStatus.completed:
+        if not any(p.kind == BookingPhotoKind.after for p in booking.photos):
+            raise ValidationError("Upload the after wash photo before completing the job")
 
     booking.status = target
     if target == BookingStatus.completed:
@@ -535,7 +545,11 @@ async def update_booking_milestone_for_washer(
     db: AsyncSession, user: User, booking_id: UUID, payload: BookingMilestoneUpdate
 ) -> Booking:
     washer = await _get_washer_for_user(db, user)
-    result = await db.execute(select(Booking).where(Booking.id == booking_id))
+    from app.models.booking_photo import BookingPhotoKind
+
+    result = await db.execute(
+        select(Booking).where(Booking.id == booking_id).options(selectinload(Booking.photos))
+    )
     booking = result.scalar_one_or_none()
     if booking is None:
         raise NotFoundError("Booking not found")
@@ -550,6 +564,12 @@ async def update_booking_milestone_for_washer(
         raise ValidationError(
             "Customer must approve the vehicle condition before starting the wash"
         )
+    if new_phase == "wash_in_progress" and not any(
+        p.kind == BookingPhotoKind.before for p in booking.photos
+    ):
+        raise ValidationError("Upload the before wash photo before starting service")
+    if new_phase == "completed" and not any(p.kind == BookingPhotoKind.after for p in booking.photos):
+        raise ValidationError("Upload the after wash photo before completing the job")
 
     await _apply_service_phase(db, booking, new_phase)
     await db.commit()

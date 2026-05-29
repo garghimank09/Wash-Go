@@ -52,7 +52,7 @@ export function validateIndianPhone10(value, { required = false } = {}) {
 export function validateOtpCode(value) {
   const trimmed = String(value || '').trim();
   if (!trimmed) return 'Verification code is required';
-  if (!/^\d{6}$/.test(trimmed)) return 'Enter the 6-digit code from your email';
+  if (!/^\d{6}$/.test(trimmed)) return 'Enter the 6-digit verification code';
   return null;
 }
 

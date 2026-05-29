@@ -1,10 +1,9 @@
 import { Link } from 'react-router-dom';
-import { ArrowLeft, LogOut, Menu, Shield } from 'lucide-react';
+import { ArrowLeft, Menu, Shield } from 'lucide-react';
 
 import { useAuth } from '../context/AuthContext';
 import { isAdminDemoMode } from '../lib/canAccessAdmin';
 import { cn } from '../lib/cn';
-import { Button } from '../ui/button';
 import { NotificationBell } from './NotificationBell';
 import { ThemeToggle } from './ThemeToggle';
 import { notificationsService } from '../services/notificationsService';
@@ -73,10 +72,6 @@ export function AdminHeader({ onMenuClick }) {
         </Link>
         <NotificationBell service={notificationsService} defaultPath="/admin/bookings" />
         <ThemeToggle className="border-indigo-200/50 dark:border-indigo-500/20" />
-        <Button variant="outline" size="sm" className="gap-2 border-indigo-200/60 dark:border-indigo-500/25" onClick={logout}>
-          <LogOut className="size-4" strokeWidth={1.75} aria-hidden />
-          <span className="hidden sm:inline">Log out</span>
-        </Button>
       </div>
     </header>
   );

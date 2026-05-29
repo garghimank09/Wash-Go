@@ -9,11 +9,11 @@ import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { useAuth } from '../context/AuthContext';
 import { canAccessAdmin } from '../lib/canAccessAdmin';
-import { isDemoEmail } from '../lib/demoAccounts';
+import { isDemoPhone } from '../lib/demoAccounts';
 import { resolvePostLoginPath } from '../lib/appPaths';
 import { authService } from '../services/authService';
 import { getErrorMessage } from '../services/api';
-import { isValidEmail, validateOtpCode } from '../utils/validators';
+import { normalizeIndianPhoneDigits, validateIndianPhone10, validateOtpCode } from '../utils/validators';
 
 export function AdminLoginPage() {
   const { login, user, refreshUser } = useAuth();
@@ -23,11 +23,13 @@ export function AdminLoginPage() {
 
   const [view, setView] = useState('login');
   const [step, setStep] = useState('credentials');
-  const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState('');
+  const [phoneError, setPhoneError] = useState('');
   const [password, setPassword] = useState('');
   const [otp, setOtp] = useState('');
   const [otpError, setOtpError] = useState('');
   const [otpInfo, setOtpInfo] = useState('');
+  const [otpDestination, setOtpDestination] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [resendLoading, setResendLoading] = useState(false);
@@ -36,14 +38,14 @@ export function AdminLoginPage() {
     return <Navigate to={resolvePostLoginPath(user, from)} replace />;
   }
 
-  const normalizedEmail = email.trim().toLowerCase();
-  const demoAccount = isDemoEmail(normalizedEmail);
+  const normalizedPhone = normalizeIndianPhoneDigits(phone);
+  const demoAccount = isDemoPhone(normalizedPhone);
 
   const finishLogin = async (me) => {
     if (!canAccessAdmin(me)) {
       authService.clearSession();
       await refreshUser();
-      setError('This account does not have admin console access. Use customer or partner sign-in instead.');
+      setError('This account does not have admin console access.');
       return;
     }
     navigate(resolvePostLoginPath(me, from), { replace: true });
@@ -52,8 +54,10 @@ export function AdminLoginPage() {
   const submitCredentials = async (e) => {
     e.preventDefault();
     setError('');
-    if (!isValidEmail(email)) {
-      setError('Enter a valid email');
+    const pErr = validateIndianPhone10(phone, { required: true });
+    setPhoneError(pErr ?? '');
+    if (pErr) {
+      setError(pErr);
       return;
     }
     if (!password) {
@@ -63,12 +67,13 @@ export function AdminLoginPage() {
     setLoading(true);
     try {
       if (demoAccount) {
-        const me = await login(normalizedEmail, password);
+        const me = await login({ phone: normalizedPhone, password });
         await finishLogin(me);
         return;
       }
-      const res = await authService.sendOtp(normalizedEmail, 'login', 'admin');
-      setOtpInfo(res.message || 'Check your email for the code.');
+      const res = await authService.sendOtp({ phone: normalizedPhone, purpose: 'login', roleHint: 'admin' });
+      setOtpDestination(res.delivery_target || '');
+      setOtpInfo(res.message || 'Check your phone for the code.');
       setStep('otp');
     } catch (err) {
       setError(getErrorMessage(err));
@@ -88,7 +93,7 @@ export function AdminLoginPage() {
     }
     setLoading(true);
     try {
-      const me = await login(normalizedEmail, password, otp.trim());
+      const me = await login({ phone: normalizedPhone, password, otpCode: otp.trim() });
       await finishLogin(me);
     } catch (err) {
       setError(getErrorMessage(err));
@@ -101,7 +106,8 @@ export function AdminLoginPage() {
     setResendLoading(true);
     setError('');
     try {
-      const res = await authService.sendOtp(normalizedEmail, 'login', 'admin');
+      const res = await authService.sendOtp({ phone: normalizedPhone, purpose: 'login', roleHint: 'admin' });
+      setOtpDestination(res.delivery_target || otpDestination);
       setOtpInfo(res.message || 'A new code was sent.');
       setOtp('');
       setOtpError('');
@@ -123,18 +129,17 @@ export function AdminLoginPage() {
       </h1>
       <p className="mt-1 text-sm text-white/65">
         {view === 'forgot'
-          ? 'We will email you a verification code.'
+          ? 'Reset with your registered mobile.'
           : step === 'otp'
-            ? 'Enter the verification code we emailed you.'
-            : 'Operations, revenue, and fleet management.'}
+            ? 'Enter the SMS verification code.'
+            : 'Operations console — mobile sign-in only.'}
       </p>
 
       {view === 'forgot' ? (
         <div className="mt-8">
           <ForgotPasswordForm
-            sendOtp={authService.sendOtp}
+            sendOtp={(opts) => authService.sendOtp({ ...opts, roleHint: 'admin' })}
             resetPassword={authService.resetPassword}
-            roleHint="admin"
             onBack={() => setView('login')}
             onSuccess={() => {
               setView('login');
@@ -147,12 +152,21 @@ export function AdminLoginPage() {
       ) : (
         <form className="mt-8 space-y-4" onSubmit={step === 'otp' ? submitOtp : submitCredentials} noValidate>
           <Input
-            label="Email"
-            name="email"
-            type="email"
-            autoComplete="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
+            label="Mobile number"
+            name="phone"
+            type="tel"
+            inputMode="numeric"
+            autoComplete="tel"
+            maxLength={10}
+            placeholder="10-digit mobile"
+            value={phone}
+            onChange={(e) => {
+              const digits = normalizeIndianPhoneDigits(e.target.value);
+              setPhone(digits);
+              if (phoneError) setPhoneError(validateIndianPhone10(digits, { required: true }) ?? '');
+            }}
+            onBlur={() => setPhoneError(validateIndianPhone10(phone, { required: true }) ?? '')}
+            error={phoneError}
             disabled={step === 'otp'}
           />
           <Input
@@ -181,7 +195,7 @@ export function AdminLoginPage() {
           ) : null}
           {step === 'otp' ? (
             <OtpVerificationFields
-              email={normalizedEmail}
+              destination={otpDestination}
               otp={otp}
               onOtpChange={(e) => {
                 const v = e.target.value.replace(/\D/g, '').slice(0, 6);
@@ -221,7 +235,7 @@ export function AdminLoginPage() {
       {view === 'login' ? (
         <>
           <p className="mt-6 text-center text-sm text-white/55">
-            Booking a wash?{' '}
+            Customer?{' '}
             <Link to="/login" className="font-semibold text-cyan-400 hover:text-cyan-300">
               Customer sign in
             </Link>
@@ -230,10 +244,16 @@ export function AdminLoginPage() {
               Partner sign in
             </Link>
           </p>
-          <DemoCredentialsPanel highlight="Admin" />
-          <p className="mt-2 text-center text-[11px] text-white/45">
-            Demo admin: <span className="font-mono">admin@washgo.demo</span> / Demo1234
-          </p>
+          <DemoCredentialsPanel
+            highlight="Admin"
+            onFillDemo={({ phone: demoPhone, password: demoPassword }) => {
+              setPhone(demoPhone);
+              setPassword(demoPassword);
+              setPhoneError('');
+              setError('');
+              setStep('credentials');
+            }}
+          />
         </>
       ) : null}
     </div>
