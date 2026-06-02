@@ -10,8 +10,13 @@ import { usePartnerAuth } from '../../context/PartnerAuthContext';
 import { Button } from '../../ui/button';
 import { Input } from '../../ui/input';
 import { GlassPanel } from '../../ui/glass-panel';
-import { ADMIN_LOGIN_ONLY_MESSAGE, isDemoPhone } from '../../lib/demoAccounts';
+import {
+  ADMIN_LOGIN_ONLY_MESSAGE,
+  CUSTOMER_LOGIN_ONLY_MESSAGE,
+  isPartnerDemoPhone,
+} from '../../lib/demoAccounts';
 import { clearCustomerSession, isBlockedAdminPortalPhone } from '../../lib/adminLoginGuard';
+import { isBlockedCustomerOnPartnerPortal } from '../../lib/partnerLoginGuard';
 import { authService } from '../../services/authService';
 import { partnerAuthService } from '../../services/partnerAuthService';
 import { getErrorMessage } from '../../services/api';
@@ -54,10 +59,15 @@ export function PartnerLoginPage() {
   }
 
   const normalizedPhone = normalizeIndianPhoneDigits(phone);
-  const demoAccount = isDemoPhone(normalizedPhone);
+  const demoAccount = isPartnerDemoPhone(normalizedPhone);
 
   const rejectAdminOnThisPortal = () => {
     setError(ADMIN_LOGIN_ONLY_MESSAGE);
+  };
+
+  const resetAnySession = () => {
+    authService.clearSession();
+    partnerAuthService.clearSession();
   };
 
   const safeFrom =
@@ -80,6 +90,10 @@ export function PartnerLoginPage() {
     }
     if (isBlockedAdminPortalPhone(normalizedPhone)) {
       rejectAdminOnThisPortal();
+      return;
+    }
+    if (isBlockedCustomerOnPartnerPortal(normalizedPhone)) {
+      setError(CUSTOMER_LOGIN_ONLY_MESSAGE);
       return;
     }
     setLoading(true);
@@ -302,7 +316,7 @@ export function PartnerLoginPage() {
               </p>
               <p className="mt-3 text-center text-sm text-white/60">
                 Booking a wash?{' '}
-                <Link to="/login" className="font-semibold text-cyan-300 hover:text-cyan-200">
+                <Link to="/login" className="font-semibold text-cyan-300 hover:text-cyan-200" onClick={resetAnySession}>
                   Customer sign in
                 </Link>
               </p>
@@ -322,7 +336,7 @@ export function PartnerLoginPage() {
         />
         <p className="mt-4 text-center text-sm text-white/55">
           WashGo admin?{' '}
-          <Link to="/admin/login" className="font-semibold text-indigo-300 hover:text-indigo-200">
+          <Link to="/admin/login" className="font-semibold text-indigo-300 hover:text-indigo-200" onClick={resetAnySession}>
             Admin console sign in
           </Link>
         </p>

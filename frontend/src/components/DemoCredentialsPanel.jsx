@@ -1,3 +1,5 @@
+import { Link } from 'react-router-dom';
+
 import { DEMO_ACCOUNTS, DEMO_PASSWORD } from '../lib/demoAccounts';
 
 /**
@@ -24,7 +26,12 @@ export function DemoCredentialsPanel({ highlight, onFillDemo }) {
               <span className="text-amber-200/90">{row.label}:</span>
               <span className="font-mono">{row.phone}</span>
               {!isHighlight ? (
-                <span className="text-amber-100/60">— use {row.where}</span>
+                <span className="text-amber-100/60">
+                  — use{' '}
+                  <Link to={row.where} className="font-semibold text-amber-200 underline-offset-2 hover:underline">
+                    {row.where}
+                  </Link>
+                </span>
               ) : onFillDemo ? (
                 <button
                   type="button"

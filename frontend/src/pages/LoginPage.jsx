@@ -11,6 +11,7 @@ import { ADMIN_LOGIN_ONLY_MESSAGE, isDemoPhone } from '../lib/demoAccounts';
 import { clearCustomerSession, isBlockedAdminPortalPhone } from '../lib/adminLoginGuard';
 import { resolvePostLoginPath } from '../lib/appPaths';
 import { authService } from '../services/authService';
+import { partnerAuthService } from '../services/partnerAuthService';
 import { getErrorMessage } from '../services/api';
 import { normalizeIndianPhoneDigits, validateIndianPhone10, validateOtpCode } from '../utils/validators';
 
@@ -41,6 +42,11 @@ export function LoginPage() {
 
   const rejectAdminOnThisPortal = () => {
     setError(ADMIN_LOGIN_ONLY_MESSAGE);
+  };
+
+  const resetAnySession = () => {
+    authService.clearSession();
+    partnerAuthService.clearSession();
   };
 
   const submitCredentials = async (e) => {
@@ -244,11 +250,11 @@ export function LoginPage() {
           </p>
           <p className="mt-3 text-center text-sm text-white/55">
             Partner?{' '}
-            <Link to="/partner/login" className="font-semibold text-emerald-400 hover:text-emerald-300">
+            <Link to="/partner/login" className="font-semibold text-emerald-400 hover:text-emerald-300" onClick={resetAnySession}>
               Washer sign in
             </Link>
             {' · '}
-            <Link to="/admin/login" className="font-semibold text-indigo-300 hover:text-indigo-200">
+            <Link to="/admin/login" className="font-semibold text-indigo-300 hover:text-indigo-200" onClick={resetAnySession}>
               Admin console
             </Link>
           </p>

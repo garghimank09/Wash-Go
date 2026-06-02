@@ -144,13 +144,20 @@ export function WasherJobPage() {
     () => effectiveWasherPhase(id, apiStatus, servicePhase),
     [id, apiStatus, servicePhase, phaseTick],
   );
+  const checklistDoneCount = checklist.filter((c) => c.done).length;
+  const checklistComplete = checklistDoneCount === checklist.length;
+  const completionChecklistBlocked = phase === 'qc_review' && !checklistComplete;
   const advanceBlockedReason = washerAdvanceBlockedReason(phase, {
     hasArrivalPhoto,
     hasBeforePhoto,
     hasAfterPhoto,
   });
+  const effectiveAdvanceBlockedReason = completionChecklistBlocked
+    ? 'Complete all checklist items before finishing the job'
+    : advanceBlockedReason;
   const advanceDisabled =
     !canWasherAdvancePhase(phase, { hasArrivalPhoto, hasBeforePhoto, hasAfterPhoto, servicePhase }) ||
+    completionChecklistBlocked ||
     advancing;
   const customerReview = job?.review ?? null;
   const showFeedbackSection = apiStatus === 'completed' || phase === 'completed';
@@ -190,6 +197,10 @@ export function WasherJobPage() {
 
   const onAdvance = async () => {
     if (!id) return;
+    if (completionChecklistBlocked) {
+      toast.error('Complete all checklist items before finishing the job');
+      return;
+    }
     if (isDemo) {
       const next = advanceWasherPhase(id, apiStatus);
       toast.success(`Status · ${next.replace(/_/g, ' ')}`, { duration: 2200 });
@@ -258,7 +269,7 @@ export function WasherJobPage() {
     );
   }
 
-  const doneCount = checklist.filter((c) => c.done).length;
+  const doneCount = checklistDoneCount;
   const progressPct = Math.round((doneCount / checklist.length) * 100);
   const phaseLabel = phase.replace(/_/g, ' ');
 
@@ -440,7 +451,7 @@ export function WasherJobPage() {
         showSwipeComplete
         showCelebrationBanner={celebrate}
         advanceDisabled={advanceDisabled}
-        advanceHint={advanceBlockedReason}
+        advanceHint={effectiveAdvanceBlockedReason}
       />
     </div>
   );

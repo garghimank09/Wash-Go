@@ -1,7 +1,14 @@
+import io
 from datetime import datetime, timedelta, timezone
 from decimal import Decimal
+from pathlib import Path
 from uuid import UUID
 
+from reportlab.lib.pagesizes import A4
+from reportlab.lib import colors
+from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
+from reportlab.lib.units import mm
+from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle
 from sqlalchemy import exists, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -37,6 +44,11 @@ from app.schemas.booking_schema import (
 from app.services import geocode_service
 from app.services.booking_photo_service import _photo_media_url
 from app.utils.exceptions import ConflictError, ForbiddenError, NotFoundError, ValidationError
+
+try:
+    from svglib.svglib import svg2rlg
+except ImportError:  # pragma: no cover - runtime dependency availability
+    svg2rlg = None
 
 
 async def _get_car_owned(db: AsyncSession, car_id: UUID, owner_id: UUID) -> Car:
@@ -727,3 +739,323 @@ async def get_booking_detail(db: AsyncSession, user: User, booking_id: UUID) -> 
             else None
         ),
     )
+
+
+async def build_booking_receipt(
+    db: AsyncSession, customer: User, booking_id: UUID
+) -> tuple[str, bytes]:
+    """
+    Build a premium PDF receipt for customer-side invoice download.
+    Includes vehicle details, customer profile details, and payment identifiers.
+    """
+    stmt = (
+        select(Booking)
+        .where(Booking.id == booking_id)
+        .options(
+            selectinload(Booking.car),
+            selectinload(Booking.customer),
+            selectinload(Booking.payments),
+            selectinload(Booking.washer).selectinload(Washer.user),
+        )
+    )
+    result = await db.execute(stmt)
+    booking = result.scalar_one_or_none()
+    if booking is None:
+        raise NotFoundError("Booking not found")
+    if booking.customer_id != customer.id:
+        raise ForbiddenError("Not allowed to download receipt for this booking")
+
+    payment: Payment | None = None
+    if booking.payments:
+        captured = [p for p in booking.payments if p.status == PaymentStatus.captured]
+        pool = captured if captured else booking.payments
+        payment = sorted(pool, key=lambda p: p.created_at or datetime.min)[-1]
+
+    amount_inr = booking.price_cents / 100
+    receipt_no = f"WG-RCP-{str(booking.id).replace('-', '')[:12].upper()}"
+    issued_at = datetime.now(timezone.utc).strftime("%d %b %Y, %I:%M %p UTC")
+    booked_at = booking.created_at.strftime("%d %b %Y, %I:%M %p UTC")
+    scheduled_at = booking.scheduled_at.strftime("%d %b %Y, %I:%M %p UTC")
+    washer_name = (
+        booking.washer.user.full_name
+        if booking.washer is not None and booking.washer.user is not None
+        else "Not assigned"
+    )
+    car_name = (
+        f"{booking.car.make} {booking.car.model} {f'({booking.car.year})' if booking.car.year else ''}".strip()
+        if booking.car
+        else "N/A"
+    )
+    car_plate = booking.car.license_plate if booking.car else "N/A"
+    customer_record = booking.customer or customer
+    customer_name = customer_record.full_name if customer_record else "N/A"
+    customer_phone = customer_record.phone if customer_record and customer_record.phone else "N/A"
+    customer_address = (
+        customer_record.home_address
+        if customer_record and customer_record.home_address
+        else booking.service_address or "N/A"
+    )
+    payment_id = str(payment.id) if payment else "N/A"
+    payment_status = payment.status.value if payment else "N/A"
+    payment_provider = payment.provider if payment and payment.provider else "N/A"
+    payment_external_id = payment.external_id if payment and payment.external_id else "N/A"
+    favicon_path = Path(__file__).resolve().parents[3] / "frontend" / "public" / "favicon.svg"
+
+    buffer = io.BytesIO()
+    doc = SimpleDocTemplate(
+        buffer,
+        pagesize=A4,
+        leftMargin=14 * mm,
+        rightMargin=14 * mm,
+        topMargin=14 * mm,
+        bottomMargin=14 * mm,
+        title=f"WashGo Receipt {booking.id}",
+    )
+
+    styles = getSampleStyleSheet()
+    title_style = ParagraphStyle(
+        "ReceiptTitle",
+        parent=styles["Heading1"],
+        fontName="Helvetica-Bold",
+        fontSize=18,
+        leading=22,
+        textColor=colors.HexColor("#0f172a"),
+        spaceAfter=4,
+    )
+    subtitle_style = ParagraphStyle(
+        "ReceiptSubtitle",
+        parent=styles["Normal"],
+        fontName="Helvetica",
+        fontSize=10,
+        leading=13,
+        textColor=colors.HexColor("#475569"),
+    )
+    section_style = ParagraphStyle(
+        "SectionTitle",
+        parent=styles["Heading4"],
+        fontName="Helvetica-Bold",
+        fontSize=11,
+        textColor=colors.HexColor("#0f172a"),
+        spaceBefore=8,
+        spaceAfter=6,
+    )
+    cell_label = ParagraphStyle(
+        "CellLabel",
+        parent=styles["Normal"],
+        fontName="Helvetica-Bold",
+        fontSize=9,
+        textColor=colors.HexColor("#334155"),
+    )
+    cell_value = ParagraphStyle(
+        "CellValue",
+        parent=styles["Normal"],
+        fontName="Helvetica",
+        fontSize=9,
+        textColor=colors.HexColor("#0f172a"),
+    )
+
+    elements: list = []
+
+    logo_flowable = None
+    if svg2rlg is not None and favicon_path.exists():
+        logo_drawing = svg2rlg(str(favicon_path))
+        if logo_drawing is not None:
+            logo_drawing.width = 18 * mm
+            logo_drawing.height = 18 * mm
+            logo_flowable = logo_drawing
+
+    header_table = Table(
+        [
+            [
+                logo_flowable
+                if logo_flowable is not None
+                else Paragraph("<font color='#ffffff'><b>WG</b></font>", styles["Title"]),
+                Paragraph("WashGo Premium Receipt", title_style),
+            ],
+            ["", Paragraph("Professional car wash service invoice", subtitle_style)],
+        ],
+        colWidths=[18 * mm, 150 * mm],
+    )
+    header_style = [
+        ("SPAN", (0, 0), (0, 1)),
+        ("ALIGN", (0, 0), (0, 1), "CENTER"),
+        ("VALIGN", (0, 0), (0, 1), "MIDDLE"),
+        ("LEFTPADDING", (0, 0), (-1, -1), 6),
+        ("RIGHTPADDING", (0, 0), (-1, -1), 6),
+        ("TOPPADDING", (0, 0), (-1, -1), 6),
+        ("BOTTOMPADDING", (0, 0), (-1, -1), 6),
+    ]
+    if logo_flowable is None:
+        header_style.append(("BACKGROUND", (0, 0), (0, 1), colors.HexColor("#06b6d4")))
+    else:
+        header_style.append(("BACKGROUND", (0, 0), (0, 1), colors.white))
+        header_style.append(("BOX", (0, 0), (0, 1), 1, colors.HexColor("#cbd5e1")))
+    header_table.setStyle(
+        TableStyle(header_style)
+    )
+    elements.append(header_table)
+    elements.append(Spacer(1, 10))
+
+    receipt_meta = Table(
+        [
+            [Paragraph("Receipt No", cell_label), Paragraph(receipt_no, cell_value)],
+            [Paragraph("Issued On", cell_label), Paragraph(issued_at, cell_value)],
+            [Paragraph("Booking ID", cell_label), Paragraph(str(booking.id), cell_value)],
+            [Paragraph("Payment ID", cell_label), Paragraph(payment_id, cell_value)],
+        ],
+        colWidths=[40 * mm, 130 * mm],
+    )
+    receipt_meta.setStyle(
+        TableStyle(
+            [
+                ("BACKGROUND", (0, 0), (-1, -1), colors.HexColor("#f8fafc")),
+                ("BOX", (0, 0), (-1, -1), 1, colors.HexColor("#cbd5e1")),
+                ("INNERGRID", (0, 0), (-1, -1), 0.5, colors.HexColor("#e2e8f0")),
+                ("VALIGN", (0, 0), (-1, -1), "TOP"),
+                ("LEFTPADDING", (0, 0), (-1, -1), 7),
+                ("RIGHTPADDING", (0, 0), (-1, -1), 7),
+                ("TOPPADDING", (0, 0), (-1, -1), 6),
+                ("BOTTOMPADDING", (0, 0), (-1, -1), 6),
+            ]
+        )
+    )
+    elements.append(receipt_meta)
+    elements.append(Spacer(1, 8))
+
+    elements.append(Paragraph("Customer Details", section_style))
+    customer_table = Table(
+        [
+            [
+                Paragraph("Name", cell_label),
+                Paragraph("Phone", cell_label),
+                Paragraph("Address", cell_label),
+            ],
+            [
+                Paragraph(customer_name, cell_value),
+                Paragraph(customer_phone, cell_value),
+                Paragraph(customer_address, cell_value),
+            ],
+        ],
+        colWidths=[48 * mm, 45 * mm, 77 * mm],
+    )
+    customer_table.setStyle(
+        TableStyle(
+            [
+                ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#e0f2fe")),
+                ("BOX", (0, 0), (-1, -1), 1, colors.HexColor("#cbd5e1")),
+                ("INNERGRID", (0, 0), (-1, -1), 0.5, colors.HexColor("#e2e8f0")),
+                ("LEFTPADDING", (0, 0), (-1, -1), 7),
+                ("RIGHTPADDING", (0, 0), (-1, -1), 7),
+                ("TOPPADDING", (0, 0), (-1, -1), 6),
+                ("BOTTOMPADDING", (0, 0), (-1, -1), 6),
+            ]
+        )
+    )
+    elements.append(customer_table)
+
+    elements.append(Paragraph("Vehicle Details", section_style))
+    vehicle_table = Table(
+        [
+            [Paragraph("Vehicle Name", cell_label), Paragraph("Plate Number", cell_label)],
+            [Paragraph(car_name, cell_value), Paragraph(car_plate, cell_value)],
+        ],
+        colWidths=[95 * mm, 75 * mm],
+    )
+    vehicle_table.setStyle(
+        TableStyle(
+            [
+                ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#dcfce7")),
+                ("BOX", (0, 0), (-1, -1), 1, colors.HexColor("#cbd5e1")),
+                ("INNERGRID", (0, 0), (-1, -1), 0.5, colors.HexColor("#e2e8f0")),
+                ("LEFTPADDING", (0, 0), (-1, -1), 7),
+                ("RIGHTPADDING", (0, 0), (-1, -1), 7),
+                ("TOPPADDING", (0, 0), (-1, -1), 6),
+                ("BOTTOMPADDING", (0, 0), (-1, -1), 6),
+            ]
+        )
+    )
+    elements.append(vehicle_table)
+
+    elements.append(Paragraph("Service & Payment Summary", section_style))
+    service_payment_table = Table(
+        [
+            [Paragraph("Booking Status", cell_label), Paragraph(booking.status.value, cell_value)],
+            [Paragraph("Service Phase", cell_label), Paragraph(booking.service_phase or "N/A", cell_value)],
+            [Paragraph("Booked On", cell_label), Paragraph(booked_at, cell_value)],
+            [Paragraph("Scheduled For", cell_label), Paragraph(scheduled_at, cell_value)],
+            [Paragraph("Washer", cell_label), Paragraph(washer_name, cell_value)],
+            [Paragraph("Payment Status", cell_label), Paragraph(payment_status, cell_value)],
+            [Paragraph("Provider", cell_label), Paragraph(payment_provider, cell_value)],
+            [Paragraph("Provider Ref", cell_label), Paragraph(payment_external_id, cell_value)],
+            [Paragraph("Service Address", cell_label), Paragraph(booking.service_address or "N/A", cell_value)],
+        ],
+        colWidths=[50 * mm, 120 * mm],
+    )
+    service_payment_table.setStyle(
+        TableStyle(
+            [
+                ("BACKGROUND", (0, 0), (-1, -1), colors.HexColor("#f8fafc")),
+                ("BOX", (0, 0), (-1, -1), 1, colors.HexColor("#cbd5e1")),
+                ("INNERGRID", (0, 0), (-1, -1), 0.5, colors.HexColor("#e2e8f0")),
+                ("LEFTPADDING", (0, 0), (-1, -1), 7),
+                ("RIGHTPADDING", (0, 0), (-1, -1), 7),
+                ("TOPPADDING", (0, 0), (-1, -1), 6),
+                ("BOTTOMPADDING", (0, 0), (-1, -1), 6),
+            ]
+        )
+    )
+    elements.append(service_payment_table)
+
+    elements.append(Spacer(1, 10))
+    total_table = Table(
+        [
+            [Paragraph("Total Amount", cell_label), Paragraph(f"{booking.currency} {amount_inr:,.2f}", cell_value)],
+        ],
+        colWidths=[120 * mm, 50 * mm],
+    )
+    total_table.setStyle(
+        TableStyle(
+            [
+                ("BACKGROUND", (0, 0), (-1, -1), colors.HexColor("#e2e8f0")),
+                ("BOX", (0, 0), (-1, -1), 1, colors.HexColor("#94a3b8")),
+                ("ALIGN", (1, 0), (1, 0), "RIGHT"),
+                ("LEFTPADDING", (0, 0), (-1, -1), 8),
+                ("RIGHTPADDING", (0, 0), (-1, -1), 8),
+                ("TOPPADDING", (0, 0), (-1, -1), 8),
+                ("BOTTOMPADDING", (0, 0), (-1, -1), 8),
+            ]
+        )
+    )
+    elements.append(total_table)
+
+    if booking.notes:
+        elements.append(Paragraph("Notes", section_style))
+        notes_table = Table([[Paragraph(booking.notes, cell_value)]], colWidths=[170 * mm])
+        notes_table.setStyle(
+            TableStyle(
+                [
+                    ("BACKGROUND", (0, 0), (-1, -1), colors.HexColor("#f8fafc")),
+                    ("BOX", (0, 0), (-1, -1), 1, colors.HexColor("#cbd5e1")),
+                    ("LEFTPADDING", (0, 0), (-1, -1), 7),
+                    ("RIGHTPADDING", (0, 0), (-1, -1), 7),
+                    ("TOPPADDING", (0, 0), (-1, -1), 6),
+                    ("BOTTOMPADDING", (0, 0), (-1, -1), 6),
+                ]
+            )
+        )
+        elements.append(notes_table)
+
+    elements.append(Spacer(1, 8))
+    elements.append(
+        Paragraph(
+            "Thank you for choosing WashGo. This is a system-generated premium receipt.",
+            subtitle_style,
+        )
+    )
+
+    doc.build(elements)
+    body = buffer.getvalue()
+    buffer.close()
+
+    filename = f"washgo-receipt-{booking.id}.pdf"
+    return filename, body

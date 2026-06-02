@@ -290,6 +290,20 @@ async def get_booking(
     return await booking_service.get_booking_detail(db, current, booking_id)
 
 
+@router.get("/{booking_id}/receipt")
+async def download_booking_receipt(
+    booking_id: UUID,
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current: Annotated[User, Depends(require_roles(UserRole.customer))],
+) -> StreamingResponse:
+    filename, body = await booking_service.build_booking_receipt(db, current, booking_id)
+    return StreamingResponse(
+        iter([body]),
+        media_type="application/pdf",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
+
+
 @router.post("/{booking_id}/cancel", response_model=BookingRead)
 async def cancel_booking(
     booking_id: UUID,

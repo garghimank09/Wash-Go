@@ -12,6 +12,7 @@ import { canAccessAdmin } from '../lib/canAccessAdmin';
 import { isDemoPhone } from '../lib/demoAccounts';
 import { resolvePostLoginPath } from '../lib/appPaths';
 import { authService } from '../services/authService';
+import { partnerAuthService } from '../services/partnerAuthService';
 import { getErrorMessage } from '../services/api';
 import { normalizeIndianPhoneDigits, validateIndianPhone10, validateOtpCode } from '../utils/validators';
 
@@ -49,6 +50,11 @@ export function AdminLoginPage() {
       return;
     }
     navigate(resolvePostLoginPath(me, from), { replace: true });
+  };
+
+  const resetAnySession = () => {
+    authService.clearSession();
+    partnerAuthService.clearSession();
   };
 
   const submitCredentials = async (e) => {
@@ -236,11 +242,11 @@ export function AdminLoginPage() {
         <>
           <p className="mt-6 text-center text-sm text-white/55">
             Customer?{' '}
-            <Link to="/login" className="font-semibold text-cyan-400 hover:text-cyan-300">
+            <Link to="/login" className="font-semibold text-cyan-400 hover:text-cyan-300" onClick={resetAnySession}>
               Customer sign in
             </Link>
             {' · '}
-            <Link to="/partner/login" className="font-semibold text-emerald-400 hover:text-emerald-300">
+            <Link to="/partner/login" className="font-semibold text-emerald-400 hover:text-emerald-300" onClick={resetAnySession}>
               Partner sign in
             </Link>
           </p>

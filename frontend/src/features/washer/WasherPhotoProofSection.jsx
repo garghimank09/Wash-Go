@@ -129,8 +129,12 @@ export function WasherPhotoProofSection({
       toast.error('Customer already approved the vehicle condition');
       return;
     }
-    if ((kind === 'before' || kind === 'after') && !showWashPhotos) {
+    if (kind === 'before' && !showBeforeWash) {
       toast.error('Customer must approve vehicle condition before wash photos');
+      return;
+    }
+    if (kind === 'after' && !showAfterWash) {
+      toast.error('Start wash before uploading after-service proof');
       return;
     }
     pendingKind.current = kind;

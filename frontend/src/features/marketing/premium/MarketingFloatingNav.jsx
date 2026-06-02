@@ -13,7 +13,7 @@ export function MarketingFloatingNav() {
   const [open, setOpen] = useState(false);
 
   return (
-    <div className="pointer-events-none fixed inset-x-0 top-0 z-50 flex justify-center px-4 pt-4 sm:px-6">
+    <div className="pointer-events-none fixed inset-x-0 top-0 z-50 flex flex-col items-center px-4 pt-4 sm:px-6">
       <header className="wg-premium-nav pointer-events-auto flex w-full max-w-6xl items-center justify-between gap-3 rounded-2xl border border-white/40 bg-white/70 px-4 py-2.5 shadow-[0_8px_40px_rgb(15_23_42/0.08)] backdrop-blur-2xl dark:border-white/10 dark:bg-slate-950/65 sm:px-5">
         <Link to="/" className="text-lg font-black tracking-tight text-wg-text">
           Wash<span className="bg-gradient-to-r from-cyan-500 to-indigo-500 bg-clip-text text-transparent">Go</span>
